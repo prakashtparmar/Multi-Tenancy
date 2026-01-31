@@ -805,7 +805,59 @@
                 cart: [],
 
                 init() {
-                    // Pre-loaded products are already set in productResults
+                     // 1. Restore State from LocalStorage
+                    const saved = localStorage.getItem('order_wizard_state');
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            this.step = parsed.step || 1;
+                            this.selectedCustomer = parsed.selectedCustomer || null;
+                            this.cart = parsed.cart || [];
+                            // Ensure order object has defaults merged with saved state
+                            this.order = { 
+                                billing_address_id: null, 
+                                shipping_address_id: null, 
+                                same_as_billing: true,
+                                ...parsed.order 
+                            };
+                            
+                            // Restore Queries if they exist
+                            this.customerQuery = parsed.customerQuery || '';
+                            this.productQuery = parsed.productQuery || '';
+
+                            // If product query exists, trigger search to restore results
+                            if(this.productQuery && this.productQuery.length > 0) {
+                                this.searchProducts();
+                            }
+                        } catch(e) {
+                            console.error('Failed to restore state', e);
+                            localStorage.removeItem('order_wizard_state');
+                        }
+                    }
+
+                    // 2. Setup Watchers for Persistence
+                    this.$watch('step', () => this.saveState());
+                    this.$watch('selectedCustomer', () => this.saveState());
+                    this.$watch('cart', () => this.saveState()); 
+                    this.$watch('order', () => this.saveState());
+                    
+                    // Deep watchers for nested object changes
+                    this.$watch('cart', () => this.saveState(), { deep: true });
+                    this.$watch('order', () => this.saveState(), { deep: true });
+                    this.$watch('customerQuery', () => this.saveState());
+                    this.$watch('productQuery', () => this.saveState());
+                },
+
+                saveState() {
+                    const state = {
+                        step: this.step,
+                        selectedCustomer: this.selectedCustomer,
+                        cart: this.cart,
+                        order: this.order,
+                        customerQuery: this.customerQuery,
+                        productQuery: this.productQuery
+                    };
+                    localStorage.setItem('order_wizard_state', JSON.stringify(state));
                 },
 
                 // API Calls
@@ -1003,6 +1055,9 @@
                         if (!res.ok || (data && data.success === false)) {
                              throw new Error(data.message || res.statusText || 'Server Error');
                         }
+
+                        // Clear LocalStorage BEFORE redirecting so the wizard starts fresh
+                        localStorage.removeItem('order_wizard_state');
 
                         // Handle Success Redirect
                         if (data.redirect_url) {
