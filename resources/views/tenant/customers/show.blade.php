@@ -1,9 +1,9 @@
 <x-layouts.app>
     <!-- Breadcrumbs -->
     <div class="mb-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
-       <a href="{{ route($routePrefix === 'tenant' ? 'tenant.dashboard' : 'dashboard') }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ __('Dashboard') }}</a>
+       <a href="/dashboard" class="text-blue-600 dark:text-blue-400 hover:underline">{{ __('Dashboard') }}</a>
        <span class="mx-2">›</span>
-       <a href="{{ route($routePrefix . '.customers.index') }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ __('Customers') }}</a>
+       <a href="/customers" class="text-blue-600 dark:text-blue-400 hover:underline">{{ __('Customers') }}</a>
        <span class="mx-2">›</span>
        <span>{{ $customer->first_name }}</span>
     </div>
@@ -23,7 +23,7 @@
           <p class="text-sm text-gray-600 dark:text-gray-400">{{ $customer->customer_code }} • {{ ucfirst($customer->category) }}</p>
        </div>
        <div class="flex gap-2">
-          <a href="{{ route($routePrefix . '.customers.edit', $customer->id) }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">
+          <a href="/customers/{{ $customer->id }}/edit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">
              Edit Customer
           </a>
        </div>

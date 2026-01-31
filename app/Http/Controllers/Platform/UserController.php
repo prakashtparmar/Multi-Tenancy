@@ -43,7 +43,6 @@ class UserController extends Controller
 
         return view('tenant.users.index', [
             'users' => $users,
-            'routePrefix' => $this->getRoutePrefix(),
         ]);
     }
 
@@ -56,7 +55,6 @@ class UserController extends Controller
 
         return view('tenant.users.form', [
             'roles' => $roles,
-            'routePrefix' => $this->getRoutePrefix(),
         ]);
     }
 
@@ -84,7 +82,7 @@ class UserController extends Controller
             $user->syncRoles($validated['roles']);
         }
 
-        return redirect('/users')->with('success', 'User created successfully.');
+        return redirect(request()->root() . '/users')->with('success', 'User created successfully.');
     }
 
     /**
@@ -97,7 +95,6 @@ class UserController extends Controller
         return view('tenant.users.form', [
             'user' => $user,
             'roles' => $roles,
-            'routePrefix' => $this->getRoutePrefix(),
         ]);
     }
 
@@ -130,7 +127,7 @@ class UserController extends Controller
             $user->syncRoles($validated['roles']);
         }
 
-        return redirect('/users')->with('success', 'User updated successfully.');
+        return redirect(request()->root() . '/users')->with('success', 'User updated successfully.');
     }
 
     /**
@@ -147,10 +144,10 @@ class UserController extends Controller
 
         if ($user->trashed()) {
             $user->forceDelete();
-            return redirect('/users?trashed=only')->with('success', 'User permanently deleted.');
+            return redirect(request()->root() . '/users?trashed=only')->with('success', 'User permanently deleted.');
         } else {
             $user->delete();
-            return redirect('/users')->with('success', 'User moved to trash.');
+            return redirect(request()->root() . '/users')->with('success', 'User moved to trash.');
         }
     }
 
@@ -162,7 +159,7 @@ class UserController extends Controller
         $user = User::onlyTrashed()->findOrFail($id);
         $user->restore();
 
-        return redirect('/users')->with('success', 'User restored successfully.');
+        return redirect(request()->root() . '/users')->with('success', 'User restored successfully.');
     }
 
     /**

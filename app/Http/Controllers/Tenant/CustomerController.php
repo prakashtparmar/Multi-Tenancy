@@ -10,23 +10,6 @@ use Illuminate\Http\Request;
 
 class CustomerController extends Controller
 {
-    private function getRoutePrefix()
-    {
-        // If tenancy is initialized, use tenant routes
-        if (tenant()) {
-            return 'tenant';
-        }
-
-        // Fallback: If we are on a subdomain that is not localhost/127.0.0.1, we are likely in a tenant context
-        // regardless of whether the helper returns true (e.g. during some edge cases)
-        $host = request()->getHost();
-        if ($host !== 'localhost' && $host !== '127.0.0.1' && !str_contains($host, 'central')) {
-             return 'tenant';
-        }
-
-        return 'central';
-    }
-
     public function index(Request $request)
     {
         $query = Customer::query();
@@ -54,15 +37,12 @@ class CustomerController extends Controller
 
         return view('tenant.customers.index', [
             'customers' => $customers,
-            'routePrefix' => $this->getRoutePrefix(),
         ]);
     }
 
     public function create()
     {
-        return view('tenant.customers.create', [
-            'routePrefix' => $this->getRoutePrefix(),
-        ]);
+        return view('tenant.customers.create');
     }
 
     public function store(StoreCustomerRequest $request)
@@ -111,7 +91,6 @@ class CustomerController extends Controller
 
         return view('tenant.customers.show', [
             'customer' => $customer,
-            'routePrefix' => $this->getRoutePrefix(),
         ]);
     }
 
@@ -123,7 +102,6 @@ class CustomerController extends Controller
 
         return view('tenant.customers.edit', [
             'customer' => $customer,
-            'routePrefix' => $this->getRoutePrefix(),
         ]);
     }
 

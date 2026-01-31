@@ -38,7 +38,8 @@ return Application::configure(basePath: dirname(__DIR__))
                  return $request->getSchemeAndHttpHost() . '/login';
             }
 
-            return config('app.url').'/login';
+            // Final Fallback: Use the current request domain dynamically
+            return $request->getSchemeAndHttpHost() . '/login';
         });
     })
     ->withExceptions(function (Exceptions $exceptions) {

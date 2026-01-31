@@ -109,7 +109,7 @@
             <div class="flex flex-col items-end gap-1">
                 <!-- Debug Info (Temporary) -->
                 <div class="text-[10px] text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded">
-                     Host: {{ request()->getHost() }} | Tenant: {{ tenant('id') ?? 'null' }} | Px: {{ $routePrefix }}
+                     Host: {{ request()->getHost() }} | Tenant: {{ tenant('id') ?? 'null' }}
                 </div>
                 <!-- Robust Link Generation using relative path to force browser to keep current domain -->
                 <a href="/customers/create" class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-200">
@@ -277,7 +277,7 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                                                 Edit Details
                                             </a>
-                                            <a href="{{ route($routePrefix . '.customers.show', $customer->id) }}" class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
+                                            <a href="/customers/{{ $customer->id }}" class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                                                 View Profile
                                             </a>

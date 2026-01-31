@@ -13,8 +13,15 @@ Route::get('/find-workspace', function () {
 
 Route::post('/find-workspace', function (Illuminate\Http\Request $request) {
     $workspace = strtolower($request->workspace);
-
-    return redirect("http://{$workspace}.localhost:8000/login");
+    
+    $scheme = $request->getScheme();
+    $host = $request->getHost();
+    $port = $request->getPort() ? ':' . $request->getPort() : '';
+    
+    // Handle local dev vs production dynamic domains
+    $baseDomain = ($host === '127.0.0.1') ? 'localhost' : $host;
+    
+    return redirect("{$scheme}://{$workspace}.{$baseDomain}{$port}/login");
 })->name('central.find-workspace.post');
 
 // Central Auth & Dashboard

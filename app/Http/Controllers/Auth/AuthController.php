@@ -82,7 +82,7 @@ class AuthController extends Controller
                 ->with('success', 'Welcome back!');
         }
 
-        return redirect(config('app.url').'/dashboard')
+        return redirect(request()->getSchemeAndHttpHost().'/dashboard')
             ->with('success', 'Welcome back!');
     }
 
@@ -118,7 +118,8 @@ class AuthController extends Controller
             return redirect(request()->getSchemeAndHttpHost().'/login');
         }
 
-        return redirect(config('app.url').'/login');
+        // Dynamic fallback for central domain logout
+        return redirect(request()->getSchemeAndHttpHost().'/login');
     }
 
     /**
