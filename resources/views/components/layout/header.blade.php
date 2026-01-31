@@ -1,4 +1,4 @@
-<header class="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-white/5 bg-background/60 px-4 backdrop-blur-xl transition-all duration-300 ease-in-out lg:px-6 shadow-[0_1px_30px_0px_rgba(0,0,0,0.02)]">
+<header class="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-white/5 bg-white/80 dark:bg-zinc-900/80 px-4 backdrop-blur-xl transition-all duration-300 ease-in-out lg:px-6 shadow-[0_1px_30px_0px_rgba(0,0,0,0.02)]">
     
     <!-- Ambient Glow -->
     <div class="absolute inset-0 z-[-1] overflow-hidden pointer-events-none">

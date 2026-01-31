@@ -117,8 +117,9 @@ class TenantDatabaseSeeder extends Seeder
 
         // 4. Create Demo Data (Customers)
         if (config('app.env') !== 'production') {
-            $customer = Customer::create([
+            $customer = Customer::firstOrCreate([
                 'customer_code' => 'CUST-DEMO-001',
+            ], [
                 'first_name' => 'Demo',
                 'last_name' => 'Farmer',
                 'mobile' => '9999999999',

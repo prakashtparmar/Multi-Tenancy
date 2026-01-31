@@ -10,10 +10,8 @@
               this.$watch('theme', val => localStorage.setItem('theme', val));
               this.$watch('colorTheme', val => localStorage.setItem('colorTheme', val));
               
-              // Watch for system preference changes if in system mode
               window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
                   if (this.theme === 'system') {
-                      // Trigger re-evaluation
                       this.theme = 'system'; 
                   }
               });
@@ -49,52 +47,16 @@
 
         <style>
             [x-cloak] { display: none !important; }
+            body { font-family: 'Plus Jakarta Sans', sans-serif; scrollbar-gutter: stable; }
+            h1, h2, h3, h4, .font-heading { font-family: 'Outfit', sans-serif; }
             
-            body {
-                font-family: 'Plus Jakarta Sans', sans-serif;
-                scrollbar-gutter: stable;
-            }
-
-            /* Robust Layout Padding Classes */
-            /* Robust Layout Padding Classes - Critical Fallback */
-            @media (min-width: 768px) {
-                .layout-padding-expanded { padding-left: 18rem !important; } /* w-72 */
-                .layout-padding-collapsed { padding-left: 4.5rem !important; } /* w-[4.5rem] */
-                /* Enforce margin if Tailwind fails */
-                main.pl-72 { padding-left: 18rem; } 
-            }
-
-            h1, h2, h3, h4, .font-heading {
-                font-family: 'Outfit', sans-serif;
-            }
-
-            /* Custom Premium Scrollbar */
-            ::-webkit-scrollbar {
-                width: 6px;
-                height: 6px;
-            }
-            ::-webkit-scrollbar-track {
-                background: transparent;
-            }
-            ::-webkit-scrollbar-thumb {
-                background-color: rgba(161, 161, 170, 0.2); /* muted-foreground/20 approx */
-                border-radius: 9999px;
-                transition: background-color 0.3s;
-            }
-            ::-webkit-scrollbar-thumb:hover {
-                background-color: rgba(161, 161, 170, 0.4); /* muted-foreground/40 approx */
-            }
-
-            /* Selection highlight */
-            ::selection {
-                background-color: rgba(var(--primary), 0.2);
-                color: rgb(var(--primary));
-            }
-
-            /* Smooth scrolling */
-            html {
-                scroll-behavior: smooth;
-            }
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar { width: 6px; height: 6px; }
+            ::-webkit-scrollbar-track { background: transparent; }
+            ::-webkit-scrollbar-thumb { background-color: rgba(161, 161, 170, 0.2); border-radius: 9999px; transition: background-color 0.3s; }
+            ::-webkit-scrollbar-thumb:hover { background-color: rgba(161, 161, 170, 0.4); }
+            ::selection { background-color: rgba(var(--primary), 0.2); color: rgb(var(--primary)); }
+            html { scroll-behavior: smooth; }
         </style>
     </head>
     <body class="min-h-svh w-full bg-background text-foreground antialiased overflow-x-hidden selection:bg-primary/20 selection:text-primary transition-colors duration-300">
@@ -106,28 +68,31 @@
         
         <x-ui.toaster />
 
-        <div class="relative flex min-h-svh flex-col">
-            <div class="flex flex-1">
-                <!-- Sidebar Component -->
-                <x-layout.app-sidebar />
+        <!-- Sidebar Component (Fixed Position, Independent of Content Flow) -->
+        <x-layout.app-sidebar />
 
-                <div class="flex flex-1 flex-col transition-all duration-300 ease-in-out md:pl-72" 
-                     :class="sidebarCollapsed ? 'md:pl-[4.5rem]' : 'md:pl-72'">
-                    
-                    <x-layout.header />
-                    
-                    <main class="flex flex-1 flex-col relative w-full max-w-full overflow-hidden">
-                        <div class="relative flex-1 flex flex-col">
-                            @yield('content')
-                        </div>
-                        
-                        <!-- Footer -->
-                        <footer class="py-6 px-8 text-center text-xs text-muted-foreground border-t border-border/40 mt-auto">
-                            <p>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
-                        </footer>
-                    </main>
+        <!-- Main Content Wrapper -->
+        <!-- We use a static padding class (pl-0 md:pl-72) as a default to prevent layout shift before JS loads. -->
+        <!-- Then we use Alpine to tighten it if collapsed. -->
+        <div class="relative min-h-svh flex flex-col transition-all duration-300 ease-in-out md:pl-72"
+             :class="sidebarCollapsed ? 'md:!pl-[4.5rem]' : ''">
+            
+            <!-- Header (Sticky) -->
+            <x-layout.header />
+            
+            <!-- Page Content -->
+            <main class="flex-1 w-full max-w-full relative overflow-hidden">
+                <div class="relative flex-1 flex flex-col min-h-full">
+                    {{ $slot ?? '' }}
+                    @yield('content')
                 </div>
-            </div>
+            </main>
+            
+            <!-- Footer -->
+            <footer class="py-6 px-8 text-center text-xs text-muted-foreground border-t border-border/40 mt-auto">
+                <p>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
+            </footer>
         </div>
+
     </body>
 </html>

@@ -59,5 +59,32 @@ Route::middleware('auth')->group(function () {
     Route::post('customers/{id}/restore', [\App\Http\Controllers\Tenant\CustomerController::class, 'restore'])->name('central.customers.restore');
     Route::resource('customers', \App\Http\Controllers\Tenant\CustomerController::class)->names('central.customers');
 
+    // Enterprise Modules (Central)
+    Route::resource('categories', \App\Http\Controllers\Central\CategoryController::class)->names('central.categories');
+    Route::resource('collections', \App\Http\Controllers\Central\CollectionController::class)->names('central.collections');
+    Route::resource('products', \App\Http\Controllers\Central\ProductController::class)->names('central.products');
+    Route::resource('warehouses', \App\Http\Controllers\Central\WarehouseController::class)->names('central.warehouses');
+    Route::resource('suppliers', \App\Http\Controllers\Central\SupplierController::class)->names('central.suppliers');
+    Route::patch('shipments/{shipment}/status', [\App\Http\Controllers\Central\ShipmentController::class, 'updateStatus'])->name('central.shipments.update-status');
+    Route::resource('shipments', \App\Http\Controllers\Central\ShipmentController::class)->names('central.shipments');
+    
+    Route::patch('returns/{orderReturn}/status', [\App\Http\Controllers\Central\OrderReturnController::class, 'updateStatus'])->name('central.returns.update-status');
+    Route::resource('returns', \App\Http\Controllers\Central\OrderReturnController::class)->names('central.returns');
+
+    Route::post('invoices/{invoice}/payment', [\App\Http\Controllers\Central\InvoiceController::class, 'addPayment'])->name('central.invoices.add-payment');
+    Route::resource('invoices', \App\Http\Controllers\Central\InvoiceController::class)->only(['index', 'store', 'show'])->names('central.invoices');
+
+    Route::post('purchase-orders/{purchaseOrder}/receive', [\App\Http\Controllers\Central\PurchaseOrderController::class, 'receive'])->name('central.purchase-orders.receive');
+    Route::resource('purchase-orders', \App\Http\Controllers\Central\PurchaseOrderController::class)->names('central.purchase-orders');
+
+    // Search Endpoints (AJAX)
+    Route::get('api/search/customers', [\App\Http\Controllers\Central\SearchController::class, 'customers'])->name('central.api.search.customers');
+    Route::post('api/customers/quick', [\App\Http\Controllers\Central\SearchController::class, 'storeCustomer'])->name('central.api.customers.store-quick');
+    Route::post('api/addresses/store', [\App\Http\Controllers\Central\SearchController::class, 'storeAddress'])->name('central.api.addresses.store');
+    Route::get('api/search/products', [\App\Http\Controllers\Central\SearchController::class, 'products'])->name('central.api.search.products');
+
+    Route::post('orders/{order}/update-status', [\App\Http\Controllers\Central\OrderController::class, 'updateStatus'])->name('central.orders.update-status');
+    Route::resource('orders', \App\Http\Controllers\Central\OrderController::class)->names('central.orders');
+
     Route::post('/logout', [App\Http\Controllers\Auth\AuthController::class, 'logout'])->name('logout');
 });

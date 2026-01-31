@@ -55,8 +55,30 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     Route::post('customers/{id}/restore', [\App\Http\Controllers\Tenant\CustomerController::class, 'restore'])->name('tenant.customers.restore');
     Route::resource('customers', \App\Http\Controllers\Tenant\CustomerController::class)->names('tenant.customers');
 
+    // Enterprise Modules
+    Route::patch('shipments/{shipment}/status', [\App\Http\Controllers\Tenant\ShipmentController::class, 'updateStatus'])->name('tenant.shipments.update-status');
+    Route::resource('shipments', \App\Http\Controllers\Tenant\ShipmentController::class)->names('tenant.shipments');
+    
+    Route::patch('returns/{orderReturn}/status', [\App\Http\Controllers\Tenant\OrderReturnController::class, 'updateStatus'])->name('tenant.returns.update-status');
+    Route::resource('returns', \App\Http\Controllers\Tenant\OrderReturnController::class)->names('tenant.returns');
+
+    Route::post('invoices/{invoice}/payment', [\App\Http\Controllers\Tenant\InvoiceController::class, 'addPayment'])->name('tenant.invoices.add-payment');
+    Route::resource('invoices', \App\Http\Controllers\Tenant\InvoiceController::class)->only(['index', 'store', 'show'])->names('tenant.invoices');
+
+    Route::post('purchase-orders/{purchaseOrder}/receive', [\App\Http\Controllers\Tenant\PurchaseOrderController::class, 'receive'])->name('tenant.purchase-orders.receive');
+    Route::resource('purchase-orders', \App\Http\Controllers\Tenant\PurchaseOrderController::class)->names('tenant.purchase-orders');
+
+
     // Activity Logs
     Route::get('/activity-logs', [\App\Http\Controllers\Platform\ActivityLogController::class, 'index'])->name('tenant.activity-logs.index');
+
+    // Enterprise Modules
+    Route::resource('products', \App\Http\Controllers\Tenant\ProductController::class)->names('tenant.products');
+    Route::resource('categories', \App\Http\Controllers\Tenant\CategoryController::class)->names('tenant.categories');
+    Route::resource('collections', \App\Http\Controllers\Tenant\CollectionController::class)->names('tenant.collections');
+    Route::resource('warehouses', \App\Http\Controllers\Tenant\WarehouseController::class)->names('tenant.warehouses');
+    Route::resource('suppliers', \App\Http\Controllers\Tenant\SupplierController::class)->names('tenant.suppliers');
+    Route::resource('orders', \App\Http\Controllers\Tenant\OrderController::class)->names('tenant.orders');
 });
 
 // Debug Route

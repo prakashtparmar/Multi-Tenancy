@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../views/**/*.blade.php";
 
 @theme {
   --font-inter: 'Inter', 'sans-serif';
