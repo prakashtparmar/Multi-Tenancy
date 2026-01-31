@@ -12,7 +12,7 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'brand']);
+        $query = Product::with(['category', 'brand', 'images']);
 
         if ($request->has('search')) {
             $search = $request->input('search');
@@ -68,9 +68,21 @@ class ProductController extends Controller
             'unit_type' => 'required|string|max:50',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048'
         ]);
 
-        Product::create($validated);
+        $product = Product::create($validated);
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $image) {
+                $path = $image->store('products', 'public');
+                $product->images()->create([
+                    'image_path' => $path,
+                    'is_primary' => $index === 0,
+                    'sort_order' => $index
+                ]);
+            }
+        }
 
         return redirect()->route('central.products.index')->with('success', 'Product created successfully.');
     }
@@ -99,9 +111,41 @@ class ProductController extends Controller
             'unit_type' => 'required|string|max:50',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'delete_images.*' => 'exists:product_images,id'
         ]);
 
         $product->update($validated);
+
+        // Handle Image Deletion
+        if ($request->has('delete_images')) {
+            $imagesToDelete = \App\Models\ProductImage::whereIn('id', $request->delete_images)
+                ->where('product_id', $product->id)
+                ->get();
+            
+            foreach ($imagesToDelete as $img) {
+                \Storage::disk('public')->delete($img->image_path);
+                $img->delete();
+            }
+        }
+
+        // Handle New Images
+        if ($request->hasFile('images')) {
+            $currentCount = $product->images()->count();
+            foreach ($request->file('images') as $index => $image) {
+                $path = $image->store('products', 'public');
+                $product->images()->create([
+                    'image_path' => $path,
+                    'is_primary' => ($currentCount + $index) === 0, // Primary if it's the first ever image
+                    'sort_order' => $currentCount + $index
+                ]);
+            }
+        }
+
+        // Ensure one image is always primary
+        if ($product->images()->exists() && !$product->images()->where('is_primary', true)->exists()) {
+            $product->images()->orderBy('sort_order')->first()->update(['is_primary' => true]);
+        }
 
         return redirect()->route('central.products.index')->with('success', 'Product updated successfully.');
     }

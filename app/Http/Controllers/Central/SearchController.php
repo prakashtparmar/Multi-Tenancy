@@ -50,14 +50,13 @@ class SearchController extends Controller
     public function products(Request $request)
     {
         $term = $request->input('q');
+        $query = Product::where('is_active', true)
+            ->with(['category', 'brand', 'images', 'stocks']); // Eager load for performance
+
         if (empty($term)) {
-            $products = Product::where('is_active', true)
-                ->with(['category', 'brand'])
-                ->limit(20)
-                ->get(); // Default recent list
+            $products = $query->limit(20)->get(); // Default recent list
         } else {
-            $products = Product::where('is_active', true)
-                ->where(function ($q) use ($term) {
+            $products = $query->where(function ($q) use ($term) {
                     $q->where('name', 'like', "%{$term}%")
                       ->orWhere('sku', 'like', "%{$term}%")
                       ->orWhere('slug', 'like', "%{$term}%");
@@ -65,18 +64,25 @@ class SearchController extends Controller
                 ->orWhereHas('category', function($q) use ($term){
                     $q->where('name', 'like', "%{$term}%");
                 })
-                ->with(['category', 'brand'])
                 ->limit(20)
                 ->get();
         }
         
         // Append stocks and image
         $products->map(function ($product) {
-            $product->stock_on_hand = $product->stock_on_hand; // Triggers accessor
+            // $product->stock_on_hand access accessors, but since we eager loaded stocks, 
+            // we should try to use the loaded relation if possible to avoid query.
+            // However, the accessor uses stocks()->sum('quantity'). 
+            // If we already loaded stocks, we can sum collection in memory.
+            $product->stock_on_hand_val = $product->stocks->sum('quantity'); 
+            // We'll just assign it to the attribute expected via accessor or just use the accessor (which might re-query if not careful, 
+            // but since stocks is loaded, laravel relation might use it? No, sum() on query builder executes query. 
+            // We should iterate collection).
+            $product->stock_on_hand_display = $product->stocks->sum('quantity');
             
-            $primaryImage = $product->images()->where('is_primary', true)->value('image_path');
+            $primaryImage = $product->images->where('is_primary', true)->first();
             $product->image_url = $primaryImage 
-                ? asset('storage/' . $primaryImage) 
+                ? asset('storage/' . $primaryImage->image_path) 
                 : 'https://placehold.co/400x400?text=No+Image';
                 
             return $product;

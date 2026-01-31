@@ -15,7 +15,7 @@
 
     <!-- Form Card -->
     <div class="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden p-6">
-        <form action="{{ route('central.products.update', $product) }}" method="POST" class="space-y-6">
+        <form action="{{ route('central.products.update', $product) }}" method="POST" class="space-y-6" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -50,6 +50,44 @@
                             <option value="{{ $category->id }}" {{ $product->category_id == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
                         @endforeach
                     </select>
+                </div>
+            </div>
+
+            <!-- Product Images -->
+            <div class="space-y-4">
+                <label class="text-sm font-medium leading-none">Product Images</label>
+                
+                <!-- Existing Images -->
+                @if($product->images->count() > 0)
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        @foreach($product->images as $image)
+                            <div class="relative group rounded-lg overflow-hidden border border-border">
+                                <img src="{{ asset('storage/' . $image->image_path) }}" class="w-full h-32 object-cover" alt="Product Image">
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-destructive text-destructive-foreground px-3 py-1.5 rounded-md text-xs font-medium">
+                                        <input type="checkbox" name="delete_images[]" value="{{ $image->id }}" class="rounded border-gray-300 text-destructive focus:ring-destructive">
+                                        <span>Delete</span>
+                                    </label>
+                                </div>
+                                @if($image->is_primary)
+                                    <div class="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded font-bold uppercase">Primary</div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div class="flex items-center justify-center w-full">
+                    <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors border-border">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-2 text-muted-foreground" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                            </svg>
+                            <p class="text-sm text-muted-foreground"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                            <p class="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (MAX. 2MB)</p>
+                        </div>
+                        <input id="dropzone-file" type="file" name="images[]" multiple class="hidden" />
+                    </label>
                 </div>
             </div>
 
