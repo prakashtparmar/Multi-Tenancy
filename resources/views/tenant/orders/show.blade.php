@@ -38,15 +38,15 @@
                                 <tr>
                                     <td class="px-6 py-4">{{ $item->product->name ?? 'Product #'.$item->product_id }}</td>
                                     <td class="px-6 py-4">{{ $item->quantity }}</td>
-                                    <td class="px-6 py-4">${{ number_format($item->unit_price, 2) }}</td>
-                                    <td class="px-6 py-4">${{ number_format($item->subtotal, 2) }}</td>
+                                    <td class="px-6 py-4">Rs {{ number_format($item->unit_price, 2) }}</td>
+                                    <td class="px-6 py-4">Rs {{ number_format($item->subtotal, 2) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                         <tfoot>
                             <tr class="bg-gray-50 font-bold">
                                 <td colspan="3" class="px-6 py-4 text-right">Total:</td>
-                                <td class="px-6 py-4">${{ number_format($order->total_amount, 2) }}</td>
+                                <td class="px-6 py-4">Rs {{ number_format($order->total_amount, 2) }}</td>
                             </tr>
                         </tfoot>
                     </table>

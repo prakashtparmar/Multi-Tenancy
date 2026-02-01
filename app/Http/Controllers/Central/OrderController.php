@@ -81,9 +81,11 @@ class OrderController extends Controller
                 'price' => $product->price,
                 'stock_on_hand' => $product->stock_on_hand,
                 'unit_type' => $product->unit_type,
-                'image_url' => $product->images->where('is_primary', true)->first() 
-                    ? asset('storage/' . $product->images->where('is_primary', true)->first()->image_path) 
-                    : 'https://placehold.co/400x400?text=No+Image',
+                'brand' => $product->brand->name ?? 'N/A',
+                'description' => $product->description,
+                'is_organic' => $product->is_organic,
+                'origin' => $product->origin,
+                'image_url' => $product->image_url,
                 'category' => $product->category->name ?? 'Uncategorized'
             ]);
 
@@ -258,6 +260,10 @@ class OrderController extends Controller
                 'price' => (float) $p->price,
                 'stock_on_hand' => (float) $p->stock_on_hand,
                 'unit_type' => $p->unit_type,
+                'brand' => $p->brand->name ?? 'N/A',
+                'description' => $p->description,
+                'is_organic' => $p->is_organic,
+                'origin' => $p->origin,
                 'image_url' => $p->image_url,
                 'category' => $p->category->name ?? 'Uncategorized'
             ]);

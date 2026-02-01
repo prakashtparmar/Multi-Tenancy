@@ -86,9 +86,11 @@ class SearchController extends Controller
                 'price' => (float) $product->price,
                 'stock_on_hand' => (float) $product->stock_on_hand,
                 'unit_type' => $product->unit_type,
-                'image_url' => $product->images->where('is_primary', true)->first() 
-                    ? asset('storage/' . $product->images->where('is_primary', true)->first()->image_path) 
-                    : 'https://placehold.co/400x400?text=No+Image',
+                'brand' => $product->brand->name ?? 'N/A',
+                'description' => $product->description,
+                'is_organic' => $product->is_organic,
+                'origin' => $product->origin,
+                'image_url' => $product->image_url,
                 'category' => $product->category->name ?? 'Uncategorized'
             ];
         });

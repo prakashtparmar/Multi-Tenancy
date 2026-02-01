@@ -39,15 +39,15 @@
                                     <td class="px-6 py-4">{{ $item->product->name }}</td>
                                     <td class="px-6 py-4">{{ $item->quantity_ordered }}</td>
                                     <td class="px-6 py-4">{{ $item->quantity_received }}</td>
-                                    <td class="px-6 py-4">${{ number_format($item->unit_cost, 2) }}</td>
-                                    <td class="px-6 py-4">${{ number_format($item->total_cost, 2) }}</td>
+                                    <td class="px-6 py-4">Rs {{ number_format($item->unit_cost, 2) }}</td>
+                                    <td class="px-6 py-4">Rs {{ number_format($item->total_cost, 2) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                         <tfoot>
                             <tr class="bg-gray-50 font-bold">
                                 <td colspan="4" class="px-6 py-4 text-right">Grand Total:</td>
-                                <td class="px-6 py-4">${{ number_format($purchaseOrder->total_cost, 2) }}</td>
+                                <td class="px-6 py-4">Rs {{ number_format($purchaseOrder->total_cost, 2) }}</td>
                             </tr>
                         </tfoot>
                     </table>

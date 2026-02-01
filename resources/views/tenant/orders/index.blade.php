@@ -126,7 +126,7 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 text-right font-bold text-foreground">
-                            ${{ number_format($order->total_amount, 2) }}
+                            Rs {{ number_format($order->total_amount, 2) }}
                         </td>
                         <td class="px-6 py-4 text-center">
                              <div class="flex items-center justify-center gap-2">

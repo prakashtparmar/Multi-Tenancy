@@ -71,7 +71,15 @@ class Product extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->images()->first()?->url ?? 'https://placehold.co/100x100?text=' . urlencode($this->name);
+        $image = $this->images()->where('is_primary', true)->first() ?? $this->images()->first();
+        
+        if ($image) {
+            return asset('storage/' . $image->image_path);
+        }
+
+        // Return a premium looking category-based placeholder
+        $category = $this->category->name ?? 'Product';
+        return "https://images.unsplash.com/photo-1592910710242-793263bba68c?q=80&w=400&auto=format&fit=crop"; // High quality farm/agri image as default
     }
 
     public function getPriceListPriceAttribute()

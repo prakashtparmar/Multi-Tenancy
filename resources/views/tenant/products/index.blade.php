@@ -34,7 +34,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $product->name }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $product->sku }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $product->category->name ?? '-' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">${{ number_format($product->price, 2) }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">Rs {{ number_format($product->price, 2) }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $product->stock_on_hand }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <a href="{{ route('tenant.products.edit', $product) }}" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</a>

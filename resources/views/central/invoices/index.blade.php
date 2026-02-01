@@ -124,7 +124,7 @@
                                 {{ $invoice->due_date ? $invoice->due_date->format('M d, Y') : '-' }}
                             </td>
                             <td class="p-6 align-middle font-medium">
-                                ${{ number_format($invoice->total_amount, 2) }}
+                                Rs {{ number_format($invoice->total_amount, 2) }}
                             </td>
                             <td class="p-6 align-middle">
                                 @if($invoice->status === 'paid')

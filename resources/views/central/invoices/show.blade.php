@@ -46,23 +46,23 @@
                                     <tr>
                                         <td class="py-2">{{ $item->product_name ?? 'Product' }} <span class="text-xs text-gray-500 block">{{ $item->sku }}</span></td>
                                         <td class="text-right py-2">{{ $item->quantity }}</td>
-                                        <td class="text-right py-2">${{ number_format($item->unit_price, 2) }}</td>
-                                        <td class="text-right py-2">${{ number_format($item->total_price, 2) }}</td>
+                                        <td class="text-right py-2">Rs {{ number_format($item->unit_price, 2) }}</td>
+                                        <td class="text-right py-2">Rs {{ number_format($item->total_price, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr class="border-t font-bold">
                                     <td colspan="3" class="text-right py-2">Total:</td>
-                                    <td class="text-right py-2">${{ number_format($invoice->total_amount, 2) }}</td>
+                                    <td class="text-right py-2">Rs {{ number_format($invoice->total_amount, 2) }}</td>
                                 </tr>
                                  <tr class="text-green-600">
                                     <td colspan="3" class="text-right py-2">Paid:</td>
-                                    <td class="text-right py-2">-${{ number_format($invoice->paid_amount, 2) }}</td>
+                                    <td class="text-right py-2">-Rs {{ number_format($invoice->paid_amount, 2) }}</td>
                                 </tr>
                                 <tr class="text-red-600 font-bold text-lg">
                                     <td colspan="3" class="text-right py-2">Balance Due:</td>
-                                    <td class="text-right py-2">${{ number_format($invoice->total_amount - $invoice->paid_amount, 2) }}</td>
+                                    <td class="text-right py-2">Rs {{ number_format($invoice->total_amount - $invoice->paid_amount, 2) }}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -113,7 +113,7 @@
                                 @forelse($invoice->payments as $payment)
                                     <li class="flex justify-between">
                                         <span>{{ $payment->paid_at->format('M d') }} <span class="text-gray-500">({{ $payment->method }})</span></span>
-                                        <span class="font-bold">${{ number_format($payment->amount, 2) }}</span>
+                                        <span class="font-bold">Rs {{ number_format($payment->amount, 2) }}</span>
                                     </li>
                                 @empty
                                     <li class="text-gray-400 italic">No payments yet.</li>

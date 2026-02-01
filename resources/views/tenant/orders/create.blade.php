@@ -154,7 +154,7 @@
                                                         class="flex h-9 w-28 ml-auto rounded-lg border border-input bg-background/50 px-3 text-right text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50 transition-all">
                                                 </td>
                                                 <td class="px-4 py-3 text-right font-medium text-foreground/90">
-                                                    $<span x-text="(item.quantity * item.price).toFixed(2)"></span>
+                                                    Rs <span x-text="(item.quantity * item.price).toFixed(2)"></span>
                                                 </td>
                                                 <td class="px-4 py-3 text-center">
                                                     <button type="button" @click="removeItem(index)" class="text-muted-foreground/50 group-hover:text-destructive hover:bg-destructive/10 p-1.5 rounded-md transition-all">
@@ -189,20 +189,20 @@
                         <div class="space-y-4 text-sm">
                             <div class="flex justify-between items-center text-muted-foreground">
                                 <span>Subtotal</span>
-                                <span>$<span x-text="grandTotal.toFixed(2)"></span></span>
+                                <span>Rs <span x-text="grandTotal.toFixed(2)"></span></span>
                             </div>
                             <div class="flex justify-between items-center text-muted-foreground">
                                 <span>Tax (0%)</span>
-                                <span>$0.00</span>
+                                <span>Rs 0.00</span>
                             </div>
                             <div class="flex justify-between items-center text-muted-foreground">
                                 <span>Shipping</span>
-                                <span>$0.00</span>
+                                <span>Rs 0.00</span>
                             </div>
                             <div class="h-px bg-border/50"></div>
                             <div class="flex justify-between items-center font-bold text-lg text-foreground">
                                 <span>Total</span>
-                                <span>$<span x-text="grandTotal.toFixed(2)"></span></span>
+                                <span>Rs <span x-text="grandTotal.toFixed(2)"></span></span>
                             </div>
                         </div>
 

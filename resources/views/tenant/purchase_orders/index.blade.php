@@ -38,7 +38,7 @@
                                                 {{ ucfirst($po->status) }}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4">${{ number_format($po->total_cost, 2) }}</td>
+                                        <td class="px-6 py-4">Rs {{ number_format($po->total_cost, 2) }}</td>
                                         <td class="px-6 py-4">
                                             <a href="{{ route('tenant.purchase-orders.show', $po) }}" class="text-indigo-600 hover:text-indigo-900">View</a>
                                         </td>

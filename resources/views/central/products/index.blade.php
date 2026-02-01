@@ -139,7 +139,7 @@
                                 <span class="text-xs text-muted-foreground">{{ $product->origin ?? '-' }}</span>
                             </td>
                             <td class="p-6 align-middle font-medium">
-                                ${{ number_format($product->price, 2) }}
+                                Rs {{ number_format($product->price, 2) }}
                             </td>
                             <td class="p-6 align-middle">
                                 @if($product->stock_on_hand > 10)

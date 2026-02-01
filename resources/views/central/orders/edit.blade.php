@@ -74,6 +74,84 @@
                 </div>
             </div>
         </template>
+
+        <!-- PRODUCT DETAILS MODAL -->
+        <template x-teleport="body">
+            <div x-show="showProductDetailsModal" 
+                 class="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100">
+                
+                <div class="bg-white dark:bg-zinc-900 w-full max-w-2xl rounded-[32px] shadow-2xl border border-white/10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 ease-out max-h-[90vh]" @click.away="showProductDetailsModal = false">
+                    <div class="flex-1 overflow-y-auto custom-scrollbar relative">
+                        <!-- Top Banner / Image -->
+                        <div class="h-64 relative bg-muted group">
+                            <img :src="detailedProduct?.image_url" class="size-full object-contain p-8 bg-zinc-50 dark:bg-zinc-800/50" onerror="this.src='https://placehold.co/800x400?text=Product+Image'">
+                            <button @click="showProductDetailsModal = false" class="absolute top-6 right-6 p-2 bg-white/20 hover:bg-white/40 backdrop-blur-lg rounded-full text-white transition-all shadow-xl">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                            <div class="absolute bottom-6 left-6 flex gap-2">
+                                <span class="px-3 py-1 bg-primary text-primary-foreground rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg" x-text="detailedProduct?.category"></span>
+                                <template x-if="detailedProduct?.is_organic">
+                                    <span class="px-3 py-1 bg-emerald-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1">
+                                        <svg class="size-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg> 100% Organic
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="p-8">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <p class="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1" x-text="detailedProduct?.brand || 'Generic'"></p>
+                                    <h3 class="text-3xl font-black tracking-tight" x-text="detailedProduct?.name"></h3>
+                                    <p class="text-xs font-mono text-muted-foreground mt-1" x-text="'SKU: ' + (detailedProduct?.sku || 'N/A')"></p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Our Price</p>
+                                    <p class="text-3xl font-black text-primary tracking-tighter">Rs <span x-text="parseFloat(detailedProduct?.price || 0).toFixed(2)"></span></p>
+                                    <p class="text-[10px] font-bold text-muted-foreground" x-text="'per ' + (detailedProduct?.unit_type || 'kg')"></p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mb-8">
+                                <div class="p-4 rounded-2xl bg-muted/30 border border-border/50">
+                                    <p class="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Available Stock</p>
+                                    <p class="text-xl font-black" :class="detailedProduct?.stock_on_hand > 0 ? 'text-foreground' : 'text-destructive'">
+                                        <span x-text="detailedProduct?.stock_on_hand || 0"></span>
+                                        <span class="text-sm font-bold text-muted-foreground ml-1 font-mono" x-text="detailedProduct?.unit_type"></span>
+                                    </p>
+                                </div>
+                                <div class="p-4 rounded-2xl bg-muted/30 border border-border/50">
+                                    <p class="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Product Origin</p>
+                                    <p class="text-sm font-bold truncate" x-text="detailedProduct?.origin || 'Global Market'"></p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <h4 class="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                                    Product Description
+                                </h4>
+                                <div class="text-sm leading-relaxed text-muted-foreground font-medium bg-muted/20 p-6 rounded-[24px]" x-text="detailedProduct?.description || 'No detailed description provided for this product.'"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-8 border-t border-border flex gap-4 bg-muted/10">
+                        <x-ui.button @click="showProductDetailsModal = false" variant="outline" class="flex-1 h-14 rounded-2xl">
+                            Close Details
+                        </x-ui.button>
+                        <template x-if="detailedProduct?.stock_on_hand > 0">
+                            <x-ui.button @click="addToCart(detailedProduct); showProductDetailsModal = false" class="flex-[2] h-14 rounded-2xl shadow-xl shadow-primary/20">
+                                Add to Order (Rs <span x-text="parseFloat(detailedProduct?.price || 0).toFixed(2)"></span>)
+                            </x-ui.button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
         
         <!-- Header / Progress Bar -->
         <div class="flex-none bg-background border-b border-border px-8 py-4 flex items-center justify-between z-20 shadow-sm sticky top-0">
@@ -493,7 +571,12 @@
                                                         <div class="flex flex-col">
                                                             <span class="text-xs text-primary font-semibold mb-0.5" x-text="product.category || 'General'"></span>
                                                             <span class="font-bold text-foreground text-base" x-text="product.name"></span>
-                                                            <span class="text-xs text-muted-foreground font-mono mt-1" x-text="product.sku"></span>
+                                                            <div class="flex items-center gap-2 mt-1">
+                                                                <span class="text-[10px] text-muted-foreground font-mono" x-text="product.sku"></span>
+                                                                <button type="button" @click="detailedProduct = product; showProductDetailsModal = true" class="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider">
+                                                                    View Details
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     
@@ -1032,6 +1115,10 @@
 
                 // Cart State
                 cart: [],
+
+                // Product Details
+                showProductDetailsModal: false,
+                detailedProduct: null,
 
                 // Tagging State
                 showTaggingModal: false,

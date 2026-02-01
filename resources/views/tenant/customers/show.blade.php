@@ -158,11 +158,11 @@
              <div class="p-4 space-y-3">
                 <div class="flex justify-between items-center">
                    <span class="text-sm text-gray-500 dark:text-gray-400">Credit Limit</span>
-                   <span class="font-medium text-gray-900 dark:text-gray-100">₹ {{ number_format($customer->credit_limit, 2) }}</span>
+                   <span class="font-medium text-gray-900 dark:text-gray-100">Rs {{ number_format($customer->credit_limit, 2) }}</span>
                 </div>
                 <div class="flex justify-between items-center">
                    <span class="text-sm text-gray-500 dark:text-gray-400">Outstanding</span>
-                   <span class="font-medium text-red-600">₹ {{ number_format($customer->outstanding_balance, 2) }}</span>
+                   <span class="font-medium text-red-600">Rs {{ number_format($customer->outstanding_balance, 2) }}</span>
                 </div>
                 <div class="pt-2 border-t border-gray-100 dark:border-gray-700">
                     <span class="text-xs text-gray-500 dark:text-gray-400">

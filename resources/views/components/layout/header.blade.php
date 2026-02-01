@@ -118,7 +118,7 @@
                                         <div class="text-right flex flex-col items-end">
                                             <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1.5">Outstanding</p>
                                             <p class="font-mono text-sm font-black px-3 py-1 rounded-xl border border-white/10 group-hover:border-primary/20 group-hover:bg-primary/5 transition-all shadow-inner" :class="cust.outstanding_balance > 0 ? 'text-rose-500 bg-rose-500/5' : 'text-emerald-500 bg-emerald-500/5'">
-                                               ₹ <span x-text="parseFloat(cust.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
+                                               Rs <span x-text="parseFloat(cust.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
                                             </p>
                                         </div>
                                         <div class="size-10 rounded-full bg-primary text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-x-8 group-hover:translate-x-0 shadow-lg shadow-primary/30">
