@@ -73,23 +73,20 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     Route::get('/activity-logs', [\App\Http\Controllers\Platform\ActivityLogController::class, 'index'])->name('tenant.activity-logs.index');
 
     // Enterprise Modules
+    Route::get('products/search', [\App\Http\Controllers\Tenant\ProductController::class, 'search'])->name('tenant.products.search');
     Route::resource('products', \App\Http\Controllers\Tenant\ProductController::class)->names('tenant.products');
     Route::resource('categories', \App\Http\Controllers\Tenant\CategoryController::class)->names('tenant.categories');
     Route::resource('collections', \App\Http\Controllers\Tenant\CollectionController::class)->names('tenant.collections');
     Route::resource('warehouses', \App\Http\Controllers\Tenant\WarehouseController::class)->names('tenant.warehouses');
     Route::resource('suppliers', \App\Http\Controllers\Tenant\SupplierController::class)->names('tenant.suppliers');
     Route::resource('orders', \App\Http\Controllers\Tenant\OrderController::class)->names('tenant.orders');
+
+    // Inventory Management
+    Route::get('inventory', [\App\Http\Controllers\Tenant\InventoryController::class, 'index'])->name('tenant.inventory.index');
+    Route::post('inventory/adjust', [\App\Http\Controllers\Tenant\InventoryController::class, 'adjust'])->name('tenant.inventory.adjust');
 });
 
-// Debug Route
-Route::get('/debug-url', function () {
-    return [
-        'tenant_id' => tenant('id'),
-        'login_route' => route('tenant.login'),
-        'app_url' => config('app.url'),
-        'request_host' => request()->getHost(),
-    ];
-});
+
 
 // Root redirect
 Route::get('/', function () {

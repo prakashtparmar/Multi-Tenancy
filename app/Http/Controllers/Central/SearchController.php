@@ -1,18 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\CustomerAddress;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Exception;
 
 class SearchController extends Controller
 {
-    public function customers(Request $request)
+    /**
+     * Search for customers via AJAX.
+     */
+    public function customers(Request $request): JsonResponse
     {
-        $term = $request->input('q');
-        if (empty($term) || strlen($term) < 2) {
+        $term = (string) $request->input('q', '');
+        if (strlen($term) < 2) {
             return response()->json([]);
         }
 
@@ -21,40 +31,40 @@ class SearchController extends Controller
             ->orWhere('last_name', 'like', "%{$term}%")
             ->orWhere('customer_code', 'like', "%{$term}%")
             ->limit(10)
-            ->limit(10)
             ->with('addresses')
             ->get();
 
-        $customers->transform(function ($customer) {
-            return [
-                'id' => $customer->id,
-                'first_name' => $customer->first_name,
-                'last_name' => $customer->last_name,
-                'mobile' => $customer->mobile,
-                'email' => $customer->email,
-                'customer_code' => $customer->customer_code,
-                'outstanding_balance' => $customer->outstanding_balance ?? 0.00,
-                'addresses' => $customer->addresses,
-                'company_name' => $customer->company_name,
-                'gst_number' => $customer->gst_number,
-                'pan_number' => $customer->pan_number,
-                'type' => $customer->type,
-                'land_area' => $customer->land_area,
-                'land_unit' => $customer->land_unit,
-            ];
-        });
+        $data = $customers->map(fn($customer) => [
+            'id' => $customer->id,
+            'first_name' => $customer->first_name,
+            'last_name' => $customer->last_name,
+            'mobile' => $customer->mobile,
+            'email' => $customer->email,
+            'customer_code' => $customer->customer_code,
+            'outstanding_balance' => (float) ($customer->outstanding_balance ?? 0.00),
+            'addresses' => $customer->addresses,
+            'company_name' => $customer->company_name,
+            'gst_number' => $customer->gst_number,
+            'pan_number' => $customer->pan_number,
+            'type' => $customer->type,
+            'land_area' => $customer->land_area,
+            'land_unit' => $customer->land_unit,
+        ]);
 
-        return response()->json($customers);
+        return response()->json($data);
     }
 
-    public function products(Request $request)
+    /**
+     * Search for products via AJAX.
+     */
+    public function products(Request $request): JsonResponse
     {
-        $term = $request->input('q');
+        $term = (string) $request->input('q', '');
         $query = Product::where('is_active', true)
-            ->with(['category', 'brand', 'images', 'stocks']); // Eager load for performance
+            ->with(['category', 'brand', 'images', 'stocks']);
 
         if (empty($term)) {
-            $products = $query->limit(20)->get(); // Default recent list
+            $products = $query->limit(20)->get();
         } else {
             $products = $query->where(function ($q) use ($term) {
                     $q->where('name', 'like', "%{$term}%")
@@ -68,17 +78,9 @@ class SearchController extends Controller
                 ->get();
         }
         
-        // Append stocks and image
-        $products->map(function ($product) {
-            // $product->stock_on_hand access accessors, but since we eager loaded stocks, 
-            // we should try to use the loaded relation if possible to avoid query.
-            // However, the accessor uses stocks()->sum('quantity'). 
-            // If we already loaded stocks, we can sum collection in memory.
+        $data = $products->map(function ($product) {
             $product->stock_on_hand_val = $product->stocks->sum('quantity'); 
-            // We'll just assign it to the attribute expected via accessor or just use the accessor (which might re-query if not careful, 
-            // but since stocks is loaded, laravel relation might use it? No, sum() on query builder executes query. 
-            // We should iterate collection).
-            $product->stock_on_hand_display = $product->stocks->sum('quantity');
+            $product->stock_on_hand_display = $product->stock_on_hand_val;
             
             $primaryImage = $product->images->where('is_primary', true)->first();
             $product->image_url = $primaryImage 
@@ -88,14 +90,17 @@ class SearchController extends Controller
             return $product;
         });
 
-        return response()->json($products);
+        return response()->json($data);
     }
 
-    public function storeCustomer(Request $request)
+    /**
+     * Store or update a customer via AJAX.
+     */
+    public function storeCustomer(Request $request): JsonResponse
     {
         $id = $request->input('id');
 
-        $rules = [
+        $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'mobile' => 'required|string|max:20|unique:customers,mobile' . ($id ? ",$id" : ''),
@@ -106,51 +111,36 @@ class SearchController extends Controller
             'type' => 'nullable|in:farmer,buyer,vendor,dealer',
             'land_area' => 'nullable|numeric|min:0',
             'land_unit' => 'nullable|string|in:acre,hectare,guntha',
-        ];
-
-        $validated = $request->validate($rules);
-
-        if ($id) {
-            $customer = Customer::findOrFail($id);
-            $customer->update([
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'] ?? null,
-                'mobile' => $validated['mobile'],
-                'email' => $validated['email'] ?? null,
-                'company_name' => $validated['company_name'] ?? null,
-                'gst_number' => $validated['gst_number'] ?? null,
-                'pan_number' => $validated['pan_number'] ?? null,
-                'type' => $validated['type'] ?? 'farmer',
-                'land_area' => $validated['land_area'] ?? null,
-                'land_unit' => $validated['land_unit'] ?? 'acre',
-            ]);
-        } else {
-            $customer = Customer::create([
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'] ?? null,
-                'mobile' => $validated['mobile'],
-                'email' => $validated['email'] ?? null,
-                'company_name' => $validated['company_name'] ?? null,
-                'gst_number' => $validated['gst_number'] ?? null,
-                'pan_number' => $validated['pan_number'] ?? null,
-                'type' => $validated['type'] ?? 'farmer',
-                'land_area' => $validated['land_area'] ?? null,
-                'land_unit' => $validated['land_unit'] ?? 'acre',
-                'customer_code' => 'CUST-' . strtoupper(\Str::random(6)), 
-                'is_active' => true,
-            ]);
-        }
-        
-        // Return loaded addresses
-        $customer->load('addresses');
-
-        return response()->json([
-            'success' => true,
-            'customer' => $customer
         ]);
+
+        try {
+            return DB::transaction(function () use ($id, $validated) {
+                if ($id) {
+                    $customer = Customer::findOrFail($id);
+                    $customer->update($validated);
+                } else {
+                    $customer = Customer::create($validated + [
+                        'customer_code' => 'CUST-' . strtoupper(Str::random(6)), 
+                        'is_active' => true,
+                    ]);
+                }
+                
+                $customer->load('addresses');
+
+                return response()->json([
+                    'success' => true,
+                    'customer' => $customer
+                ]);
+            });
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
     }
 
-    public function storeAddress(Request $request)
+    /**
+     * Store or update a customer address via AJAX.
+     */
+    public function storeAddress(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
@@ -168,28 +158,31 @@ class SearchController extends Controller
             'is_default' => 'boolean',
         ]);
 
-        // Handle Default assignment (reset others)
-        if (!empty($validated['is_default']) && $validated['is_default']) {
-            \App\Models\CustomerAddress::where('customer_id', $validated['customer_id'])
-                ->update(['is_default' => false]);
-        }
+        try {
+            return DB::transaction(function () use ($validated) {
+                // Handle Default assignment (reset others)
+                if (!empty($validated['is_default'])) {
+                    CustomerAddress::where('customer_id', $validated['customer_id'])
+                        ->update(['is_default' => false]);
+                }
 
-        if (!empty($validated['id'])) {
-            // Update
-            $address = \App\Models\CustomerAddress::where('customer_id', $validated['customer_id'])
-                        ->where('id', $validated['id'])
-                        ->firstOrFail();
-            
-            $address->update($validated);
-        } else {
-            // Create
-            $address = \App\Models\CustomerAddress::create($validated);
-        }
+                if (!empty($validated['id'])) {
+                    $address = CustomerAddress::where('customer_id', $validated['customer_id'])
+                                ->where('id', $validated['id'])
+                                ->firstOrFail();
+                    $address->update($validated);
+                } else {
+                    $address = CustomerAddress::create($validated);
+                }
 
-        return response()->json([
-            'success' => true,
-            'address' => $address,
-            'all_addresses' => \App\Models\CustomerAddress::where('customer_id', $validated['customer_id'])->get()
-        ]);
+                return response()->json([
+                    'success' => true,
+                    'address' => $address,
+                    'all_addresses' => CustomerAddress::where('customer_id', $validated['customer_id'])->get()
+                ]);
+            });
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
     }
 }

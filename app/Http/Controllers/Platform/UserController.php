@@ -1,26 +1,34 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\RouteContextService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Spatie\Permission\Models\Role;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class UserController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
-     * Display a listing of the resource.
+     * Display a listing of the users.
      */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
+        $this->authorize('users manage');
+
         $query = User::with('roles');
 
         // Search Filter
-        if ($request->has('search') && $request->search) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -29,45 +37,45 @@ class UserController extends Controller
         }
 
         // Filter by Status
-        if ($request->has('status') && in_array($request->status, ['active', 'inactive'])) {
+        if ($request->filled('status') && in_array($request->status, ['active', 'inactive'])) {
             $query->where('status', $request->status);
         }
 
         // Filter by Trashed
-        if ($request->has('trashed') && $request->trashed === 'only') {
+        if ($request->query('trashed') === 'only') {
             $query->onlyTrashed();
         }
 
-        $perPage = $request->input('per_page', 10);
+        $perPage = (int) $request->input('per_page', 10);
         $users = $query->latest()->paginate($perPage)->withQueryString();
 
-        return view('tenant.users.index', [
-            'users' => $users,
-        ]);
+        return view('tenant.users.index', compact('users'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new user.
      */
-    public function create()
+    public function create(): View
     {
+        $this->authorize('users manage');
+
         $roles = Role::all();
 
-        return view('tenant.users.form', [
-            'roles' => $roles,
-        ]);
+        return view('tenant.users.form', compact('roles'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created user in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
+        $this->authorize('users manage');
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'roles' => ['array'],
+            'roles' => ['nullable', 'array'],
             'status' => ['nullable', 'in:active,inactive'],
         ]);
 
@@ -78,36 +86,37 @@ class UserController extends Controller
             'status' => $validated['status'] ?? 'active',
         ]);
 
-        if (isset($validated['roles'])) {
+        if (!empty($validated['roles'])) {
             $user->syncRoles($validated['roles']);
         }
 
-        return redirect(request()->root() . '/users')->with('success', 'User created successfully.');
+        return redirect()->route('tenant.users.index')->with('success', 'User created successfully.');
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the specified user.
      */
-    public function edit(User $user)
+    public function edit(User $user): View
     {
+        $this->authorize('users manage');
+
         $roles = Role::all();
 
-        return view('tenant.users.form', [
-            'user' => $user,
-            'roles' => $roles,
-        ]);
+        return view('tenant.users.form', compact('user', 'roles'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified user in storage.
      */
-    public function update(Request $request, User $user)
+    public function update(Request $request, User $user): RedirectResponse
     {
+        $this->authorize('users manage');
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class.',email,'.$user->id],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'roles' => ['array'],
+            'roles' => ['nullable', 'array'],
             'status' => ['nullable', 'in:active,inactive'],
         ]);
 
@@ -117,7 +126,7 @@ class UserController extends Controller
             'status' => $validated['status'] ?? $user->status,
         ]);
 
-        if ($validated['password']) {
+        if (!empty($validated['password'])) {
             $user->update([
                 'password' => Hash::make($validated['password']),
             ]);
@@ -127,15 +136,16 @@ class UserController extends Controller
             $user->syncRoles($validated['roles']);
         }
 
-        return redirect(request()->root() . '/users')->with('success', 'User updated successfully.');
+        return redirect()->route('tenant.users.index')->with('success', 'User updated successfully.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified user from storage.
      */
-    public function destroy($id)
+    public function destroy($id): RedirectResponse
     {
-        // Check if user is already trashed to determine if force delete
+        $this->authorize('users manage');
+
         $user = User::withTrashed()->findOrFail($id);
 
         if ($user->id === auth()->id()) {
@@ -144,29 +154,33 @@ class UserController extends Controller
 
         if ($user->trashed()) {
             $user->forceDelete();
-            return redirect(request()->root() . '/users?trashed=only')->with('success', 'User permanently deleted.');
+            return redirect()->route('tenant.users.index', ['trashed' => 'only'])->with('success', 'User permanently deleted.');
         } else {
             $user->delete();
-            return redirect(request()->root() . '/users')->with('success', 'User moved to trash.');
+            return redirect()->route('tenant.users.index')->with('success', 'User moved to trash.');
         }
     }
 
     /**
-     * Restore the specified resource.
+     * Restore the specified user from trash.
      */
-    public function restore($id)
+    public function restore($id): RedirectResponse
     {
+        $this->authorize('users manage');
+
         $user = User::onlyTrashed()->findOrFail($id);
         $user->restore();
 
-        return redirect(request()->root() . '/users')->with('success', 'User restored successfully.');
+        return redirect()->route('tenant.users.index')->with('success', 'User restored successfully.');
     }
 
     /**
-     * Handle Bulk Actions (Delete, Restore, Status)
+     * Handle bulk actions on users.
      */
-    public function bulkAction(Request $request)
+    public function bulkAction(Request $request): RedirectResponse
     {
+        $this->authorize('users manage');
+
         $validated = $request->validate([
             'ids' => ['required', 'array'],
             'ids.*' => ['exists:users,id'],
@@ -179,7 +193,9 @@ class UserController extends Controller
         // Exclude self from critical actions
         if (($key = array_search(auth()->id(), $ids)) !== false) {
             unset($ids[$key]);
-            if (empty($ids)) return back()->with('error', 'You cannot perform actions on yourself.');
+            if (empty($ids)) {
+                return back()->with('error', 'You cannot perform actions on yourself.');
+            }
         }
 
         switch ($action) {
@@ -203,6 +219,8 @@ class UserController extends Controller
                 User::whereIn('id', $ids)->update(['status' => $action]);
                 $message = "Selected users marked as $action.";
                 break;
+            default:
+                $message = 'Invalid action.';
         }
 
         return back()->with('success', $message);

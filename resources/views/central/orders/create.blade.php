@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div x-data="orderWizard(@js($products))" class="flex flex-col min-h-screen bg-muted/5">
+    <div x-data="orderWizard(@js($products), @js($preSelectedCustomer))" class="flex flex-col min-h-screen bg-muted/5">
         
         <!-- Header / Progress Bar -->
         <div class="flex-none bg-background border-b border-border px-8 py-4 flex items-center justify-between z-20 shadow-sm sticky top-0">
@@ -43,7 +43,7 @@
                 </div>
             </div>
 
-            <x-ui.button variant="ghost" href="{{ route('central.orders.index') }}" size="sm" class="text-muted-foreground hover:text-destructive">
+            <x-ui.button variant="ghost" href="{{ route('central.orders.index') }}" size="sm" class="text-muted-foreground hover:text-destructive" @click="localStorage.removeItem('order_wizard_state')">
                 Cancel
             </x-ui.button>
         </div>
@@ -53,73 +53,185 @@
             <div class="p-6">
                 <div class="max-w-7xl mx-auto h-full">
                     
-                    <!-- STEP 1: CUSTOMER SELECTION -->
+                    <!-- STEP 1: CUSTOMER SELECTION / VERIFICATION -->
                     <div x-show="step === 1" 
                          x-transition:enter="transition ease-out duration-300"
                          x-transition:enter-start="opacity-0 translate-y-4"
                          x-transition:enter-end="opacity-100 translate-y-0"
-                         class="flex flex-col items-center justify-center max-w-2xl mx-auto min-h-[500px]">
+                         class="flex flex-col items-center justify-center max-w-4xl mx-auto min-h-[500px] w-full">
                         
-                        <div class="w-full bg-card bg-white dark:bg-zinc-900 border border-border rounded-2xl shadow-lg p-10 text-center relative overflow-hidden">
-                            <!-- Background Decoration -->
-                            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary/50 to-primary"></div>
-                            
-                            <h2 class="text-2xl font-bold mb-2 text-foreground">Select Customer</h2>
-                            <p class="text-muted-foreground mb-8">Search to start a new order. You can add a new customer if needed.</p>
-                            
-                            <div class="relative max-w-lg mx-auto mb-6 group">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                    </svg>
-                                </div>
-                                <input type="text" 
-                                       x-model="customerQuery" 
-                                       @input.debounce.300ms="searchCustomers()"
-                                       placeholder="Search by Name, Mobile, or Code..." 
-                                       class="w-full pl-11 pr-4 py-4 rounded-xl border-2 border-border bg-background/50 focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-lg shadow-sm"
-                                       autofocus>
-                            </div>
-
-                            <!-- Initial State / Results -->
-                            <div class="max-h-[300px] overflow-y-auto custom-scrollbar text-left rounded-xl border border-border bg-background/50 shadow-inner p-2 min-h-[100px]">
-                                <template x-if="customerQuery.length < 2 && customerResults.length === 0">
-                                    <div class="h-full flex flex-col items-center justify-center text-muted-foreground py-8 opacity-60">
-                                        <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                        <span class="text-sm">Start typing to find customers</span>
+                        <!-- Mode A: Search (Shown if no customer selected) -->
+                        <template x-if="!selectedCustomer">
+                            <div class="w-full max-w-2xl bg-card bg-white dark:bg-zinc-900 border border-border rounded-2xl shadow-lg p-10 text-center relative overflow-hidden">
+                                <!-- Background Decoration -->
+                                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary/50 to-primary"></div>
+                                
+                                <h2 class="text-2xl font-bold mb-2 text-foreground">Select Customer</h2>
+                                <p class="text-muted-foreground mb-8">Search to start a new order. You can add a new customer if needed.</p>
+                                
+                                <div class="relative max-w-lg mx-auto mb-6 group">
+                                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                        </svg>
                                     </div>
-                                </template>
+                                    <input type="text" 
+                                           x-model="customerQuery" 
+                                           @input.debounce.300ms="searchCustomers()"
+                                           placeholder="Search by Name, Mobile, or Code..." 
+                                           class="w-full pl-11 pr-4 py-4 rounded-xl border-2 border-border bg-background/50 focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-lg shadow-sm"
+                                           autofocus>
+                                </div>
 
-                                <template x-for="cust in customerResults" :key="cust.id">
-                                    <div @click="selectCustomer(cust)" 
-                                         class="group flex items-center justify-between p-3 rounded-lg hover:bg-primary/5 border border-transparent hover:border-primary/20 cursor-pointer transition-all mb-1">
-                                        <div class="flex items-center gap-4">
-                                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 text-primary flex items-center justify-center font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
-                                                <span x-text="cust.first_name.charAt(0)"></span><span x-text="(cust.last_name || '').charAt(0)"></span>
+                                <!-- Search Results -->
+                                <div class="max-h-[300px] overflow-y-auto custom-scrollbar text-left rounded-xl border border-border bg-background/50 shadow-inner p-2 min-h-[100px]">
+                                    <template x-if="customerQuery.length < 2 && customerResults.length === 0">
+                                        <div class="h-full flex flex-col items-center justify-center text-muted-foreground py-8 opacity-60">
+                                            <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                            <span class="text-sm">Start typing to find customers</span>
+                                        </div>
+                                    </template>
+
+                                    <template x-for="cust in customerResults" :key="cust.id">
+                                        <div @click="selectCustomer(cust, false)" 
+                                             class="group flex items-center justify-between p-3 rounded-lg hover:bg-primary/5 border border-transparent hover:border-primary/20 cursor-pointer transition-all mb-1">
+                                            <div class="flex items-center gap-4">
+                                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 text-primary flex items-center justify-center font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
+                                                    <span x-text="cust.first_name.charAt(0)"></span><span x-text="(cust.last_name || '').charAt(0)"></span>
+                                                </div>
+                                                <div>
+                                                    <p class="font-semibold text-foreground text-lg leading-tight" x-text="cust.first_name + ' ' + (cust.last_name || '')"></p>
+                                                    <p class="text-sm text-muted-foreground" x-text="cust.mobile + ' • ' + cust.customer_code"></p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                 <div class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Balance</div>
+                                                 <div class="font-mono font-medium" :class="cust.outstanding_balance > 0 ? 'text-red-600' : 'text-green-600'">
+                                                    Rs <span x-text="cust.outstanding_balance || '0.00'"></span>
+                                                 </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                   
+                                    <div x-show="customerQuery.length > 2 && customerResults.length === 0" class="text-center py-6">
+                                        <p class="text-muted-foreground mb-3">No customers found.</p>
+                                        <button @click="openCreateCustomerModal()" class="inline-flex items-center gap-2 text-sm bg-primary text-primary-foreground px-5 py-2.5 rounded-full hover:bg-primary/90 transition-transform active:scale-95 shadow-lg shadow-primary/20">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                            Create New Customer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Mode B: Customer Details (Shown if customer selected) -->
+                        <template x-if="selectedCustomer">
+                            <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-5">
+                                <!-- Left Column: Customer Profile Card -->
+                                <div class="md:col-span-2 space-y-6">
+                                    <div class="bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+                                        <div class="bg-gradient-to-r from-primary/10 to-transparent p-8 border-b border-border flex items-center gap-6">
+                                            <div class="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground text-3xl font-bold shadow-lg shadow-primary/30">
+                                                <span x-text="selectedCustomer.first_name.charAt(0)"></span><span x-text="(selectedCustomer.last_name || '').charAt(0)"></span>
+                                            </div>
+                                            <div class="flex-1">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <h2 class="text-3xl font-bold text-foreground" x-text="selectedCustomer.first_name + ' ' + (selectedCustomer.last_name || '')"></h2>
+                                                    <span class="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-xs font-bold uppercase tracking-widest border border-emerald-500/20">Active</span>
+                                                </div>
+                                                <p class="text-muted-foreground flex items-center gap-3">
+                                                    <span class="flex items-center gap-1 font-mono bg-muted/50 px-2 py-0.5 rounded" x-text="selectedCustomer.customer_code"></span>
+                                                    <span>•</span>
+                                                    <span x-text="selectedCustomer.mobile"></span>
+                                                    <span>•</span>
+                                                    <span class="capitalize" x-text="selectedCustomer.type || 'farmer'"></span>
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div class="p-8 grid grid-cols-2 gap-8">
+                                            <div>
+                                                <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Contact Information</h3>
+                                                <div class="space-y-4 text-sm">
+                                                    <div class="flex items-center gap-3 text-foreground">
+                                                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                                        <span x-text="selectedCustomer.email || 'No email provided'"></span>
+                                                    </div>
+                                                    <div class="flex items-center gap-3 text-foreground">
+                                                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                                        <span x-text="selectedCustomer.mobile"></span>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div>
-                                                <p class="font-semibold text-foreground text-lg leading-tight" x-text="cust.first_name + ' ' + (cust.last_name || '')"></p>
-                                                <p class="text-sm text-muted-foreground" x-text="cust.mobile + ' • ' + cust.customer_code"></p>
+                                                <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Finance & Credit</h3>
+                                                <div class="space-y-4">
+                                                    <div class="flex justify-between items-end border-b border-border/50 pb-2">
+                                                        <span class="text-sm text-muted-foreground">Outstanding</span>
+                                                        <span class="text-xl font-bold font-mono" :class="selectedCustomer.outstanding_balance > 0 ? 'text-red-600' : 'text-emerald-600'">
+                                                            Rs <span x-text="selectedCustomer.outstanding_balance || '0.00'"></span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="flex justify-between items-end">
+                                                        <span class="text-sm text-muted-foreground">Credit Limit</span>
+                                                        <span class="text-sm font-bold text-foreground">Rs <span x-text="selectedCustomer.credit_limit || '0.00'"></span></span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="text-right">
-                                             <div class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Balance</div>
-                                             <div class="font-mono font-medium" :class="cust.outstanding_balance > 0 ? 'text-red-600' : 'text-green-600'">
-                                                Rs <span x-text="cust.outstanding_balance || '0.00'"></span>
-                                             </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-6">
+                                        <div class="bg-card border border-border rounded-2xl p-6 shadow-lg">
+                                            <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Default Billing Address</h3>
+                                            <template x-if="selectedCustomer.addresses && selectedCustomer.addresses.length > 0">
+                                                <div class="text-sm space-y-1">
+                                                    <p class="font-bold text-foreground" x-text="selectedCustomer.addresses[0].address_line1"></p>
+                                                    <p class="text-muted-foreground" x-text="selectedCustomer.addresses[0].address_line2"></p>
+                                                    <p class="text-muted-foreground" x-text="(selectedCustomer.addresses[0].village || '') + (selectedCustomer.addresses[0].state ? ', ' + selectedCustomer.addresses[0].state : '')"></p>
+                                                    <p class="font-mono text-xs mt-2 bg-muted px-2 py-1 rounded inline-block" x-text="selectedCustomer.addresses[0].pincode"></p>
+                                                </div>
+                                            </template>
+                                            <template x-if="!selectedCustomer.addresses || selectedCustomer.addresses.length === 0">
+                                                <p class="text-sm text-muted-foreground italic">No address found. Please add an address to proceed.</p>
+                                            </template>
+                                        </div>
+                                         <div class="bg-card border border-border rounded-2xl p-6 shadow-lg">
+                                            <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Agriculture Details</h3>
+                                            <div class="space-y-3">
+                                                <div class="flex justify-between text-sm">
+                                                    <span class="text-muted-foreground">Land Area</span>
+                                                    <span class="font-bold capitalize" x-text="(selectedCustomer.land_area || '0') + ' ' + (selectedCustomer.land_unit || 'acre')"></span>
+                                                </div>
+                                                <div class="flex justify-between text-sm">
+                                                    <span class="text-muted-foreground">Main Crops</span>
+                                                    <span class="font-bold" x-text="(selectedCustomer.crops?.primary?.join(', ')) || 'None'"></span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </template>
-                               
-                                <div x-show="customerQuery.length > 2 && customerResults.length === 0" class="text-center py-6">
-                                    <p class="text-muted-foreground mb-3">No customers found.</p>
-                                    <button @click="openCreateCustomerModal()" class="inline-flex items-center gap-2 text-sm bg-primary text-primary-foreground px-5 py-2.5 rounded-full hover:bg-primary/90 transition-transform active:scale-95 shadow-lg shadow-primary/20">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                        Create New Customer
-                                    </button>
+                                </div>
+
+                                <!-- Right Column: Verification & Actions -->
+                                <div class="space-y-6">
+                                    <div class="bg-primary/5 border border-primary/20 rounded-2xl p-8 flex flex-col h-full shadow-inner">
+                                        <h3 class="text-lg font-bold text-foreground mb-4">Customer Verified?</h3>
+                                        <p class="text-sm text-muted-foreground mb-8">Please confirm the customer details. You can change the customer if needed.</p>
+                                        
+                                        <div class="mt-auto space-y-3">
+                                            <button @click="selectedCustomer = null; customerQuery = '';" class="w-full bg-background border border-border text-foreground hover:bg-muted py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
+                                                Change Customer
+                                            </button>
+                                            <button @click="step = 2" class="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 group">
+                                                Next: Select Products
+                                                <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </template>
                     </div>
 
                     <!-- Create Customer Modal -->
@@ -390,6 +502,7 @@
                                             <span x-text="selectedCustomer ? selectedCustomer.first_name.charAt(0) : '?'"></span>
                                         </div>
                                         <span class="truncate" x-text="selectedCustomer ? 'For: ' + selectedCustomer.first_name + ' ' + selectedCustomer.last_name : 'No Customer Selected'"></span>
+                                        <button type="button" @click="goToStep(1)" class="text-[10px] text-primary hover:underline ml-auto shrink-0 font-bold uppercase transition-all">Change</button>
                                     </div>
                                 </div>
                                 
@@ -618,6 +731,47 @@
 
                                 <div class="bg-card border border-border rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
                                     <h3 class="font-semibold text-lg mb-6 flex items-center gap-2">
+                                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Order Type & Schedule
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div class="space-y-4">
+                                            <label class="text-sm font-medium text-muted-foreground block">Is this a future order?</label>
+                                            <div class="flex items-center gap-6">
+                                                <label class="flex items-center gap-2 cursor-pointer group">
+                                                    <input type="radio" name="is_future_order_radio" value="0" x-model="order.is_future_order" @change="order.is_future_order = false" class="peer sr-only">
+                                                    <div class="w-5 h-5 rounded-full border-2 border-border flex items-center justify-center peer-checked:border-primary peer-checked:bg-primary transition-all group-hover:border-primary/50 shadow-sm">
+                                                        <div class="w-1.5 h-1.5 rounded-full bg-white opacity-0 peer-checked:opacity-100"></div>
+                                                    </div>
+                                                    <span class="text-sm font-semibold text-muted-foreground peer-checked:text-foreground transition-colors">Immediate Order</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer group">
+                                                    <input type="radio" name="is_future_order_radio" value="1" x-model="order.is_future_order" @change="order.is_future_order = true" class="peer sr-only">
+                                                    <div class="w-5 h-5 rounded-full border-2 border-border flex items-center justify-center peer-checked:border-primary peer-checked:bg-primary transition-all group-hover:border-primary/50 shadow-sm">
+                                                        <div class="w-1.5 h-1.5 rounded-full bg-white opacity-0 peer-checked:opacity-100"></div>
+                                                    </div>
+                                                    <span class="text-sm font-semibold text-muted-foreground peer-checked:text-foreground transition-colors">Future/Scheduled Order</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div x-show="order.is_future_order" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-2">
+                                            <label class="block text-sm font-medium text-muted-foreground">Scheduled Date & Time <span class="text-red-500">*</span></label>
+                                            <div class="relative group">
+                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <svg class="w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                </div>
+                                                <input type="datetime-local" x-model="order.scheduled_at" 
+                                                       class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
+                                                       :required="order.is_future_order">
+                                            </div>
+                                            <p class="text-[10px] text-muted-foreground italic">Order will be processed at the selected time.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-card border border-border rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
+                                    <h3 class="font-semibold text-lg mb-6 flex items-center gap-2">
                                         <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                                         Logistics & Notes
                                     </h3>
@@ -640,7 +794,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
 
                             <!-- Right: Summary Sidebar -->
@@ -752,21 +905,23 @@
     </div>
 
     <script>
-        function orderWizard(initialProducts) {
+        function orderWizard(initialProducts, preSelectedCustomer) {
             return {
-                step: 1,
+                step: preSelectedCustomer ? 2 : 1,
                 
                 // Order State
                 order: {
                     billing_address_id: null,
                     shipping_address_id: null,
-                    same_as_billing: true
+                    same_as_billing: true,
+                    is_future_order: false,
+                    scheduled_at: ''
                 },
 
                 // Customer State
                 customerQuery: '',
                 customerResults: [],
-                selectedCustomer: null,
+                selectedCustomer: preSelectedCustomer || null,
                 showCreateCustomerModal: false,
                 newCustomer: { 
                     first_name: '', 
@@ -805,27 +960,49 @@
                 cart: [],
 
                 init() {
-                     // 1. Restore State from LocalStorage
+                    // 1. Check for Reset Parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.has('reset')) {
+                        localStorage.removeItem('order_wizard_state');
+                        if (!preSelectedCustomer) {
+                            this.step = 1;
+                            this.selectedCustomer = null;
+                            this.cart = [];
+                            return;
+                        }
+                    }
+
+                    // 2. If we have a pre-selected customer, prioritize it
+                    if (preSelectedCustomer) {
+                        this.selectCustomer(preSelectedCustomer, false);
+                    }
+
+                    // 3. Restore State from LocalStorage
                     const saved = localStorage.getItem('order_wizard_state');
                     if (saved) {
                         try {
                             const parsed = JSON.parse(saved);
+                            
+                            // Only restore if not already set by preSelectedCustomer
+                            if (!this.selectedCustomer) {
+                                this.selectedCustomer = parsed.selectedCustomer || null;
+                            }
+                            
                             this.step = parsed.step || 1;
-                            this.selectedCustomer = parsed.selectedCustomer || null;
                             this.cart = parsed.cart || [];
-                            // Ensure order object has defaults merged with saved state
+                            
+                            // Merge order object
                             this.order = { 
                                 billing_address_id: null, 
                                 shipping_address_id: null, 
                                 same_as_billing: true,
+                                ...this.order, // current (including address set by selectCustomer)
                                 ...parsed.order 
                             };
                             
-                            // Restore Queries if they exist
                             this.customerQuery = parsed.customerQuery || '';
                             this.productQuery = parsed.productQuery || '';
 
-                            // If product query exists, trigger search to restore results
                             if(this.productQuery && this.productQuery.length > 0) {
                                 this.searchProducts();
                             }
@@ -893,7 +1070,7 @@
                         if (data.success) {
                             // If editing (ID exists), do not redirect. If creating new, redirect.
                             let isEdit = !!this.newCustomer.id;
-                            this.selectCustomer(data.customer, !isEdit);
+                            this.selectCustomer(data.customer, false);
                             this.showCreateCustomerModal = false;
                         } else {
                             this.newCustomerError = data.message || 'Failed to create customer.';
@@ -904,7 +1081,7 @@
                     }
                 },
 
-                selectCustomer(cust, shouldNextStep = true) {
+                selectCustomer(cust, shouldNextStep = false) {
                     this.selectedCustomer = cust;
                     // Auto-select Default Addresses
                     if(cust.addresses && cust.addresses.length > 0) {
@@ -1013,6 +1190,8 @@
                         notes: document.querySelector('[name="notes"]')?.value,
                         billing_address_id: this.order.billing_address_id,
                         shipping_address_id: this.order.shipping_address_id,
+                        is_future_order: this.order.is_future_order,
+                        scheduled_at: this.order.scheduled_at,
                         items: this.cart.map(item => ({
                             product_id: item.product_id,
                             quantity: item.quantity,

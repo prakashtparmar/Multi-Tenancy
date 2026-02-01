@@ -1,20 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ProductController extends Controller
 {
-    public function index()
+    use AuthorizesRequests;
+
+    /**
+     * Display a listing of the products.
+     */
+    public function index(): JsonResponse
     {
-        return response()->json(Product::with(['category', 'brand'])->paginate(20));
+        $this->authorize('products view');
+
+        $products = Product::with(['category', 'brand'])->paginate(20);
+        
+        return response()->json($products);
     }
 
-    public function show(Product $product)
+    /**
+     * Display the specified product.
+     */
+    public function show(Product $product): JsonResponse
     {
-        return response()->json($product->load(['category', 'brand', 'images']));
+        $this->authorize('products view');
+
+        return response()->json($product->load(['category', 'brand']));
     }
 }

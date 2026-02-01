@@ -1,76 +1,96 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Stancl\Tenancy\Database\Models\Domain;
+use Stancl\Tenancy\Exceptions\TenantDatabaseAlreadyExistsException;
 
 class TenantController extends Controller
 {
-    public function index()
+    /**
+     * Display a listing of the tenants.
+     */
+    public function index(): View
     {
         return view('central.tenants.index', [
             'tenants' => Tenant::with('domains')->latest()->get(),
         ]);
     }
 
-    public function create()
+    /**
+     * Show the form for creating a new tenant.
+     */
+    public function create(): View
     {
         return view('central.tenants.create');
     }
 
-    public function store(Request $request)
+    /**
+     * Store a newly created tenant in storage.
+     */
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'id' => ['required', 'string', 'min:3', 'max:20', 'alpha_dash', 'unique:tenants,id'],
-            'domain_name' => ['required', 'string', 'min:3', 'max:20', 'alpha_dash', Rule::unique('domains', 'domain')->where(function ($query) {
-                // Ensure subdomain uniqueness logic if needed
-            })],
+            'domain_name' => ['required', 'string', 'min:3', 'max:20', 'alpha_dash', Rule::unique('domains', 'domain')],
             'email' => ['required', 'email'],
         ]);
 
         try {
-            // Assume localhost for dev, proper domain handling for prod would be needed
-            $fullDomain = $validated['domain_name'].'.localhost';
+            // Assume localhost for dev, proper domain handling for prod would be needed via configuration
+            $baseDomain = request()->getHost();
+            if ($baseDomain === '127.0.0.1') {
+                $baseDomain = 'localhost';
+            }
+            // If it's a subdomain, we should get the root domain. 
+            // For now, let's stick to the simplest production-ready logic.
+            $fullDomain = $validated['domain_name'] . '.' . $baseDomain;
 
-            // Check if domain exists (though validation should catch this, double safety)
-            if (\Stancl\Tenancy\Database\Models\Domain::where('domain', $fullDomain)->exists()) {
-                return back()->with('error', 'The subdomain "'.$validated['domain_name'].'" is already taken.');
+            if (Domain::where('domain', $fullDomain)->exists()) {
+                return back()->withInput()->with('error', 'The subdomain "' . $validated['domain_name'] . '" is already taken.');
             }
 
             $tenant = Tenant::create([
                 'id' => $validated['id'],
-                'status' => 'active', // Default to active
+                'status' => 'active',
                 'owner_email' => $validated['email'],
                 'plan' => 'free',
             ]);
+            
             $tenant->domains()->create(['domain' => $fullDomain]);
 
-            // The TenantDatabaseSeeder is already run by the TenancyServiceProvider (Jobs\SeedDatabase)
-            // due to the 'seeder_parameters' config in tenancy.php. 
-            // We just need to update the admin email after it's done.
+            // Seed tenant specific data and update admin email
             $tenant->run(function () use ($validated) {
-                $admin = \App\Models\User::first();
+                $admin = User::first();
                 if ($admin) {
                     $admin->update(['email' => $validated['email']]);
                 }
             });
 
-            return redirect(config('app.url').'/tenants')->with('success', 'Workspace provisioning complete.');
+            return redirect()->route('tenants.index')->with('success', 'Workspace provisioning complete.');
 
-        } catch (\Stancl\Tenancy\Exceptions\TenantDatabaseAlreadyExistsException $e) {
-            return back()->with('error', 'Database collision detected for ID: '.$validated['id'].'. Please use a different Workspace ID.');
+        } catch (TenantDatabaseAlreadyExistsException $e) {
+            return back()->withInput()->with('error', 'Database collision detected for ID: ' . $validated['id']);
         } catch (\Exception $e) {
-            \Log::error('Tenant creation failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return back()->with('error', 'An unexpected error occurred: '.$e->getMessage());
+            Log::error('Tenant creation failed', ['error' => $e->getMessage()]);
+            return back()->withInput()->with('error', 'An unexpected error occurred: ' . $e->getMessage());
         }
     }
 
-
-
-    public function toggleStatus(Tenant $tenant)
+    /**
+     * Toggle the status of a tenant.
+     */
+    public function toggleStatus(Tenant $tenant): RedirectResponse
     {
         $newStatus = $tenant->status === 'active' ? 'inactive' : 'active';
         $tenant->update(['status' => $newStatus]);

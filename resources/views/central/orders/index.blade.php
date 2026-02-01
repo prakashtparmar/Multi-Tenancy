@@ -23,6 +23,10 @@
             <a href="{{ route('central.orders.index', ['status' => 'completed']) }}" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'completed' ? 'bg-background text-emerald-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-emerald-600 hover:bg-background/50' }}">
                 Completed
             </a>
+            <div class="w-px h-4 bg-border/40 mx-1"></div>
+            <a href="{{ route('central.orders.index', ['status' => 'scheduled']) }}" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'scheduled' ? 'bg-background text-indigo-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-indigo-600 hover:bg-background/50' }}">
+                Scheduled
+            </a>
         </div>
     </div>
 
@@ -49,7 +53,9 @@
                 </form>
             </div>
     
-            <a href="{{ route('central.orders.create') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-200">
+            <a href="{{ route('central.orders.create', ['reset' => 1]) }}" 
+               onclick="localStorage.removeItem('order_wizard_state')"
+               class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-200">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 <span>Create Order</span>
             </a>
@@ -124,7 +130,14 @@
                                 <span class="text-sm">{{ $order->customer->name ?? 'Guest' }}</span>
                             </td>
                             <td class="p-6 align-middle text-muted-foreground font-mono text-xs">
-                                {{ $order->created_at->format('M d, Y') }}
+                                @if($order->is_future_order && $order->scheduled_at)
+                                    <div class="flex flex-col">
+                                        <span class="text-indigo-600 font-bold">Scheduled</span>
+                                        <span>{{ $order->scheduled_at->format('M d, Y H:i') }}</span>
+                                    </div>
+                                @else
+                                    {{ $order->created_at->format('M d, Y') }}
+                                @endif
                             </td>
                             <td class="px-6 py-4 text-sm text-foreground">
                                 Rs {{ number_format($order->grand_total, 2) }}
@@ -141,6 +154,10 @@
                                 @elseif($order->status === 'cancelled')
                                     <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
                                         Cancelled
+                                    </span>
+                                @elseif($order->status === 'scheduled')
+                                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
+                                        Scheduled
                                     </span>
                                 @else
                                     <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">

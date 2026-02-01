@@ -72,6 +72,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->boolean('is_taxable')->default(true);
             $table->boolean('manage_stock')->default(true);
+            $table->decimal('stock_on_hand', 12, 3)->default(0);
             
             // SEO
             $table->string('meta_title')->nullable();

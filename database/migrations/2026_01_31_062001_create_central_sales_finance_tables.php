@@ -61,8 +61,24 @@ return new class extends Migration
             $table->decimal('shipping_amount', 12, 2)->default(0);
             $table->decimal('grand_total', 12, 2)->default(0);
             
+            // Methods & Tracking
+            $table->string('payment_method')->nullable();
+            $table->string('shipping_method')->nullable();
+            $table->string('discount_code')->nullable();
+            
+            // Addresses (Snapshots)
+            $table->unsignedBigInteger('billing_address_id')->nullable();
+            $table->unsignedBigInteger('shipping_address_id')->nullable();
+
             $table->text('notes')->nullable();
             $table->timestamp('placed_at')->useCurrent();
+            $table->timestamp('scheduled_at')->nullable();
+            $table->boolean('is_future_order')->default(false);
+            
+            // Cancellation
+            $table->timestamp('cancelled_at')->nullable();
+            $table->string('cancel_reason')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
         });

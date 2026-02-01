@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class EnsureCentralSession
 {
@@ -15,23 +19,13 @@ class EnsureCentralSession
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Check if session has tenant_id but we are on central domain
-        \Log::info('EnsureCentralSession: Checking session', [
-            'url' => $request->fullUrl(),
-            'has_tenant_id' => $request->session()->has('tenant_id'),
-            'session_tenant' => $request->session()->get('tenant_id'),
-            'user_id' => auth()->id(),
-            'is_tenant_helper' => tenant() ? 'yes' : 'no'
-        ]);
-
         if ($request->session()->has('tenant_id')) {
-            \Log::warning('Tenant session detected on central domain - clearing session', [
+            Log::warning('Tenant session detected on central domain - clearing session', [
                 'session_tenant' => $request->session()->get('tenant_id'),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
-            // Logout to prevent "logged in as tenant user on central"
-            auth()->logout();
+            Auth::logout();
 
             $request->session()->invalidate();
             $request->session()->regenerateToken();

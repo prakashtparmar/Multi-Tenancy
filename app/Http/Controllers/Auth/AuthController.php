@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -9,6 +11,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Http\RedirectResponse;
 
 class AuthController extends Controller
 {
@@ -18,52 +23,51 @@ class AuthController extends Controller
     public function login(LoginRequest $request): mixed
     {
         if (config('app.debug')) {
-            \Log::debug('Login attempt', ['email' => $request->email, 'tenant' => tenant('id')]);
+            Log::debug('Login attempt', ['email' => $request->email, 'tenant' => tenant('id')]);
         }
 
         // Force 'remember' to false for Auth::attempt to ensure session expiration on close.
-        // We handle 'remember email' manually below.
+        // We handle 'remember email' manually via cookie persistence.
         if (! Auth::attempt($request->only('email', 'password'), false)) {
-            \Log::warning('Login failed for '.$request->email);
+            Log::warning('Login failed for ' . $request->email);
+            
             if ($request->expectsJson()) {
                 throw ValidationException::withMessages([
                     'email' => __('auth.failed'),
                 ]);
             }
 
-            return back()->withErrors(['email' => __('auth.failed')]);
+            return back()->withInput()->withErrors(['email' => __('auth.failed')]);
         }
+
+        /** @var User $user */
+        $user = Auth::user();
 
         if (config('app.debug')) {
-            \Log::debug('Login successful for '.$request->email);
+            Log::debug('Login successful for ' . $request->email);
         }
 
-        $user = User::where('email', $request->email)->firstOrFail();
-
         // Store tenant ID in session for security middleware
-        // Note: Auth::attempt() already regenerates the session internally
         if (tenant()) {
             $request->session()->put('tenant_id', tenant('id'));
-            \Log::info('Stored tenant_id in session', ['tenant_id' => tenant('id')]);
         }
 
         // Log activity
         activity()
             ->performedOn($user)
             ->causedBy($user)
-            ->log('User logged in to tenant: '.tenant('id'));
+            ->log('User logged in to tenant: ' . (tenant('id') ?? 'central'));
 
         // Generate Sanctum token for API support
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // Secure "Remember Username" Logic (Email Persistence Only)
-        // Note: We only persist the email, never the password for security reasons
         if ($request->boolean('remember')) {
             // Save email for 30 days
-            \Illuminate\Support\Facades\Cookie::queue('saved_email', $request->email, 43200);
+            Cookie::queue('saved_email', (string) $request->email, 43200);
         } else {
             // Forget email if unchecked
-            \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('saved_email'));
+            Cookie::queue(Cookie::forget('saved_email'));
         }
 
         if ($request->expectsJson()) {
@@ -76,13 +80,7 @@ class AuthController extends Controller
             ]);
         }
 
-        // Redirect based on context
-        if (tenant()) {
-            return redirect(request()->getSchemeAndHttpHost().'/dashboard')
-                ->with('success', 'Welcome back!');
-        }
-
-        return redirect(request()->getSchemeAndHttpHost().'/dashboard')
+        return redirect()->route(tenant() ? 'tenant.dashboard' : 'dashboard')
             ->with('success', 'Welcome back!');
     }
 
@@ -91,6 +89,7 @@ class AuthController extends Controller
      */
     public function logout(Request $request): mixed
     {
+        /** @var User $user */
         $user = $request->user();
 
         if ($user) {
@@ -100,7 +99,7 @@ class AuthController extends Controller
             activity()
                 ->performedOn($user)
                 ->causedBy($user)
-                ->log('User logged out from tenant: '.tenant('id'));
+                ->log('User logged out');
         }
 
         Auth::guard('web')->logout();
@@ -114,12 +113,9 @@ class AuthController extends Controller
             ]);
         }
 
-        if (tenant()) {
-            return redirect(request()->getSchemeAndHttpHost().'/login');
-        }
-
-        // Dynamic fallback for central domain logout
-        return redirect(request()->getSchemeAndHttpHost().'/login');
+        $loginUrl = tenant() ? '/login' : '/login'; // Dynamic based on host
+        
+        return redirect(request()->getSchemeAndHttpHost() . $loginUrl);
     }
 
     /**

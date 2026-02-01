@@ -12,6 +12,10 @@ Route::get('/find-workspace', function () {
 });
 
 Route::post('/find-workspace', function (Illuminate\Http\Request $request) {
+    $request->validate([
+        'workspace' => 'required|alpha_dash|max:64',
+    ]);
+    
     $workspace = strtolower($request->workspace);
     
     $scheme = $request->getScheme();
@@ -54,10 +58,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/tenants/{tenant}/toggle-status', [\App\Http\Controllers\Central\TenantController::class, 'toggleStatus'])->name('tenants.toggle-status');
     Route::resource('tenants', \App\Http\Controllers\Central\TenantController::class);
 
-    // Customer Management (Central/Global)
-    Route::post('customers/bulk', [\App\Http\Controllers\Tenant\CustomerController::class, 'bulk'])->name('central.customers.bulk');
-    Route::post('customers/{id}/restore', [\App\Http\Controllers\Tenant\CustomerController::class, 'restore'])->name('central.customers.restore');
-    Route::resource('customers', \App\Http\Controllers\Tenant\CustomerController::class)->names('central.customers');
+    // Customer Management (Central)
+    Route::post('customers/bulk', [\App\Http\Controllers\Central\CustomerController::class, 'bulk'])->name('central.customers.bulk');
+    Route::post('customers/{id}/restore', [\App\Http\Controllers\Central\CustomerController::class, 'restore'])->name('central.customers.restore');
+    Route::resource('customers', \App\Http\Controllers\Central\CustomerController::class)->names('central.customers');
 
     // Enterprise Modules (Central)
     Route::resource('categories', \App\Http\Controllers\Central\CategoryController::class)->names('central.categories');
@@ -85,6 +89,10 @@ Route::middleware('auth')->group(function () {
 
     Route::post('orders/{order}/update-status', [\App\Http\Controllers\Central\OrderController::class, 'updateStatus'])->name('central.orders.update-status');
     Route::resource('orders', \App\Http\Controllers\Central\OrderController::class)->names('central.orders');
+
+    // Inventory Management
+    Route::get('inventory', [\App\Http\Controllers\Central\InventoryController::class, 'index'])->name('central.inventory.index');
+    Route::post('inventory/adjust', [\App\Http\Controllers\Central\InventoryController::class, 'adjust'])->name('central.inventory.adjust');
 
     Route::post('/logout', [App\Http\Controllers\Auth\AuthController::class, 'logout'])->name('logout');
 });

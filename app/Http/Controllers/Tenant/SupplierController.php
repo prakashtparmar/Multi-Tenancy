@@ -1,52 +1,111 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Exception;
 
 class SupplierController extends Controller
 {
-    public function index()
+    use AuthorizesRequests;
+
+    /**
+     * Display a listing of the suppliers.
+     */
+    public function index(): View
     {
-        $suppliers = Supplier::all();
+        $this->authorize('inventory manage');
+        
+        $suppliers = Supplier::paginate(15);
         return view('tenant.suppliers.index', compact('suppliers'));
     }
 
-    public function create()
+    /**
+     * Show the form for creating a new supplier.
+     */
+    public function create(): View
     {
+        $this->authorize('inventory manage');
         return view('tenant.suppliers.create');
     }
 
-    public function store(Request $request)
+    /**
+     * Store a newly created supplier in storage.
+     */
+    public function store(Request $request): RedirectResponse
     {
+        $this->authorize('inventory manage');
+
         $validated = $request->validate([
-            'company_name' => 'required|string|max:255',
-            'email' => 'nullable|email',
-            'currency' => 'required|string|max:3',
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|unique:suppliers,email',
+            'phone' => 'nullable|string|max:20',
+            'contact_person' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
         ]);
 
-        Supplier::create($validated);
+        try {
+            DB::transaction(function () use ($validated) {
+                Supplier::create($validated);
+            });
 
-        return redirect()->route('suppliers.index')->with('success', 'Supplier created successfully.');
+            return redirect()->route('tenant.suppliers.index')->with('success', 'Supplier created successfully.');
+        } catch (Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create supplier.');
+        }
     }
 
-    public function edit(Supplier $supplier)
+    /**
+     * Show the form for editing the specified supplier.
+     */
+    public function edit(Supplier $supplier): View
     {
+        $this->authorize('inventory manage');
         return view('tenant.suppliers.edit', compact('supplier'));
     }
 
-    public function update(Request $request, Supplier $supplier)
+    /**
+     * Update the specified supplier in storage.
+     */
+    public function update(Request $request, Supplier $supplier): RedirectResponse
     {
+        $this->authorize('inventory manage');
+
         $validated = $request->validate([
-            'company_name' => 'required|string|max:255',
-            'email' => 'nullable|email',
-            'currency' => 'required|string|max:3',
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|unique:suppliers,email,' . $supplier->id,
+            'phone' => 'nullable|string|max:20',
+            'contact_person' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
         ]);
 
-        $supplier->update($validated);
+        try {
+            DB::transaction(function () use ($supplier, $validated) {
+                $supplier->update($validated);
+            });
 
-        return redirect()->route('suppliers.index')->with('success', 'Supplier updated successfully.');
+            return redirect()->route('tenant.suppliers.index')->with('success', 'Supplier updated successfully.');
+        } catch (Exception $e) {
+            return back()->withInput()->with('error', 'Failed to update supplier.');
+        }
+    }
+
+    /**
+     * Remove the specified supplier from storage.
+     */
+    public function destroy(Supplier $supplier): RedirectResponse
+    {
+        $this->authorize('inventory manage');
+        
+        $supplier->delete();
+        return redirect()->route('tenant.suppliers.index')->with('success', 'Supplier deleted successfully.');
     }
 }

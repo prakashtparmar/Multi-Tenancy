@@ -1,22 +1,42 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
 use App\Models\Shipment;
 use App\Models\Order;
 use App\Models\Warehouse;
+use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Exception;
 
 class ShipmentController extends Controller
 {
-    public function index(Request $request)
+    use AuthorizesRequests;
+
+    protected OrderService $orderService;
+
+    public function __construct(OrderService $orderService)
     {
+        $this->orderService = $orderService;
+    }
+
+    /**
+     * Display a listing of central shipments.
+     */
+    public function index(Request $request): View
+    {
+        $this->authorize('orders view');
+
         $query = Shipment::with(['order.customer', 'warehouse']);
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where('tracking_number', 'like', "%{$search}%")
                   ->orWhereHas('order', function($q) use ($search) {
@@ -24,23 +44,23 @@ class ShipmentController extends Controller
                   });
         }
 
-        if ($request->has('status')) {
-            $query->where('status', $request->input('status'));
+        if ($request->filled('status')) {
+            $query->where('status', (string) $request->input('status'));
         }
 
-        $perPage = $request->input('per_page', 10);
+        $perPage = (int) $request->input('per_page', 10);
         $shipments = $query->latest()->paginate($perPage)->withQueryString();
-
-        if ($request->ajax()) {
-            return view('central.shipments.index', compact('shipments'))->render();
-        }
 
         return view('central.shipments.index', compact('shipments'));
     }
 
-    public function create()
+    /**
+     * Show the form for creating a new shipment.
+     */
+    public function create(): View
     {
-        // Orders that are confirmed or processing, but not yet fully shipped
+        $this->authorize('orders manage');
+
         $orders = Order::whereIn('status', ['confirmed', 'processing'])
             ->where('shipping_status', '!=', 'shipped')
             ->latest()
@@ -51,61 +71,81 @@ class ShipmentController extends Controller
         return view('central.shipments.create', compact('orders', 'warehouses'));
     }
 
-    public function store(Request $request)
+    /**
+     * Store a newly created shipment in storage.
+     */
+    public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $this->authorize('orders manage');
+
+        $validated = $request->validate([
             'order_id' => 'required|exists:orders,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'carrier' => 'required|string',
             'tracking_number' => 'nullable|string',
-            'weight' => 'nullable|numeric',
+            'weight' => 'nullable|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($request) {
-            $shipment = Shipment::create([
-                'order_id' => $request->order_id,
-                'warehouse_id' => $request->warehouse_id,
-                'carrier' => $request->carrier,
-                'tracking_number' => $request->tracking_number,
-                'weight' => $request->weight,
-                'status' => 'shipped',
-                'shipped_at' => now(),
-            ]);
+        try {
+            DB::transaction(function () use ($validated) {
+                /** @var Order $order */
+                $order = Order::findOrFail($validated['order_id']);
 
-            // Update Order Status
-            $order = Order::find($request->order_id);
-            $order->update([
-                'shipping_status' => 'shipped',
-                'status' => 'shipped' // Assuming full shipment for simplicity
-            ]);
-            
-            // In a full WMS, we would decrement stock here based on order items
-            // foreach($order->items as $item) { ... decrement stock ... }
-        });
+                Shipment::create([
+                    'order_id' => $order->id,
+                    'warehouse_id' => $validated['warehouse_id'],
+                    'carrier' => $validated['carrier'],
+                    'tracking_number' => $validated['tracking_number'] ?? null,
+                    'weight' => $validated['weight'] ?? null,
+                    'status' => 'shipped',
+                    'shipped_at' => now(),
+                ]);
 
-        return redirect()->route('central.shipments.index')->with('success', 'Shipment created and Order updated.');
+                // Delegate inventory logic to OrderService if applicable, 
+                // or handle simple state update here.
+                $order->update([
+                    'shipping_status' => 'shipped',
+                    'status' => 'shipped'
+                ]);
+            });
+
+            return redirect()->route('central.shipments.index')->with('success', 'Shipment created successfully.');
+        } catch (Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create shipment: ' . $e->getMessage());
+        }
     }
 
-    public function show(Shipment $shipment)
+    /**
+     * Display the specified shipment.
+     */
+    public function show(Shipment $shipment): View
     {
+        $this->authorize('orders view');
         $shipment->load(['order.items', 'order.customer', 'warehouse']);
         return view('central.shipments.show', compact('shipment'));
     }
 
-    public function updateStatus(Request $request, Shipment $shipment)
+    /**
+     * Update the status of the shipment.
+     */
+    public function updateStatus(Request $request, Shipment $shipment): RedirectResponse
     {
-        $request->validate(['status' => 'required|string']);
+        $this->authorize('orders manage');
+        $validated = $request->validate(['status' => 'required|string']);
         
-        $shipment->update(['status' => $request->status]);
-        
-        if ($request->status === 'delivered') {
-            $shipment->update(['delivered_at' => now()]);
-            $shipment->order->update([
-                'shipping_status' => 'delivered',
-                'status' => 'delivered'
-            ]);
-        }
+        try {
+            DB::transaction(function () use ($validated, $shipment) {
+                $shipment->update(['status' => $validated['status']]);
+                
+                if ($validated['status'] === 'delivered') {
+                    $shipment->update(['delivered_at' => now()]);
+                    $this->orderService->deliverOrder($shipment->order);
+                }
+            });
 
-        return back()->with('success', 'Shipment status updated.');
+            return back()->with('success', 'Shipment status updated successfully.');
+        } catch (Exception $e) {
+            return back()->with('error', 'Failed to update shipment status: ' . $e->getMessage());
+        }
     }
 }

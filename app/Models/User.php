@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -10,7 +12,6 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
-
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
@@ -18,6 +19,9 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, HasRoles, LogsActivity, Notifiable, SoftDeletes;
 
+    /**
+     * Get the activity log options for the model.
+     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

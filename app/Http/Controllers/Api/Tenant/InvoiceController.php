@@ -1,20 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class InvoiceController extends Controller
 {
-    public function index()
+    use AuthorizesRequests;
+
+    /**
+     * Display a listing of the invoices.
+     */
+    public function index(): JsonResponse
     {
-        return response()->json(Invoice::with('order.customer')->latest()->paginate(20));
+        $this->authorize('orders view');
+
+        $invoices = Invoice::with(['order.customer'])->latest()->paginate(20);
+        
+        return response()->json($invoices);
     }
 
-    public function show(Invoice $invoice)
+    /**
+     * Display the specified invoice.
+     */
+    public function show(Invoice $invoice): JsonResponse
     {
+        $this->authorize('orders view');
+
         return response()->json($invoice->load(['order', 'payments']));
     }
 }

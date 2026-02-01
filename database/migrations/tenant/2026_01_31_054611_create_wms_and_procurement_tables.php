@@ -46,6 +46,7 @@ return new class extends Migration
             $table->decimal('weight', 8, 3)->nullable(); // kg
             $table->boolean('is_active')->default(true);
             $table->boolean('is_taxable')->default(true);
+            $table->decimal('stock_on_hand', 12, 3)->default(0);
             $table->timestamps();
             $table->softDeletes();
         });

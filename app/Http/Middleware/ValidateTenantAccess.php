@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class ValidateTenantAccess
 {
@@ -16,43 +21,38 @@ class ValidateTenantAccess
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Only apply to authenticated users in tenant context
-        // Skip if user is not authenticated (prevents issues during login)
-        if (! auth()->check() || ! tenancy()->initialized) {
+        // Only apply to authenticated users in initialized tenant context
+        if (! Auth::check() || ! tenancy()->initialized) {
             return $next($request);
         }
 
         // Enforce Tenant Status
-        // Enforce Tenant Status
         if (tenant('status') !== 'active') {
-            auth()->logout();
+            Auth::logout();
 
-            // Explicitly redirect to the current domain's login to ensure we don't drift to central
-            // and preserve flash messages by NOT invalidating session here (just logout)
             return redirect($request->getSchemeAndHttpHost() . '/login')
-                ->with('error', 'This workspace is currently '.tenant('status').'. Please contact support.');
+                ->with('error', 'This workspace is currently ' . tenant('status') . '. Please contact support.');
         }
 
-        $user = auth()->user();
-        $tenantId = tenant('id');
+        $user = Auth::user();
 
-        // Verify user exists in current tenant database
-        $userExists = \App\Models\User::where('id', $user->id)
+        // Verify user exists in current tenant database to prevent cross-tenant leakage
+        $userExists = User::where('id', $user->id)
             ->where('email', $user->email)
             ->exists();
 
         if (! $userExists) {
-            \Log::error('User attempted to access tenant they do not belong to', [
+            Log::error('User attempted to access unauthorized tenant', [
                 'user_id' => $user->id,
                 'user_email' => $user->email,
-                'tenant_id' => $tenantId,
+                'tenant_id' => tenant('id'),
             ]);
 
-            auth()->logout();
+            Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('tenant.login.view')
+            return redirect($request->getSchemeAndHttpHost() . '/login')
                 ->with('error', 'Access denied. You do not have access to this workspace.');
         }
 

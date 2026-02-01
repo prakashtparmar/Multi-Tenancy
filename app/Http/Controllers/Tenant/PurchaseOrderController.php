@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
@@ -7,29 +9,50 @@ use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\Warehouse;
 use App\Models\Product;
+use App\Models\InventoryStock;
+use App\Models\InventoryMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class PurchaseOrderController extends Controller
 {
-    public function index()
+    use AuthorizesRequests;
+
+    /**
+     * Display a listing of the purchase orders.
+     */
+    public function index(): View
     {
+        $this->authorize('inventory manage');
+        
         $orders = PurchaseOrder::with(['supplier', 'warehouse'])->latest()->paginate(10);
         return view('tenant.purchase_orders.index', compact('orders'));
     }
 
-    public function create()
+    /**
+     * Show the form for creating a new purchase order.
+     */
+    public function create(): View
     {
+        $this->authorize('inventory manage');
+        
         $suppliers = Supplier::all();
         $warehouses = Warehouse::where('is_active', true)->get();
-        // In Tenant context, Products are scoped to tenant automatically if GlobalScope is set, 
-        // or we trust the model.
-        $products = Product::select('id', 'name', 'sku', 'cost_price')->get(); 
+        $products = Product::select('id', 'name', 'sku')->get(); 
+        
         return view('tenant.purchase_orders.create', compact('suppliers', 'warehouses', 'products'));
     }
 
-    public function store(Request $request)
+    /**
+     * Store a newly created purchase order in storage.
+     */
+    public function store(Request $request): RedirectResponse
     {
+        $this->authorize('inventory manage');
+
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
@@ -41,76 +64,95 @@ class PurchaseOrderController extends Controller
             'items.*.cost' => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($validated) {
-            $totalCost = 0;
-            foreach ($validated['items'] as $item) {
-                $totalCost += $item['quantity'] * $item['cost'];
-            }
+        try {
+            DB::transaction(function () use ($validated) {
+                $totalCost = 0;
+                foreach ($validated['items'] as $item) {
+                    $totalCost += $item['quantity'] * $item['cost'];
+                }
 
-            $po = PurchaseOrder::create([
-                'supplier_id' => $validated['supplier_id'],
-                'warehouse_id' => $validated['warehouse_id'],
-                'po_number' => $validated['po_number'],
-                'status' => 'ordered',
-                'expected_date' => $validated['expected_date'],
-                'total_cost' => $totalCost,
-                'created_by' => auth()->id(),
-            ]);
-
-            foreach ($validated['items'] as $item) {
-                $po->items()->create([
-                    'product_id' => $item['product_id'],
-                    'quantity_ordered' => $item['quantity'],
-                    'unit_cost' => $item['cost'],
-                    'total_cost' => $item['quantity'] * $item['cost'],
+                $po = PurchaseOrder::create([
+                    'supplier_id' => $validated['supplier_id'],
+                    'warehouse_id' => $validated['warehouse_id'],
+                    'po_number' => $validated['po_number'],
+                    'status' => 'ordered',
+                    'expected_date' => $validated['expected_date'],
+                    'total_cost' => $totalCost,
+                    'created_by' => auth()->id(),
                 ]);
-            }
-        });
 
-        return redirect()->route('tenant.purchase-orders.index')->with('success', 'Purchase Order created.');
+                foreach ($validated['items'] as $item) {
+                    $po->items()->create([
+                        'product_id' => $item['product_id'],
+                        'quantity_ordered' => $item['quantity'],
+                        'unit_cost' => $item['cost'],
+                        'total_cost' => $item['quantity'] * $item['cost'],
+                    ]);
+                }
+            });
+
+            return redirect()->route('tenant.purchase-orders.index')->with('success', 'Purchase Order created.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create purchase order.');
+        }
     }
 
-    public function show(PurchaseOrder $purchaseOrder)
+    /**
+     * Display the specified purchase order.
+     */
+    public function show(PurchaseOrder $purchaseOrder): View
     {
+        $this->authorize('inventory manage');
+        
         $purchaseOrder->load(['items.product', 'supplier', 'warehouse']);
         return view('tenant.purchase_orders.show', compact('purchaseOrder'));
     }
 
-    public function receive(Request $request, PurchaseOrder $purchaseOrder)
+    /**
+     * Receive the items from the purchase order and update inventory.
+     */
+    public function receive(Request $request, PurchaseOrder $purchaseOrder): RedirectResponse
     {
+        $this->authorize('inventory manage');
+
         if ($purchaseOrder->status === 'received') {
             return back()->with('error', 'Order already received.');
         }
 
-        DB::transaction(function () use ($purchaseOrder) {
-            $purchaseOrder->update(['status' => 'received']);
+        try {
+            DB::transaction(function () use ($purchaseOrder) {
+                $purchaseOrder->update(['status' => 'received']);
 
-            foreach ($purchaseOrder->items as $item) {
-                // Update Stock
-                $stock = \App\Models\InventoryStock::firstOrCreate(
-                    [
-                        'warehouse_id' => $purchaseOrder->warehouse_id,
-                        'product_id' => $item->product_id
-                    ],
-                    ['quantity' => 0, 'reserve_quantity' => 0]
-                );
+                foreach ($purchaseOrder->items as $item) {
+                    $stock = InventoryStock::firstOrCreate(
+                        [
+                            'warehouse_id' => $purchaseOrder->warehouse_id,
+                            'product_id' => $item->product_id
+                        ],
+                        ['quantity' => 0, 'reserve_quantity' => 0]
+                    );
 
-                $stock->increment('quantity', $item->quantity_ordered);
+                    $stock->increment('quantity', $item->quantity_ordered);
 
-                // Log Movement
-                \App\Models\InventoryMovement::create([
-                    'stock_id' => $stock->id,
-                    'type' => 'purchase',
-                    'quantity' => $item->quantity_ordered,
-                    'reference_id' => $purchaseOrder->id,
-                    'reason' => 'PO Received: ' . $purchaseOrder->po_number,
-                    'user_id' => auth()->id(),
-                ]);
-                
-                $item->update(['quantity_received' => $item->quantity_ordered]);
-            }
-        });
+                    InventoryMovement::create([
+                        'stock_id' => $stock->id,
+                        'type' => 'purchase',
+                        'quantity' => $item->quantity_ordered,
+                        'reference_id' => $purchaseOrder->id,
+                        'reason' => 'PO Received: ' . $purchaseOrder->po_number,
+                        'user_id' => auth()->id(),
+                    ]);
+                    
+                    $item->update(['quantity_received' => $item->quantity_ordered]);
 
-        return back()->with('success', 'Stock received and inventory updated.');
+                    // Sync denormalized stock
+                    $item->product->refreshStockOnHand();
+                }
+            });
+
+            return back()->with('success', 'Stock received and inventory updated.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to receive stock.');
+        }
     }
 }

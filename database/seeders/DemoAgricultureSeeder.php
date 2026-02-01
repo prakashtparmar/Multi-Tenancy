@@ -115,15 +115,15 @@ class DemoAgricultureSeeder extends Seeder
             'manage_stock' => true,
         ]);
 
-        // 6. Inventory
+        // 6. Inventory (Zero stock as requested)
         foreach ($products as $product) {
             InventoryStock::updateOrCreate(
                 ['warehouse_id' => $mainWarehouse->id, 'product_id' => $product->id],
-                ['quantity' => 1000, 'reserve_quantity' => 0]
+                ['quantity' => 0, 'reserve_quantity' => 0]
             );
             InventoryStock::updateOrCreate(
                 ['warehouse_id' => $westWarehouse->id, 'product_id' => $product->id],
-                ['quantity' => 500, 'reserve_quantity' => 0]
+                ['quantity' => 0, 'reserve_quantity' => 0]
             );
         }
 
@@ -179,7 +179,7 @@ class DemoAgricultureSeeder extends Seeder
             'unit_price' => 60.00,
             'total_price' => 600.00,
         ]);
-        $orderService->confirmOrder($order2); 
+        // $orderService->confirmOrder($order2); // Disabled: Needs stock
 
         // Order 3: Shipped (50kg Wheat @ 45 = 2250)
         $order3 = Order::create([
@@ -201,8 +201,8 @@ class DemoAgricultureSeeder extends Seeder
             'unit_price' => 45.00,
             'total_price' => 2250.00,
         ]);
-        $orderService->confirmOrder($order3);
-        $orderService->shipOrder($order3, 'TRK-FEDEX-999');
+        // $orderService->confirmOrder($order3); // Disabled: Needs stock
+        // $orderService->shipOrder($order3, 'TRK-FEDEX-999'); // Disabled: Needs confirmation first
 
         echo "✅ Demo Data Seeded Successfully (INR)!\n";
     }

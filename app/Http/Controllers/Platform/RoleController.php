@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
@@ -7,160 +9,130 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Services\RouteContextService;
 
 class RoleController extends Controller
 {
-    private function getRoutePrefix()
+    use AuthorizesRequests;
+
+    /**
+     * Get the route prefix based on context.
+     */
+    private function getRoutePrefix(): string
     {
-        // Fix: Rely on the actual route name to determine context.
-        $route = request()->route();
-        if (!$route) {
-            return 'central';
-        }
-        
-        $routeName = $route->getName();
-        return str_starts_with($routeName ?? '', 'tenant.') ? 'tenant' : 'central';
+        return RouteContextService::getRoutePrefix();
     }
 
     /**
-     * Display a listing of the resource.
+     * Display a listing of the roles.
      */
-    public function index()
+    public function index(): View
     {
+        $this->authorize('users manage');
+
         $roles = Role::with('permissions')->withCount('users')->paginate(10);
         
-        // Fix: Force create URL to use current host
-        $createUrl = route($this->getRoutePrefix() . '.roles.create');
-        $currentHost = request()->getHttpHost();
-        $createUrl = preg_replace('#^https?://[^/]+#', (request()->secure() ? 'https://' : 'http://') . $currentHost, $createUrl);
-
         return view('tenant.roles.index', [
             'roles' => $roles,
             'routePrefix' => $this->getRoutePrefix(),
-            'createUrl' => $createUrl,
         ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new role.
      */
-    public function create()
+    public function create(): View
     {
-        $permissions = Permission::all()->groupBy(function ($data) {
-            return explode(' ', $data->name)[0]; // Group by first word (e.g., "user" from "user create")
-        });
+        $this->authorize('users manage');
 
-        // Fix: Explicitly generate the action URL using the current request's host
-        // to prevent route() from reverting to APP_URL (127.0.0.1) and causing 419 errors.
-        $actionUrl = route($this->getRoutePrefix() . '.roles.store');
-        
-        // Ensure the host matches the current request to avoid cross-domain POSTs
-        $currentHost = request()->getHttpHost(); 
-        $actionUrl = preg_replace('#^https?://[^/]+#', (request()->secure() ? 'https://' : 'http://') . $currentHost, $actionUrl);
-
-        // Fix: Generate safe Index URL for Back/Cancel buttons
-        $indexUrl = route($this->getRoutePrefix() . '.roles.index');
-        $indexUrl = preg_replace('#^https?://[^/]+#', (request()->secure() ? 'https://' : 'http://') . $currentHost, $indexUrl);
+        $permissions = Permission::all()->groupBy(fn($p) => explode(' ', $p->name)[0]);
 
         return view('tenant.roles.form', [
             'permissions' => $permissions,
             'routePrefix' => $this->getRoutePrefix(),
-            'actionUrl' => $actionUrl,
-            'indexUrl' => $indexUrl,
+            'role' => new Role(), // For form model binding if used
         ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created role in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
+        $this->authorize('users manage');
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
-            'permissions' => ['array'],
+            'permissions' => ['nullable', 'array'],
         ]);
 
         $role = Role::create(['name' => $validated['name']]);
 
-        if (isset($validated['permissions'])) {
+        if (!empty($validated['permissions'])) {
             $role->syncPermissions($validated['permissions']);
         }
 
-        // Fix: Force redirect to current host to avoid session loss (419/Logout)
-        $url = route($this->getRoutePrefix() . '.roles.index');
-        $currentHost = request()->getHttpHost();
-        $url = preg_replace('#^https?://[^/]+#', (request()->secure() ? 'https://' : 'http://') . $currentHost, $url);
-
-        return redirect($url)->with('success', 'Role created successfully.');
+        return redirect()->route($this->getRoutePrefix() . '.roles.index')
+            ->with('success', 'Role created successfully.');
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the specified role.
      */
-    public function edit(Role $role)
+    public function edit(Role $role): View
     {
-        $permissions = Permission::all()->groupBy(function ($data) {
-            return explode(' ', $data->name)[0];
-        });
+        $this->authorize('users manage');
 
-        // Fix logic for Edit as well
-        $actionUrl = route($this->getRoutePrefix() . '.roles.update', $role);
-        $currentHost = request()->getHttpHost();
-        $actionUrl = preg_replace('#^https?://[^/]+#', (request()->secure() ? 'https://' : 'http://') . $currentHost, $actionUrl);
-
-        // Fix: Generate safe Index URL for Back/Cancel buttons
-        $indexUrl = route($this->getRoutePrefix() . '.roles.index');
-        $indexUrl = preg_replace('#^https?://[^/]+#', (request()->secure() ? 'https://' : 'http://') . $currentHost, $indexUrl);
+        $permissions = Permission::all()->groupBy(fn($p) => explode(' ', $p->name)[0]);
 
         return view('tenant.roles.form', [
             'role' => $role,
             'permissions' => $permissions,
             'routePrefix' => $this->getRoutePrefix(),
-            'actionUrl' => $actionUrl,
-            'indexUrl' => $indexUrl,
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified role in storage.
      */
-    public function update(Request $request, Role $role)
+    public function update(Request $request, Role $role): RedirectResponse
     {
+        $this->authorize('users manage');
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('roles', 'name')->ignore($role->id)],
-            'permissions' => ['array'],
+            'permissions' => ['nullable', 'array'],
         ]);
 
         $role->update(['name' => $validated['name']]);
 
         if (isset($validated['permissions'])) {
             $role->syncPermissions($validated['permissions']);
+        } else {
+            $role->syncPermissions([]);
         }
 
-        // Fix: Force redirect to current host
-        $url = route($this->getRoutePrefix() . '.roles.index');
-        $currentHost = request()->getHttpHost();
-        $url = preg_replace('#^https?://[^/]+#', (request()->secure() ? 'https://' : 'http://') . $currentHost, $url);
-
-        return redirect($url)->with('success', 'Role updated successfully.');
+        return redirect()->route($this->getRoutePrefix() . '.roles.index')
+            ->with('success', 'Role updated successfully.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified role from storage.
      */
-    public function destroy(Role $role)
+    public function destroy(Role $role): RedirectResponse
     {
-        if ($role->name === 'admin' || $role->name === 'Super Admin') { // Prevent deleting specific critical roles
+        $this->authorize('users manage');
+
+        if (in_array($role->name, ['admin', 'Super Admin'])) {
             return back()->with('error', 'Cannot delete system roles.');
         }
 
         $role->delete();
         
-        // Fix: Force redirect to current host
-        $url = route($this->getRoutePrefix() . '.roles.index');
-        $currentHost = request()->getHttpHost();
-        $url = preg_replace('#^https?://[^/]+#', (request()->secure() ? 'https://' : 'http://') . $currentHost, $url);
-
-        return redirect($url)->with('success', 'Role deleted successfully.');
+        return redirect()->route($this->getRoutePrefix() . '.roles.index')
+            ->with('success', 'Role deleted successfully.');
     }
 }

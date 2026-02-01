@@ -1,20 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Shipment;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ShipmentController extends Controller
 {
-    public function index()
+    use AuthorizesRequests;
+
+    /**
+     * Display a listing of the shipments.
+     */
+    public function index(): JsonResponse
     {
-        return response()->json(Shipment::with('order')->latest()->paginate(20));
+        $this->authorize('orders view');
+
+        $shipments = Shipment::with(['order.customer', 'warehouse'])->latest()->paginate(20);
+        
+        return response()->json($shipments);
     }
 
-    public function show(Shipment $shipment)
+    /**
+     * Display the specified shipment.
+     */
+    public function show(Shipment $shipment): JsonResponse
     {
+        $this->authorize('orders view');
+
         return response()->json($shipment->load(['order.items', 'warehouse']));
     }
 }

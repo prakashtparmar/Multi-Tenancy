@@ -19,12 +19,13 @@ class Product extends Model
         'is_taxable' => 'boolean',
         'price' => 'decimal:2',
         'cost_price' => 'decimal:2',
+        'stock_on_hand' => 'decimal:3',
     ];
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'sku', 'price', 'stock_quantity'])
+            ->logOnly(['name', 'sku', 'price', 'stock_on_hand'])
             ->logOnlyDirty();
     }
 
@@ -49,8 +50,17 @@ class Product extends Model
         return $this->hasMany(InventoryStock::class);
     }
 
-    public function getStockOnHandAttribute()
+    public function getStockOnHandAttribute($value)
     {
-        return $this->stocks()->sum('quantity');
+        return $value ?? 0;
+    }
+
+    /**
+     * Synchronize the denormalized stock_on_hand field with inventory_stocks.
+     */
+    public function refreshStockOnHand(): void
+    {
+        $total = $this->stocks()->sum('quantity');
+        $this->update(['stock_on_hand' => $total]);
     }
 }

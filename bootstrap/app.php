@@ -1,51 +1,45 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use App\Http\Middleware\EnsureTenantSession;
+use App\Http\Middleware\ValidateTenantAccess;
+use App\Http\Middleware\EnsureCentralSession;
+use App\Http\Middleware\PreventBackHistory;
+use Stancl\Tenancy\Exceptions\TenantCouldNotBeIdentifiedOnDomainException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        commands: __DIR__.'/../routes/console.php',
+        api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Illuminate\Foundation\Configuration\Middleware $middleware) {
+    ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'tenant.session' => \App\Http\Middleware\EnsureTenantSession::class,
-            'tenant.access' => \App\Http\Middleware\ValidateTenantAccess::class,
-            'central.session' => \App\Http\Middleware\EnsureCentralSession::class,
-            'prevent-back-history' => \App\Http\Middleware\PreventBackHistory::class,
+            'tenant.session' => EnsureTenantSession::class,
+            'tenant.access' => ValidateTenantAccess::class,
+            'central.session' => EnsureCentralSession::class,
+            'prevent-back-history' => PreventBackHistory::class,
         ]);
 
         $middleware->appendToGroup('web', [
-            \App\Http\Middleware\PreventBackHistory::class,
+            PreventBackHistory::class,
         ]);
 
-        $middleware->redirectGuestsTo(function (Illuminate\Http\Request $request) {
-            $isTenant = tenant() ? 'yes (' . tenant('id') . ')' : 'no';
-            \Log::info("Redirecting guest. URL: " . $request->fullUrl() . ", Tenant Detected: $isTenant, Route: " . $request->route()?->getName());
-            
+        $middleware->redirectGuestsTo(function (Request $request) {
             if (tenant()) {
                 return route('tenant.login.view');
             }
             
-            // Fallback: If we are on a subdomain (e.g. foo.localhost) but no tenant detected yet,
-            // we should try to redirect to that domain's login page rather than central
-            $host = $request->getHost();
-            if ($host !== 'localhost' && $host !== '127.0.0.1' && !str_contains($host, 'central')) {
-                 \Log::info("Tenant not detected via helper, but host '$host' implies tenant. Redirecting to host login.");
-                 // Manually construct the login URL for the current host
-                 // Use SchemeAndHttpHost to preserve http/https and port
-                 return $request->getSchemeAndHttpHost() . '/login';
-            }
-
-            // Final Fallback: Use the current request domain dynamically
-            return $request->getSchemeAndHttpHost() . '/login';
+            return route('login');
         });
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (\Stancl\Tenancy\Exceptions\TenantCouldNotBeIdentifiedOnDomainException $e, $request) {
+        $exceptions->render(function (TenantCouldNotBeIdentifiedOnDomainException $e, Request $request) {
             return response()->view('errors.tenant-not-found', [], 404);
         });
     })->create();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 class RouteContextService
@@ -9,13 +11,10 @@ class RouteContextService
      *
      * Returns 'tenant' if running in a tenant context,
      * otherwise returns 'central' for central routes.
-     *
-     * @return string
      */
     public static function getRoutePrefix(): string
     {
-        // Primary check: if tenancy is initialized, we're in a tenant context
-        if (tenancy()->initialized) {
+        if (function_exists('tenancy') && tenancy()->initialized) {
             return 'tenant';
         }
 
@@ -24,8 +23,6 @@ class RouteContextService
 
     /**
      * Check if the current request is in a tenant context.
-     *
-     * @return bool
      */
     public static function isTenantContext(): bool
     {
@@ -34,8 +31,6 @@ class RouteContextService
 
     /**
      * Check if the current request is in the central context.
-     *
-     * @return bool
      */
     public static function isCentralContext(): bool
     {

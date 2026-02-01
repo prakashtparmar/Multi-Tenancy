@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
@@ -11,6 +13,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 {
     use HasDatabase, HasDomains;
 
+    /**
+     * Get the custom columns defined for the tenant model.
+     *
+     * @return array<int, string>
+     */
     public static function getCustomColumns(): array
     {
         return [
