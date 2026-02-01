@@ -102,4 +102,14 @@ class Customer extends Model
               ->orWhere('company_name', 'like', "%{$term}%");
         });
     }
+
+    public function interactions()
+    {
+        return $this->hasMany(CustomerInteraction::class);
+    }
+
+    public function getNameAttribute(): string
+    {
+        return trim("{$this->first_name} {$this->last_name}");
+    }
 }

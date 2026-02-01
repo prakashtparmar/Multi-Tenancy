@@ -79,15 +79,18 @@ class SearchController extends Controller
         }
         
         $data = $products->map(function ($product) {
-            $product->stock_on_hand_val = $product->stocks->sum('quantity'); 
-            $product->stock_on_hand_display = $product->stock_on_hand_val;
-            
-            $primaryImage = $product->images->where('is_primary', true)->first();
-            $product->image_url = $primaryImage 
-                ? asset('storage/' . $primaryImage->image_path) 
-                : 'https://placehold.co/400x400?text=No+Image';
-                
-            return $product;
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'price' => (float) $product->price,
+                'stock_on_hand' => (float) $product->stock_on_hand,
+                'unit_type' => $product->unit_type,
+                'image_url' => $product->images->where('is_primary', true)->first() 
+                    ? asset('storage/' . $product->images->where('is_primary', true)->first()->image_path) 
+                    : 'https://placehold.co/400x400?text=No+Image',
+                'category' => $product->category->name ?? 'Uncategorized'
+            ];
         });
 
         return response()->json($data);

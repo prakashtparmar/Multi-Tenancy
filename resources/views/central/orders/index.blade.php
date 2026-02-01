@@ -105,6 +105,7 @@
                             </th>
                             <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Order #</th>
                             <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Customer</th>
+                            <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Created By</th>
                             <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Date</th>
                             <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Grand Total</th>
                             <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Status</th>
@@ -128,6 +129,9 @@
                             </td>
                             <td class="p-6 align-middle">
                                 <span class="text-sm">{{ $order->customer->name ?? 'Guest' }}</span>
+                            </td>
+                            <td class="p-6 align-middle">
+                                <span class="text-xs text-muted-foreground font-medium">{{ $order->creator->name ?? 'System' }}</span>
                             </td>
                             <td class="p-6 align-middle text-muted-foreground font-mono text-xs">
                                 @if($order->is_future_order && $order->scheduled_at)

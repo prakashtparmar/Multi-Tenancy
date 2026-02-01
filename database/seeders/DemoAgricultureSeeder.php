@@ -115,16 +115,17 @@ class DemoAgricultureSeeder extends Seeder
             'manage_stock' => true,
         ]);
 
-        // 6. Inventory (Zero stock as requested)
+        // 6. Inventory (Generous stock for testing)
         foreach ($products as $product) {
             InventoryStock::updateOrCreate(
                 ['warehouse_id' => $mainWarehouse->id, 'product_id' => $product->id],
-                ['quantity' => 0, 'reserve_quantity' => 0]
+                ['quantity' => 1000, 'reserve_quantity' => 0]
             );
             InventoryStock::updateOrCreate(
                 ['warehouse_id' => $westWarehouse->id, 'product_id' => $product->id],
-                ['quantity' => 0, 'reserve_quantity' => 0]
+                ['quantity' => 1000, 'reserve_quantity' => 0]
             );
+            $product->refreshStockOnHand();
         }
 
         // 7. Customers

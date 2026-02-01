@@ -1,6 +1,78 @@
 <x-app-layout>
     <div x-data="orderWizard(@js($products), @js($preSelectedCustomer))" class="flex flex-col min-h-screen bg-muted/5">
         
+        <!-- MANDATORY INTERACTION TAGGING MODAL -->
+        <template x-teleport="body">
+            <div x-show="showTaggingModal" 
+                 class="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-lg p-4" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100">
+                
+                <div class="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[32px] shadow-[0_0_80px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 ease-out max-h-[90vh]" @click.away="if(!taggingLoading) showTaggingModal = false">
+                    <div class="flex-1 overflow-y-auto p-8 relative custom-scrollbar">
+                        <div class="absolute -top-10 -right-10 size-40 bg-primary/20 blur-[60px] rounded-full"></div>
+                        
+                        <div class="relative z-10 flex items-center gap-4 mb-6">
+                            <div class="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                            </div>
+                            <div>
+                                <h3 class="font-black text-2xl tracking-tighter">Interaction Outcome</h3>
+                                <p class="text-xs text-muted-foreground uppercase tracking-widest font-bold">Mandatory Tagging Required</p>
+                            </div>
+                        </div>
+
+                        <div class="p-6 rounded-2xl bg-muted/30 border border-border/50 mb-8">
+                            <p class="text-sm font-medium text-foreground/80 leading-relaxed">
+                                You are closing an active session for <span class="text-primary font-black" x-text="selectedCustomer?.first_name + ' ' + (selectedCustomer?.last_name || '')"></span>. 
+                                To ensure high-quality CRM data, please select why this visit did not result in an order.
+                            </p>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Reason for no order</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <template x-for="opt in [
+                                        {id: 'enquiry', label: 'Enquiry Only'},
+                                        {id: 'pricing', label: 'Price Too High'},
+                                        {id: 'stock', label: 'Out of Stock'},
+                                        {id: 'follow_up', label: 'Need Follow-up'},
+                                        {id: 'comparison', label: 'Comparing Market'},
+                                        {id: 'other', label: 'Other Reason'}
+                                    ]">
+                                        <button @click="tagOutcome = opt.id" 
+                                                :class="tagOutcome === opt.id ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.02]' : 'bg-secondary/20 hover:bg-secondary/40 border-border text-muted-foreground'"
+                                                class="p-4 rounded-xl text-xs font-black uppercase tracking-widest border transition-all duration-300 text-center">
+                                            <span x-text="opt.label"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Additional Notes (Optional)</label>
+                                <textarea x-model="tagNotes" 
+                                          class="w-full bg-secondary/20 dark:bg-white/5 border border-border rounded-2xl p-4 text-sm font-medium placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[100px]" 
+                                          placeholder="Provide more context..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-8 border-t border-border flex gap-4 bg-white dark:bg-zinc-900 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                        <button @click="showTaggingModal = false" :disabled="taggingLoading" class="flex-1 h-14 rounded-2xl border border-border text-xs font-black uppercase tracking-widest hover:bg-secondary/50 transition-all disabled:opacity-50">
+                            Stay Back
+                        </button>
+                        <button @click="submitTagging()" :disabled="taggingLoading" class="flex-[2] h-14 rounded-2xl bg-primary text-primary-foreground text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
+                            <span x-show="taggingLoading" class="animate-spin size-4 border-2 border-white/20 border-t-white rounded-full"></span>
+                            <span x-text="taggingLoading ? 'Logging...' : 'Confirm & Close Segment'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+        
         <!-- Header / Progress Bar -->
         <div class="flex-none bg-background border-b border-border px-8 py-4 flex items-center justify-between z-20 shadow-sm sticky top-0">
             <div>
@@ -43,7 +115,7 @@
                 </div>
             </div>
 
-            <x-ui.button variant="ghost" href="{{ route('central.orders.index') }}" size="sm" class="text-muted-foreground hover:text-destructive" @click="localStorage.removeItem('order_wizard_state')">
+            <x-ui.button variant="ghost" @click="requestCloseSession()" size="sm" class="text-muted-foreground hover:text-destructive">
                 Cancel
             </x-ui.button>
         </div>
@@ -219,7 +291,7 @@
                                         <p class="text-sm text-muted-foreground mb-8">Please confirm the customer details. You can change the customer if needed.</p>
                                         
                                         <div class="mt-auto space-y-3">
-                                            <button @click="selectedCustomer = null; customerQuery = '';" class="w-full bg-background border border-border text-foreground hover:bg-muted py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
+                                            <button @click="requestCloseSession()" class="w-full bg-background border border-border text-foreground hover:bg-muted py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
                                                 Change Customer
                                             </button>
@@ -831,7 +903,7 @@
                 </div>
             </div>
         </div>
-    <!-- Address Modal (Create/Edit) -->
+        <!-- Address Modal (Create/Edit) -->
     <div x-show="showAddressModal" 
          class="fixed inset-0 z-50 flex items-center justify-center px-4" 
          style="display: none;">
@@ -901,8 +973,6 @@
                 </div>
             </div>
         </div>
-    </div>
-    </div>
 
     <script>
         function orderWizard(initialProducts, preSelectedCustomer) {
@@ -959,6 +1029,12 @@
                 // Cart State
                 cart: [],
 
+                // Tagging State
+                showTaggingModal: false,
+                taggingLoading: false,
+                tagOutcome: '',
+                tagNotes: '',
+
                 init() {
                     // 1. Check for Reset Parameter
                     const urlParams = new URLSearchParams(window.location.search);
@@ -999,6 +1075,11 @@
                                 ...this.order, // current (including address set by selectCustomer)
                                 ...parsed.order 
                             };
+
+                            this.showTaggingModal = false;
+                            this.taggingLoading = false;
+                            this.tagOutcome = '';
+                            this.tagNotes = '';
                             
                             this.customerQuery = parsed.customerQuery || '';
                             this.productQuery = parsed.productQuery || '';
@@ -1105,6 +1186,55 @@
                     }
                 },
 
+                requestCloseSession() {
+                    if (this.selectedCustomer) {
+                        this.tagOutcome = '';
+                        this.tagNotes = '';
+                        this.showTaggingModal = true;
+                    } else {
+                        window.location.href = "{{ route('central.orders.create', ['reset' => 1]) }}";
+                    }
+                },
+
+                async submitTagging() {
+                    if (!this.tagOutcome) {
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Please select an outcome.' } }));
+                        return;
+                    }
+
+                    this.taggingLoading = true;
+                    try {
+                        let res = await fetch(`{{ url('/api/customers') }}/${this.selectedCustomer.id}/interactions`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                outcome: this.tagOutcome,
+                                notes: this.tagNotes,
+                                type: 'order_dropped',
+                                metadata: {
+                                    cart_items: this.cart,
+                                    last_step: this.step
+                                }
+                            })
+                        });
+
+                        let data = await res.json();
+                        if (data.success) {
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Interaction logged. Session closed.' } }));
+                            localStorage.removeItem('order_wizard_state');
+                            window.location.href = "{{ route('central.orders.create', ['reset' => 1]) }}";
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Failed to log interaction.' } }));
+                    } finally {
+                        this.taggingLoading = false;
+                    }
+                },
+
                 goToStep(targetStep) {
                     if (targetStep === 1) {
                          this.step = 1;
@@ -1168,17 +1298,17 @@
                 async submitOrder() {
                     // Validation
                     if (this.cart.length === 0) {
-                        alert('Your cart is empty. Please add products to place an order.');
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Your cart is empty. Please add products to place an order.' } }));
                         return;
                     }
 
                     if (!this.order.billing_address_id) {
-                        alert('Billing address is compulsory. Please select a billing address.');
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Billing address is compulsory. Please select a billing address.' } }));
                         return;
                     }
 
                     if (!this.order.same_as_billing && !this.order.shipping_address_id) {
-                        alert('Shipping address is compulsory. Please select a shipping address or verify "Same as Billing".');
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Shipping address is compulsory. Please select a shipping address or verify "Same as Billing".' } }));
                         return;
                     }
 
@@ -1222,7 +1352,7 @@
                         // Handle 422 Validation Errors
                         if (res.status === 422) {
                             let errors = Object.values(data.errors || {}).flat().join('\n');
-                            alert('Validation Failed:\n' + errors);
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Validation Failed: ' + errors } }));
                             if(loadingBtn) {
                                 loadingBtn.disabled = false;
                                 loadingBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Place Order';
@@ -1251,7 +1381,7 @@
 
                     } catch (e) {
                          console.error(e);
-                         alert('Error: ' + e.message);
+                         window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Error: ' + e.message } }));
                          if(loadingBtn) {
                             loadingBtn.disabled = false;
                             loadingBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Place Order';
@@ -1406,4 +1536,7 @@
             }
         }
     </script>
+
+    
+    </div>
 </x-app-layout>

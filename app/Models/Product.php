@@ -63,4 +63,19 @@ class Product extends Model
         $total = $this->stocks()->sum('quantity');
         $this->update(['stock_on_hand' => $total]);
     }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function getImageUrlAttribute()
+    {
+        return $this->images()->first()?->url ?? 'https://placehold.co/100x100?text=' . urlencode($this->name);
+    }
+
+    public function getPriceListPriceAttribute()
+    {
+        return $this->price;
+    }
 }

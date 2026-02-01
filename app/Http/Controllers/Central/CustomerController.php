@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Customer;
+use App\Models\CustomerInteraction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -256,5 +257,32 @@ class CustomerController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Store a customer interaction outcome.
+     */
+    public function storeInteraction(Request $request, Customer $customer)
+    {
+        $validated = $request->validate([
+            'outcome' => 'required|string',
+            'notes' => 'nullable|string',
+            'type' => 'nullable|string'
+        ]);
+
+        $interaction = CustomerInteraction::create([
+            'customer_id' => $customer->id,
+            'user_id' => auth()->id(),
+            'type' => $validated['type'] ?? 'enquiry',
+            'outcome' => $validated['outcome'],
+            'notes' => $validated['notes'],
+            'metadata' => $request->input('metadata', [])
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Interaction tagged successfully.',
+            'interaction' => $interaction
+        ]);
     }
 }

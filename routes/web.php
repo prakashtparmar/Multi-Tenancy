@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
     // Customer Management (Central)
     Route::post('customers/bulk', [\App\Http\Controllers\Central\CustomerController::class, 'bulk'])->name('central.customers.bulk');
     Route::post('customers/{id}/restore', [\App\Http\Controllers\Central\CustomerController::class, 'restore'])->name('central.customers.restore');
+    Route::post('api/customers/{customer}/interactions', [\App\Http\Controllers\Central\CustomerController::class, 'storeInteraction'])->name('central.api.customers.interactions.store');
     Route::resource('customers', \App\Http\Controllers\Central\CustomerController::class)->names('central.customers');
 
     // Enterprise Modules (Central)

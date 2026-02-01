@@ -164,17 +164,67 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="text-muted-foreground">Shipping</span>
-                            <span>${{ number_format($order->shipping_amount, 2) }}</span>
+                            <span>Rs {{ number_format($order->shipping_amount ?? 0, 2) }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-muted-foreground">Tax</span>
-                            <span>Rs {{ number_format($order->tax_amount, 2) }}</span>
+                            <span>Rs {{ number_format($order->tax_amount ?? 0, 2) }}</span>
                         </div>
                         <div class="h-px bg-border my-2"></div>
                         <div class="flex justify-between font-bold text-lg">
                             <span>Total</span>
                             <span>Rs {{ number_format($order->grand_total, 2) }}</span>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Order History Tracking -->
+                <div class="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
+                    <h3 class="font-semibold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
+                        Order Heritage
+                    </h3>
+                    <div class="space-y-4 text-xs">
+                        <div class="flex items-start gap-3">
+                            <div class="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5"></div>
+                            <div>
+                                <p class="font-bold">Created</p>
+                                <p class="text-muted-foreground">{{ $order->created_at->format('M d, Y h:i A') }}</p>
+                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->creator->name ?? 'System' }}</span></p>
+                            </div>
+                        </div>
+
+                        @if($order->updated_at > $order->created_at && $order->updated_by)
+                        <div class="flex items-start gap-3">
+                            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5"></div>
+                            <div>
+                                <p class="font-bold">Last Updated</p>
+                                <p class="text-muted-foreground">{{ $order->updated_at->format('M d, Y h:i A') }}</p>
+                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->updater->name ?? 'System' }}</span></p>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if($order->status === 'cancelled' && $order->cancelled_by)
+                        <div class="flex items-start gap-3">
+                            <div class="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5"></div>
+                            <div>
+                                <p class="font-bold text-red-600">Cancelled</p>
+                                <p class="text-muted-foreground">{{ $order->cancelled_at ? $order->cancelled_at->format('M d, Y h:i A') : $order->updated_at->format('M d, Y h:i A') }}</p>
+                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->canceller->name ?? 'System' }}</span></p>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if($order->status === 'completed' && $order->completed_by)
+                        <div class="flex items-start gap-3">
+                            <div class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5"></div>
+                            <div>
+                                <p class="font-bold text-primary">Completed</p>
+                                <p class="text-muted-foreground">{{ $order->updated_at->format('M d, Y h:i A') }}</p>
+                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->completer->name ?? 'System' }}</span></p>
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>

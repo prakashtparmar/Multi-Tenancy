@@ -75,6 +75,12 @@ return new class extends Migration
             $table->timestamp('scheduled_at')->nullable();
             $table->boolean('is_future_order')->default(false);
             
+            // Lifecycle Audit
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('completed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+
             // Cancellation
             $table->timestamp('cancelled_at')->nullable();
             $table->string('cancel_reason')->nullable();

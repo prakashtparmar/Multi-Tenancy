@@ -110,6 +110,7 @@ class OrderService
         $order->update([
             'status' => 'completed',
             'shipping_status' => 'delivered',
+            'completed_by' => Auth::id(),
         ]);
         
         $order->shipments()->where('status', 'shipped')->update([
@@ -142,7 +143,10 @@ class OrderService
                 }
             }
 
-            $order->update(['status' => 'cancelled']);
+            $order->update([
+                'status' => 'cancelled',
+                'cancelled_by' => Auth::id(),
+            ]);
             return $order->fresh();
         });
     }
