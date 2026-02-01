@@ -58,12 +58,13 @@
         
         <!-- Table Header Toolbar -->
         <div class="p-4 border-b border-border/40 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="relative w-full sm:w-80">
+            <form action="{{ url()->current() }}" method="GET" class="relative w-full sm:w-80">
+                @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 </div>
-                <input type="text" placeholder="Search orders..." class="flex h-10 w-full rounded-xl border border-input bg-background/50 pl-9 pr-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50 transition-all">
-            </div>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search orders..." class="flex h-10 w-full rounded-xl border border-input bg-background/50 pl-9 pr-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50 transition-all">
+            </form>
 
             <div class="flex items-center gap-2">
                  <button class="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-accent transition-colors">
@@ -89,7 +90,7 @@
                     @forelse($orders as $order)
                     <tr class="group hover:bg-muted/30 transition-colors">
                         <td class="px-6 py-4 font-mono font-medium text-foreground">
-                            {{ $order->order_number }}
+                            <a href="{{ route('tenant.orders.show', $order) }}" class="font-semibold text-primary hover:underline">{{ $order->order_number }}</a>
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
@@ -97,7 +98,7 @@
                                     {{ substr($order->customer->first_name ?? 'G', 0, 1) }}{{ substr($order->customer->last_name ?? '', 0, 1) }}
                                 </div>
                                 <div class="flex flex-col">
-                                    <span class="font-medium text-foreground">{{ $order->customer->first_name ?? 'Guest' }} {{ $order->customer->last_name ?? '' }}</span>
+                                    <a href="{{ $order->customer_id ? route('tenant.customers.show', $order->customer_id) : '#' }}" class="font-medium text-foreground hover:text-primary hover:underline transition-colors">{{ $order->customer->first_name ?? 'Guest' }} {{ $order->customer->last_name ?? '' }}</a>
                                     <span class="text-[10px] text-muted-foreground">{{ $order->warehouse->name ?? 'Default' }}</span>
                                 </div>
                             </div>

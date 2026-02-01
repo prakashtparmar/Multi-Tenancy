@@ -124,11 +124,11 @@
                             </td>
                             <td class="p-6 align-middle">
                                 <div class="flex flex-col space-y-0.5">
-                                    <span class="font-semibold text-foreground text-sm tracking-tight">#{{ $order->order_number }}</span>
+                                    <a href="{{ route('central.orders.show', $order) }}" class="font-semibold text-primary hover:underline text-sm tracking-tight">#{{ $order->order_number }}</a>
                                 </div>
                             </td>
                             <td class="p-6 align-middle">
-                                <span class="text-sm">{{ $order->customer->name ?? 'Guest' }}</span>
+                                <a href="{{ $order->customer_id ? route('central.customers.show', $order->customer_id) : '#' }}" class="text-sm font-medium hover:text-primary hover:underline transition-colors">{{ $order->customer->name ?? 'Guest' }}</a>
                             </td>
                             <td class="p-6 align-middle">
                                 <span class="text-xs text-muted-foreground font-medium">{{ $order->creator->name ?? 'System' }}</span>
