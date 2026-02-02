@@ -12,6 +12,9 @@ use App\Models\Product;
 use App\Models\OrderItem;
 use App\Models\InventoryStock;
 use App\Models\InventoryMovement;
+use App\Exports\OrdersExport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -80,8 +83,14 @@ class OrderController extends Controller
                 $subTotalAmount = 0;
                 $itemDiscountsTotal = 0;
 
+                $productIds = collect($validated['items'])->pluck('product_id');
+                $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+
                 $preparedItems = [];
                 foreach ($validated['items'] as $item) {
+                     $product = $products[$item['product_id']] ?? null;
+                     if (!$product) throw new Exception("Product #{$item['product_id']} not found.");
+
                     $itemBasePrice = $item['quantity'] * $item['price'];
                     $itemDiscount = 0;
                     $itemDiscountValue = $item['discount_value'] ?? 0;
@@ -98,6 +107,8 @@ class OrderController extends Controller
 
                     $preparedItems[] = array_merge($item, [
                         'discount_amount' => $itemDiscount,
+                        'product_name' => $product->name,
+                        'sku' => $product->sku
                     ]);
                 }
 
@@ -180,7 +191,7 @@ class OrderController extends Controller
     {
         $this->authorize('orders view');
         
-        $order->load(['customer', 'warehouse', 'items.product', 'invoices', 'shipments']);
+        $order->load(['customer', 'warehouse', 'items.product', 'invoices', 'shipments', 'billingAddress', 'shippingAddress']);
         return view('tenant.orders.show', compact('order'));
     }
 
@@ -249,8 +260,14 @@ class OrderController extends Controller
                 $subTotalAmount = 0;
                 $itemDiscountsTotal = 0;
                 $preparedItems = [];
+                
+                $productIds = collect($validated['items'])->pluck('product_id');
+                $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
                  foreach ($validated['items'] as $item) {
+                     $product = $products[$item['product_id']] ?? null;
+                     if (!$product) throw new Exception("Product #{$item['product_id']} not found.");
+
                     $itemBasePrice = $item['quantity'] * $item['price'];
                     $itemDiscount = 0;
                     $itemDiscountValue = $item['discount_value'] ?? 0;
@@ -267,6 +284,8 @@ class OrderController extends Controller
 
                     $preparedItems[] = array_merge($item, [
                         'discount_amount' => $itemDiscount,
+                        'product_name' => $product->name,
+                        'sku' => $product->sku
                     ]);
                 }
 
@@ -308,6 +327,8 @@ class OrderController extends Controller
                         'discount_value' => $item['discount_value'] ?? 0,
                         'discount_amount' => $item['discount_amount'],
                         'total_price' => $item['quantity'] * $item['price'],
+                        'product_name' => $item['product_name'],
+                        'sku' => $item['sku']
                     ]);
 
                     // Update Inventory
@@ -326,6 +347,97 @@ class OrderController extends Controller
             });
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Failed to update order: ' . $e->getMessage());
+        }
+    }
+
+    public function updateStatus(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorize('orders manage');
+        
+        $validated = $request->validate([
+            'status' => 'required|in:pending,confirmed,shipped,delivered,cancelled,returned',
+            'tracking_number' => 'nullable|string|required_if:status,shipped',
+            'carrier' => 'nullable|string|required_if:status,shipped',
+            'payment_status' => 'nullable|in:unpaid,paid,partial,refunded'
+        ]);
+
+        $order->status = $validated['status'];
+        
+        if (isset($validated['payment_status'])) {
+            $order->payment_status = $validated['payment_status'];
+        }
+
+        if ($validated['status'] === 'shipped') {
+             $order->shipping_status = 'shipped';
+             // Create Shipment Record
+             $order->shipments()->create([
+                 'warehouse_id' => $order->warehouse_id,
+                 'tracking_number' => $validated['tracking_number'],
+                 'carrier' => $validated['carrier'],
+                 'status' => 'shipped',
+                 'shipped_at' => now(),
+             ]);
+        }
+        
+        if ($validated['status'] === 'delivered') {
+             $order->shipping_status = 'delivered';
+             $order->completed_by = auth()->id();
+        }
+
+        if ($validated['status'] === 'cancelled') {
+             $order->cancelled_at = now();
+             $order->cancelled_by = auth()->id();
+             // TODO: Restore inventory logic here if needed
+        }
+
+        $order->save();
+
+        return back()->with('success', 'Order status updated.');
+    }
+
+    public function downloadInvoice(Order $order)
+    {
+        try {
+            $this->authorize('orders view');
+            $order->load(['items.product', 'customer', 'billingAddress', 'shippingAddress']);
+            
+            $pdf = Pdf::loadView('tenant.invoices.print', compact('order'));
+            return $pdf->download("invoice-{$order->order_number}.pdf");
+        } catch (\Exception $e) {
+            \Log::error("Tenant PDF Error (Invoice): " . $e->getMessage());
+            return back()->with('error', 'Could not generate PDF: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadReceipt(Order $order)
+    {
+        try {
+            $this->authorize('orders view');
+            $order->load(['items.product', 'customer']);
+            
+            $pdf = Pdf::loadView('tenant.receipts.cod', compact('order'))
+                      ->setPaper([0, 0, 226, 600]); // 80mm width for thermal
+            
+            return $pdf->download("receipt-{$order->order_number}.pdf");
+        } catch (\Exception $e) {
+            \Log::error("Tenant PDF Error (Receipt): " . $e->getMessage());
+            return back()->with('error', 'Could not generate PDF: ' . $e->getMessage());
+        }
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorize('orders view');
+        $format = $request->input('format', 'csv');
+        $filename = "tenant-orders-" . date('Y-m-d');
+
+        switch ($format) {
+            case 'xlsx':
+                return Excel::download(new OrdersExport, "{$filename}.xlsx");
+            case 'pdf':
+                return Excel::download(new OrdersExport, "{$filename}.pdf", \Maatwebsite\Excel\Excel::DOMPDF);
+            default:
+                return Excel::download(new OrdersExport, "{$filename}.csv");
         }
     }
 }

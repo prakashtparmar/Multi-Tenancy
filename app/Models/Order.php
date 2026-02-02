@@ -62,6 +62,16 @@ class Order extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function billingAddress()
+    {
+        return $this->belongsTo(CustomerAddress::class, 'billing_address_id');
+    }
+
+    public function shippingAddress()
+    {
+        return $this->belongsTo(CustomerAddress::class, 'shipping_address_id');
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');

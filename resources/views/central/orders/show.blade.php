@@ -47,6 +47,14 @@
                 <x-ui.button variant="outline" href="{{ route('central.orders.edit', $order) }}">
                     Edit Order
                 </x-ui.button>
+                <div class="flex gap-2 ml-2 border-l pl-4 border-border/50">
+                    <x-ui.button variant="secondary" href="{{ route('central.orders.invoice', $order) }}" target="_blank" title="Print Invoice">
+                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    </x-ui.button>
+                    <x-ui.button variant="secondary" href="{{ route('central.orders.receipt', $order) }}" target="_blank" title="Print Receipt">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </x-ui.button>
+                </div>
             </div>
         </div>
 
@@ -56,6 +64,10 @@
                 @csrf
                 <input type="hidden" name="action" value="ship">
                 <h3 class="text-lg font-bold">Ship Order</h3>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Courier / Carrier</label>
+                    <input type="text" name="carrier" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="e.g. FedEx">
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Tracking Number</label>
                     <input type="text" name="tracking_number" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
@@ -134,8 +146,8 @@
                             <a href="mailto:{{ $order->customer->email }}" class="text-primary hover:underline text-right truncate max-w-[150px]">{{ $order->customer->email }}</a>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-muted-foreground">Phone</span>
-                            <span class="text-right">{{ $order->customer->phone ?? 'N/A' }}</span>
+                            <span class="text-muted-foreground">Mobile</span>
+                            <span class="text-right">{{ $order->customer->mobile ?? 'N/A' }}</span>
                         </div>
                     </div>
                 </div>
@@ -226,7 +238,7 @@
                             <div>
                                 <p class="font-bold">Created</p>
                                 <p class="text-muted-foreground">{{ $order->created_at->format('M d, Y h:i A') }}</p>
-                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->creator->name ?? 'System' }}</span></p>
+                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->creator?->name ?? 'System' }}</span></p>
                             </div>
                         </div>
 
@@ -236,7 +248,7 @@
                             <div>
                                 <p class="font-bold">Last Updated</p>
                                 <p class="text-muted-foreground">{{ $order->updated_at->format('M d, Y h:i A') }}</p>
-                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->updater->name ?? 'System' }}</span></p>
+                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->updater?->name ?? 'System' }}</span></p>
                             </div>
                         </div>
                         @endif
@@ -247,7 +259,7 @@
                             <div>
                                 <p class="font-bold text-red-600">Cancelled</p>
                                 <p class="text-muted-foreground">{{ $order->cancelled_at ? $order->cancelled_at->format('M d, Y h:i A') : $order->updated_at->format('M d, Y h:i A') }}</p>
-                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->canceller->name ?? 'System' }}</span></p>
+                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->canceller?->name ?? 'System' }}</span></p>
                             </div>
                         </div>
                         @endif
@@ -258,7 +270,7 @@
                             <div>
                                 <p class="font-bold text-primary">Completed</p>
                                 <p class="text-muted-foreground">{{ $order->updated_at->format('M d, Y h:i A') }}</p>
-                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->completer->name ?? 'System' }}</span></p>
+                                <p class="mt-0.5"><span class="text-muted-foreground">By:</span> <span class="font-medium text-foreground">{{ $order->completer?->name ?? 'System' }}</span></p>
                             </div>
                         </div>
                         @endif

@@ -89,6 +89,9 @@ Route::middleware('auth')->group(function () {
     Route::get('api/search/products', [\App\Http\Controllers\Central\SearchController::class, 'products'])->name('central.api.search.products');
 
     Route::post('orders/{order}/update-status', [\App\Http\Controllers\Central\OrderController::class, 'updateStatus'])->name('central.orders.update-status');
+    Route::get('orders/{order}/invoice', [\App\Http\Controllers\Central\OrderController::class, 'downloadInvoice'])->name('central.orders.invoice');
+    Route::get('orders/{order}/receipt', [\App\Http\Controllers\Central\OrderController::class, 'downloadReceipt'])->name('central.orders.receipt');
+    Route::post('orders/export', [\App\Http\Controllers\Central\OrderController::class, 'export'])->name('central.orders.export');
     Route::resource('orders', \App\Http\Controllers\Central\OrderController::class)->names('central.orders');
 
     // Inventory Management

@@ -66,11 +66,19 @@
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Search orders..." class="flex h-10 w-full rounded-xl border border-input bg-background/50 pl-9 pr-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50 transition-all">
             </form>
 
-            <div class="flex items-center gap-2">
-                 <button class="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-accent transition-colors">
+            <div class="flex items-center gap-2" x-data="{ open: false }">
+                 <button @click="open = !open" class="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-accent transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                     Export
                  </button>
+                 <div x-show="open" @click.away="open = false" class="absolute right-0 mt-32 w-48 rounded-xl border border-border bg-popover p-1 shadow-xl z-50">
+                    <form action="{{ route('tenant.orders.export') }}" method="POST">
+                        @csrf
+                        <button name="format" value="csv" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-accent transition-colors">Export CSV</button>
+                        <button name="format" value="xlsx" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-accent transition-colors">Export Excel (.xlsx)</button>
+                        <button name="format" value="pdf" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-accent transition-colors">Export PDF</button>
+                    </form>
+                 </div>
             </div>
         </div>
 
@@ -134,9 +142,22 @@
                                 <a href="{{ route('tenant.orders.show', $order) }}" class="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                                 </a>
-                                <button class="p-2 rounded-lg hover:bg-accent text-muted-foreground transition-all">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                                </button>
+                                <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                                    <button @click="open = !open" class="p-2 rounded-lg hover:bg-accent text-muted-foreground transition-all">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                    </button>
+                                    <div x-show="open" class="absolute right-0 top-10 z-50 min-w-[160px] bg-white border border-border rounded-lg shadow-xl p-1" style="display: none;">
+                                        <a href="{{ route('tenant.orders.invoice', $order) }}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                                            Print Invoice
+                                        </a>
+                                        <a href="{{ route('tenant.orders.receipt', $order) }}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                                            Print Receipt
+                                        </a>
+                                        <a href="{{ route('tenant.orders.edit', $order) }}" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md border-t pt-2 mt-1">
+                                            Edit Order
+                                        </a>
+                                    </div>
+                                </div>
                              </div>
                         </td>
                     </tr>

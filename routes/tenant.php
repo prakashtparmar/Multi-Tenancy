@@ -79,6 +79,10 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     Route::resource('collections', \App\Http\Controllers\Tenant\CollectionController::class)->names('tenant.collections');
     Route::resource('warehouses', \App\Http\Controllers\Tenant\WarehouseController::class)->names('tenant.warehouses');
     Route::resource('suppliers', \App\Http\Controllers\Tenant\SupplierController::class)->names('tenant.suppliers');
+    Route::post('orders/{order}/status', [\App\Http\Controllers\Tenant\OrderController::class, 'updateStatus'])->name('tenant.orders.status');
+    Route::get('orders/{order}/invoice', [\App\Http\Controllers\Tenant\OrderController::class, 'downloadInvoice'])->name('tenant.orders.invoice');
+    Route::get('orders/{order}/receipt', [\App\Http\Controllers\Tenant\OrderController::class, 'downloadReceipt'])->name('tenant.orders.receipt');
+    Route::post('orders/export', [\App\Http\Controllers\Tenant\OrderController::class, 'export'])->name('tenant.orders.export');
     Route::resource('orders', \App\Http\Controllers\Tenant\OrderController::class)->names('tenant.orders');
 
     // Inventory Management

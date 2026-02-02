@@ -12,6 +12,9 @@ use App\Models\Product;
 use App\Models\InventoryStock;
 use App\Models\InventoryMovement;
 use App\Services\OrderService;
+use App\Exports\OrdersExport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -251,7 +254,7 @@ class OrderController extends Controller
     public function show(Order $order): View
     {
         $this->authorize('orders view');
-        return view('central.orders.show', ['order' => $order->load(['items', 'invoices', 'shipments', 'creator', 'updater', 'canceller', 'completer'])]);
+        return view('central.orders.show', ['order' => $order->load(['items', 'invoices', 'shipments', 'creator', 'updater', 'canceller', 'completer', 'billingAddress', 'shippingAddress'])]);
     }
 
     /**
@@ -270,7 +273,7 @@ class OrderController extends Controller
                     $this->orderService->confirmOrder($order);
                     break;
                 case 'ship':
-                    $this->orderService->shipOrder($order, (string) $request->input('tracking_number'));
+                    $this->orderService->shipOrder($order, (string) $request->input('tracking_number'), (string) $request->input('carrier'));
                     break;
                 case 'deliver':
                     $this->orderService->deliverOrder($order);
@@ -485,6 +488,52 @@ class OrderController extends Controller
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
             }
             return back()->withInput()->with('error', 'Error updating order: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadInvoice(Order $order)
+    {
+        try {
+            $this->authorize('orders view');
+            $order->load(['items.product', 'customer', 'billingAddress', 'shippingAddress']);
+            
+            $pdf = Pdf::loadView('central.invoices.print', compact('order'));
+            return $pdf->download("invoice-{$order->order_number}.pdf");
+        } catch (\Exception $e) {
+            \Log::error("PDF Generation Error (Invoice): " . $e->getMessage());
+            return back()->with('error', 'Could not generate PDF: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadReceipt(Order $order)
+    {
+        try {
+            $this->authorize('orders view');
+            $order->load(['items.product', 'customer']);
+            
+            $pdf = Pdf::loadView('central.receipts.cod', compact('order'))
+                      ->setPaper([0, 0, 226, 600]); // 80mm width for thermal
+            
+            return $pdf->download("receipt-{$order->order_number}.pdf");
+        } catch (\Exception $e) {
+            \Log::error("PDF Generation Error (Receipt): " . $e->getMessage());
+            return back()->with('error', 'Could not generate PDF: ' . $e->getMessage());
+        }
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorize('orders view');
+        $format = $request->input('format', 'csv');
+        $filename = "orders-" . date('Y-m-d');
+
+        switch ($format) {
+            case 'xlsx':
+                return Excel::download(new OrdersExport, "{$filename}.xlsx");
+            case 'pdf':
+                return Excel::download(new OrdersExport, "{$filename}.pdf", \Maatwebsite\Excel\Excel::DOMPDF);
+            default:
+                return Excel::download(new OrdersExport, "{$filename}.csv");
         }
     }
 }

@@ -53,12 +53,29 @@
                 </form>
             </div>
     
-            <a href="{{ route('central.orders.create', ['reset' => 1]) }}" 
-               onclick="localStorage.removeItem('order_wizard_state')"
-               class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                <span>Create Order</span>
-            </a>
+            <div class="flex items-center gap-2">
+                <div x-data="{ open: false }" class="relative">
+                    <x-ui.button variant="outline" @click="open = !open" class="gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Export
+                    </x-ui.button>
+                    <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 rounded-xl border border-border bg-popover p-1 shadow-xl z-50">
+                        <form action="{{ route('central.orders.export') }}" method="POST">
+                            @csrf
+                            <button name="format" value="csv" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-accent transition-colors">Export CSV</button>
+                            <button name="format" value="xlsx" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-accent transition-colors">Export Excel (.xlsx)</button>
+                            <button name="format" value="pdf" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-accent transition-colors">Export PDF</button>
+                        </form>
+                    </div>
+                </div>
+
+                <a href="{{ route('central.orders.create', ['reset' => 1]) }}" 
+                   onclick="localStorage.removeItem('order_wizard_state')"
+                   class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <span>Create Order</span>
+                </a>
+            </div>
         </div>
     
         <div class="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-xl shadow-sm overflow-hidden relative">
@@ -187,6 +204,13 @@
                                         </a>
                                         <a href="{{ route('central.orders.edit', $order) }}" class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
                                             Edit Order
+                                        </a>
+                                        <div class="h-px bg-border/50 my-1"></div>
+                                        <a href="{{ route('central.orders.invoice', $order) }}" target="_blank" class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
+                                            Print Invoice
+                                        </a>
+                                        <a href="{{ route('central.orders.receipt', $order) }}" target="_blank" class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
+                                            Print Receipt
                                         </a>
                                     </div>
                                  </div>

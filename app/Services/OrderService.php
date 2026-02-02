@@ -54,13 +54,13 @@ class OrderService
     /**
      * Ship an order and deduct physical stock.
      */
-    public function shipOrder(Order $order, ?string $trackingNumber = null): Order
+    public function shipOrder(Order $order, ?string $trackingNumber = null, ?string $carrier = null): Order
     {
         if ($order->status !== 'processing') {
             throw new Exception("Order must be processing to be shipped.");
         }
 
-        return DB::transaction(function () use ($order, $trackingNumber) {
+        return DB::transaction(function () use ($order, $trackingNumber, $carrier) {
             foreach ($order->items as $item) {
                 $stock = InventoryStock::where('product_id', $item->product_id)
                     ->where('warehouse_id', $order->warehouse_id)
@@ -90,6 +90,7 @@ class OrderService
             $order->shipments()->create([
                 'warehouse_id' => $order->warehouse_id,
                 'tracking_number' => $trackingNumber,
+                'carrier' => $carrier,
                 'status' => 'shipped',
                 'shipped_at' => now(),
             ]);
