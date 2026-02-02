@@ -142,6 +142,9 @@
                             <td class="p-6 align-middle">
                                 <div class="flex flex-col space-y-0.5">
                                     <a href="{{ route('central.orders.show', $order) }}" class="font-semibold text-primary hover:underline text-sm tracking-tight">#{{ $order->order_number }}</a>
+                                    @if($order->shipping_status === 'shipped' && $order->shipments->isNotEmpty())
+                                        <span class="text-[10px] font-mono text-muted-foreground/80 tracking-tighter" title="Tracking ID">{{ $order->shipments->first()->tracking_number }}</span>
+                                    @endif
                                 </div>
                             </td>
                             <td class="p-6 align-middle">
@@ -202,9 +205,17 @@
                                         <a href="{{ route('central.orders.show', $order) }}" class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
                                             View Details
                                         </a>
-                                        <a href="{{ route('central.orders.edit', $order) }}" class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
-                                            Edit Order
-                                        </a>
+                                        @if(!in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned']))
+                                            <a href="{{ route('central.orders.edit', $order) }}" class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
+                                                Edit Order
+                                            </a>
+                                        @endif
+
+                                        @if(in_array($order->status, ['completed', 'delivered']))
+                                            <a href="{{ route('central.returns.create', ['order_id' => $order->id]) }}" class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-orange-500/10 hover:text-orange-600">
+                                                Request Return
+                                            </a>
+                                        @endif
                                         <div class="h-px bg-border/50 my-1"></div>
                                         <a href="{{ route('central.orders.invoice', $order) }}" target="_blank" class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
                                             Print Invoice

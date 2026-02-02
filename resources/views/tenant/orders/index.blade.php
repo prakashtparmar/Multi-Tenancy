@@ -99,6 +99,9 @@
                     <tr class="group hover:bg-muted/30 transition-colors">
                         <td class="px-6 py-4 font-mono font-medium text-foreground">
                             <a href="{{ route('tenant.orders.show', $order) }}" class="font-semibold text-primary hover:underline">{{ $order->order_number }}</a>
+                            @if($order->status === 'shipped' && $order->shipments->isNotEmpty())
+                                <div class="text-[10px] font-mono text-muted-foreground/80 tracking-tighter" title="Tracking ID">{{ $order->shipments->first()->tracking_number }}</div>
+                            @endif
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
@@ -153,9 +156,17 @@
                                         <a href="{{ route('tenant.orders.receipt', $order) }}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
                                             Print Receipt
                                         </a>
-                                        <a href="{{ route('tenant.orders.edit', $order) }}" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md border-t pt-2 mt-1">
-                                            Edit Order
-                                        </a>
+                                        @if(!in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned']))
+                                            <a href="{{ route('tenant.orders.edit', $order) }}" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md border-t pt-2 mt-1">
+                                                Edit Order
+                                            </a>
+                                        @endif
+                                        
+                                        @if(in_array($order->status, ['completed', 'delivered']))
+                                            <a href="{{ route('tenant.returns.create', ['order_id' => $order->id]) }}" class="flex items-center gap-2 px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 rounded-md border-t pt-2 mt-1">
+                                                Request Return
+                                            </a>
+                                        @endif
                                     </div>
                                 </div>
                              </div>

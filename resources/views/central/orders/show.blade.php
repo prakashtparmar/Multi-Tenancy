@@ -44,9 +44,17 @@
                     </form>
                 @endif
 
-                <x-ui.button variant="outline" href="{{ route('central.orders.edit', $order) }}">
-                    Edit Order
-                </x-ui.button>
+                @if(!in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned']))
+                    <x-ui.button variant="outline" href="{{ route('central.orders.edit', $order) }}">
+                        Edit Order
+                    </x-ui.button>
+                @endif
+
+                @if(in_array($order->status, ['completed', 'delivered']))
+                     <x-ui.button variant="outline" class="border-orange-500/50 text-orange-600 hover:bg-orange-50" href="{{ route('central.returns.create', ['order_id' => $order->id]) }}">
+                        Request Return
+                    </x-ui.button>
+                @endif
                 <div class="flex gap-2 ml-2 border-l pl-4 border-border/50">
                     <x-ui.button variant="secondary" href="{{ route('central.orders.invoice', $order) }}" target="_blank" title="Print Invoice">
                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
@@ -56,6 +64,83 @@
                     </x-ui.button>
                 </div>
             </div>
+        </div>
+
+        <!-- Order Progress Stepper -->
+        <div class="mb-8 rounded-xl border border-border bg-card p-8 shadow-sm">
+            <div class="relative">
+                <div class="absolute left-0 top-1/2 -mt-0.5 w-full h-1 bg-muted rounded-full z-0"></div>
+                <div class="relative z-10 flex justify-between w-full">
+                    
+                    <!-- Step 1: Placed -->
+                    @php $isPlaced = true; @endphp
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm bg-primary text-primary-foreground shadow-lg ring-4 ring-card">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <span class="text-sm font-medium">Placed</span>
+                        <span class="text-xs text-muted-foreground">{{ $order->created_at->format('M d') }}</span>
+                    </div>
+
+                    <!-- Step 2: Confirmed/Processing -->
+                    @php 
+                        $isConfirmed = in_array($order->status, ['processing', 'shipped', 'completed']);
+                        $isCurrent = $order->status === 'processing';
+                    @endphp
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm {{ $isConfirmed ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground' }} shadow-lg ring-4 ring-card transition-colors duration-500">
+                             @if($isConfirmed) <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> @else 2 @endif
+                        </div>
+                        <span class="text-sm font-medium {{ $isConfirmed ? 'text-foreground' : 'text-muted-foreground' }}">Processing</span>
+                    </div>
+
+                    <!-- Step 3: Shipped -->
+                    @php 
+                        $isShipped = in_array($order->status, ['shipped', 'completed']);
+                    @endphp
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm {{ $isShipped ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground' }} shadow-lg ring-4 ring-card transition-colors duration-500">
+                             @if($isShipped) <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> @else 3 @endif
+                        </div>
+                        <span class="text-sm font-medium {{ $isShipped ? 'text-foreground' : 'text-muted-foreground' }}">Shipped</span>
+                        @if($isShipped && $order->shipments->isNotEmpty())
+                            <span class="text-xs text-muted-foreground">{{ $order->shipments->first()->shipped_at ? $order->shipments->first()->shipped_at->format('M d') : '' }}</span>
+                        @endif
+                    </div>
+
+                     <!-- Step 4: Delivered -->
+                     @php 
+                        $isDelivered = $order->status === 'completed';
+                    @endphp
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm {{ $isDelivered ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground' }} shadow-lg ring-4 ring-card transition-colors duration-500">
+                             @if($isDelivered) <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> @else 4 @endif
+                        </div>
+                        <span class="text-sm font-medium {{ $isDelivered ? 'text-foreground' : 'text-muted-foreground' }}">Delivered</span>
+                    </div>
+
+                </div>
+                 <!-- Progress Bar Fill -->
+                 <div class="absolute left-0 top-1/2 -mt-0.5 h-1 bg-primary rounded-full z-0 transition-all duration-1000 ease-out" style="width: {{ $order->status === 'completed' ? '100%' : ($order->status === 'shipped' ? '66%' : ($order->status === 'processing' ? '33%' : '0%')) }}"></div>
+            </div>
+
+            <!-- Tracking Info Display -->
+            @if($order->shipments->isNotEmpty())
+                <div class="mt-8 p-4 bg-muted/30 rounded-lg border border-border/50 flex flex-wrap gap-6 items-center">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Carrier</span>
+                        <p class="font-medium">{{ $order->shipments->first()->carrier ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tracking Number</span>
+                        <p class="font-mono font-medium text-primary">{{ $order->shipments->first()->tracking_number ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                         <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Shipped Date</span>
+                        <p class="font-medium">{{ $order->shipments->first()->shipped_at ? $order->shipments->first()->shipped_at->format('M d, Y') : 'N/A' }}</p>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <!-- Ship Dialog -->

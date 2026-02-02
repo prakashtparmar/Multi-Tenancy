@@ -47,7 +47,14 @@ class OrderController extends Controller
     {
         $this->authorize('orders manage');
         
-        $customers = Customer::all();
+        $activeCustomerId = session('active_customer_id');
+
+        if ($activeCustomerId) {
+            $customers = Customer::with('addresses')->where('id', $activeCustomerId)->get();
+        } else {
+            $customers = Customer::with('addresses')->get();
+        }
+        
         $warehouses = Warehouse::where('is_active', true)->get();
         
         return view('tenant.orders.create', compact('customers', 'warehouses'));
@@ -72,10 +79,12 @@ class OrderController extends Controller
             'items.*.price' => 'required|numeric|min:0',
             'items.*.discount_type' => 'nullable|string|in:fixed,percent',
             'items.*.discount_value' => 'nullable|numeric|min:0',
-            'billing_address_id' => 'nullable|integer',
-            'shipping_address_id' => 'nullable|integer',
+            'billing_address_id' => 'required|exists:customer_addresses,id',
+            'shipping_address_id' => 'nullable|exists:customer_addresses,id',
             'discount_type' => 'nullable|string|in:fixed,percent',
             'discount_value' => 'nullable|numeric|min:0',
+            'payment_method' => 'nullable|string',
+            'shipping_method' => 'nullable|string',
         ]);
 
         try {
@@ -140,7 +149,9 @@ class OrderController extends Controller
                     'scheduled_at' => $validated['scheduled_at'] ?? null,
                     'is_future_order' => $validated['is_future_order'] ?? false,
                     'billing_address_id' => $validated['billing_address_id'] ?? null,
-                    'shipping_address_id' => $validated['shipping_address_id'] ?? null,
+                    'shipping_address_id' => $validated['shipping_address_id'] ?? $validated['billing_address_id'],
+                    'payment_method' => $validated['payment_method'] ?? 'cash',
+                    'shipping_method' => $validated['shipping_method'] ?? 'standard',
                     'grand_total' => $grandTotal,
                 ]);
 
@@ -202,8 +213,8 @@ class OrderController extends Controller
     {
         $this->authorize('orders manage');
         
-        if ($order->status === 'completed' || $order->status === 'cancelled') {
-             return back()->with('error', 'Cannot edit completed or cancelled orders.');
+        if (in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned'])) {
+             return back()->with('error', 'Cannot edit orders that are already delivered, completed, cancelled, or returned.');
         }
 
         $order->load(['items.product']);
@@ -220,8 +231,8 @@ class OrderController extends Controller
     {
         $this->authorize('orders manage');
 
-        if ($order->status === 'completed' || $order->status === 'cancelled') {
-             return back()->with('error', 'Cannot edit completed or cancelled orders.');
+        if (in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned'])) {
+             return back()->with('error', 'Cannot edit orders that are already delivered, completed, cancelled, or returned.');
         }
 
         $validated = $request->validate([
@@ -231,12 +242,13 @@ class OrderController extends Controller
             'scheduled_at' => 'required_if:is_future_order,1|nullable|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:1',
+            'items.*.quantity' => 'required|numeric|min:0.001',
             'items.*.price' => 'required|numeric|min:0',
             'items.*.discount_type' => 'nullable|string|in:fixed,percent',
             'items.*.discount_value' => 'nullable|numeric|min:0',
             'discount_type' => 'nullable|string|in:fixed,percent',
             'discount_value' => 'nullable|numeric|min:0',
+            'order_status' => 'nullable|string'
         ]);
 
         try {
@@ -310,7 +322,7 @@ class OrderController extends Controller
                     'discount_amount' => $itemDiscountsTotal + $orderDiscountAmount,
                     'discount_type' => $orderDiscountType,
                     'discount_value' => $orderDiscountValue,
-                    'status' => ($validated['is_future_order'] ?? false) ? 'scheduled' : 'pending',
+                    'status' => $validated['order_status'] ?? $order->status,
                     'scheduled_at' => $validated['scheduled_at'] ?? null,
                     'is_future_order' => $validated['is_future_order'] ?? false,
                     'grand_total' => $grandTotal,

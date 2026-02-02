@@ -217,6 +217,7 @@
                              @php
                                 $primaryCrops = old('primary_crops', is_array($customer->crops) ? implode(',', $customer->crops['primary'] ?? []) : ($customer->crops['primary'] ?? ''));
                                 $secondaryCrops = old('secondary_crops', is_array($customer->crops) ? implode(',', $customer->crops['secondary'] ?? []) : ($customer->crops['secondary'] ?? ''));
+                                $tags = old('tags', is_array($customer->tags) ? implode(',', $customer->tags) : '');
                             @endphp
 
                              <div class="space-y-2 sm:col-span-2 lg:col-span-3">
@@ -236,6 +237,16 @@
                                       placeholder="Type crop & press Enter" />
                                 </div>
                                 <input type="hidden" name="secondary_crops" id="secondary-hidden" value="{{ $secondaryCrops }}">
+                             </div>
+
+                             <div class="space-y-2 sm:col-span-2 lg:col-span-3">
+                                <label class="text-sm font-medium leading-none text-foreground/80">Custom Tags / Labels</label>
+                                <div id="tags-box" class="flex flex-wrap gap-1 p-2 min-h-10 rounded-xl border border-input bg-background/50 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all shadow-sm">
+                                   <input id="tags-input" type="text"
+                                      class="flex-1 min-w-[120px] bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+                                      placeholder="Type tag & press Enter (e.g. High Value, Reliable)" />
+                                </div>
+                                <input type="hidden" name="tags" id="tags-hidden" value="{{ $tags }}">
                              </div>
                              
                              <div class="space-y-2">
@@ -413,6 +424,7 @@
 
    tagInput('primary-box', 'primary-input', 'primary-hidden');
    tagInput('secondary-box', 'secondary-input', 'secondary-hidden');
+   tagInput('tags-box', 'tags-input', 'tags-hidden');
 
    document.addEventListener('DOMContentLoaded', () => {
        const first = document.querySelector('input[name="first_name"]');

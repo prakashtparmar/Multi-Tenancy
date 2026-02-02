@@ -43,12 +43,7 @@
             
             <!-- Enterprise KPI Grid -->
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                @foreach([
-                    ['title' => 'Total Sales', 'value' => '$145,231.89', 'change' => '+12.5%', 'trend' => 'up', 'desc' => 'vs. previous 30 days', 'icon' => 'dollar-sign'],
-                    ['title' => 'Sessions', 'value' => '32,450', 'change' => '+6.2%', 'trend' => 'up', 'desc' => 'vs. previous 30 days', 'icon' => 'users'],
-                    ['title' => 'Returning Rate', 'value' => '24.8%', 'change' => '-1.3%', 'trend' => 'down', 'desc' => 'vs. previous 30 days', 'icon' => 'refresh-cw'],
-                    ['title' => 'Avg. Order Value', 'value' => '$84.32', 'change' => '+3.1%', 'trend' => 'up', 'desc' => 'vs. previous 30 days', 'icon' => 'shopping-cart'],
-                ] as $stat)
+                @foreach($stats as $stat)
                 <div class="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/20 hover:-translate-y-1">
                     <!-- Subtle Glow Effect -->
                     <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -115,10 +110,14 @@
                                  <div class="border-b border-border/30 w-full h-0"></div>
                              </div>
 
-                             @foreach([45, 62, 55, 85, 58, 78, 52, 98, 48, 88, 65, 92, 75, 82, 65, 85, 98, 108, 92, 115, 95, 85, 75, 65, 55, 68, 84, 91, 73, 88] as $index => $height)
-                                <div class="relative flex-1 group z-10" title="${{ number_format($height * 123, 2) }}">
+                             @php
+                                $maxVal = count($chartData) > 0 ? max($chartData) : 1;
+                                if ($maxVal == 0) $maxVal = 1;
+                             @endphp
+                             @foreach($chartData as $index => $value)
+                                <div class="relative flex-1 group z-10" title="Rs {{ number_format($value, 2) }}">
                                       <div class="w-full bg-gradient-to-t from-primary/60 to-primary rounded-t-sm opacity-80 group-hover:opacity-100 group-hover:to-primary group-hover:from-primary/80 transition-all duration-300 shadow-[0_0_15px_rgba(var(--primary),0.3)] hover:shadow-[0_0_20px_rgba(var(--primary),0.5)]" 
-                                           style="height: {{ $height * 0.7 }}%"></div>
+                                           style="height: {{ ($value / $maxVal) * 100 }}%"></div>
                                 </div>
                              @endforeach
                         </div>
@@ -200,26 +199,32 @@
                              <a href="#" class="text-xs font-medium text-primary hover:underline">View All</a>
                         </div>
                         <div class="divide-y divide-border/40">
-                            @foreach([
-                                ['id' => '#1024', 'customer' => 'Alex Smith', 'total' => '$124.00', 'status' => 'Paid', 'bg' => 'bg-emerald-500/10', 'text' => 'text-emerald-600', 'border' => 'border-emerald-500/20'],
-                                ['id' => '#1023', 'customer' => 'Jordan Lee', 'total' => '$54.50', 'status' => 'Pending', 'bg' => 'bg-amber-500/10', 'text' => 'text-amber-600', 'border' => 'border-amber-500/20'],
-                                ['id' => '#1022', 'customer' => 'Casey Jones', 'total' => '$210.00', 'status' => 'Paid', 'bg' => 'bg-emerald-500/10', 'text' => 'text-emerald-600', 'border' => 'border-emerald-500/20'],
-                                ['id' => '#1021', 'customer' => 'Taylor Swift', 'total' => '$89.99', 'status' => 'Fulfilled', 'bg' => 'bg-blue-500/10', 'text' => 'text-blue-600', 'border' => 'border-blue-500/20'],
-                            ] as $order)
-                            <div class="group p-4 px-5 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+                            @foreach($recentOrders as $order)
+                            <div @click="window.location.href='{{ tenant('id') ? route('tenant.orders.show', $order) : route('central.orders.show', $order) }}'"
+                                 class="group p-4 px-5 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
                                 <div class="flex items-center gap-3">
                                     <div class="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground border border-border">
-                                        {{ substr($order['customer'], 0, 1) }}
+                                        {{ substr($order->customer->name ?? 'G', 0, 1) }}
                                     </div>
                                     <div>
-                                        <p class="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{{ $order['customer'] }}</p>
-                                        <p class="text-xs text-muted-foreground">{{ $order['id'] }}</p>
+                                        <p class="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{{ $order->customer->name ?? 'Guest' }}</p>
+                                        <p class="text-xs text-muted-foreground">#{{ $order->order_number }}</p>
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-sm font-bold text-foreground">{{ $order['total'] }}</p>
-                                    <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium border {{ $order['bg'] }} {{ $order['text'] }} {{ $order['border'] }}">
-                                        {{ $order['status'] }}
+                                    <p class="text-sm font-bold text-foreground">Rs {{ number_format($order->grand_total, 2) }}</p>
+                                    @php
+                                        $statusBaseClasses = 'inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium border';
+                                        $statusMap = [
+                                            'completed' => 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+                                            'processing' => 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+                                            'cancelled' => 'bg-destructive/10 text-destructive border-destructive/20',
+                                            'pending' => 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+                                        ];
+                                        $statusClass = $statusMap[$order->status] ?? 'bg-muted text-muted-foreground border-border';
+                                    @endphp
+                                    <span class="{{ $statusBaseClasses }} {{ $statusClass }}">
+                                        {{ ucfirst($order->status) }}
                                     </span>
                                 </div>
                             </div>

@@ -1030,7 +1030,7 @@
                                         <span>Rs <span x-text="grandTotal.toFixed(2)"></span></span>
                                     </div>
                                     
-                                    <button type="submit" id="submitBtn" class="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold shadow-xl shadow-primary/30 hover:bg-primary/90 transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+                                    <button type="button" @click="submitOrder()" id="submitBtn" class="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold shadow-xl shadow-primary/30 hover:bg-primary/90 transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                         Place Order
                                     </button>
@@ -1355,7 +1355,8 @@
 
                     this.taggingLoading = true;
                     try {
-                        let res = await fetch(`{{ url('/api/customers') }}/${this.selectedCustomer.id}/interactions`, {
+                        let routeUrl = "{{ route('central.customers.interaction', ['customer' => 'CUSTOMER_ID']) }}";
+                        let res = await fetch(routeUrl.replace('CUSTOMER_ID', this.selectedCustomer.id), {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1365,6 +1366,7 @@
                                 outcome: this.tagOutcome,
                                 notes: this.tagNotes,
                                 type: 'order_dropped',
+                                close_session: true,
                                 metadata: {
                                     cart_items: this.cart,
                                     last_step: this.step

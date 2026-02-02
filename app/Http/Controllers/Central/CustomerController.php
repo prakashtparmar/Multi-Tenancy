@@ -70,8 +70,8 @@ class CustomerController extends Controller
         $data = $request->validated();
         
         $crops = [
-            'primary' => array_filter(array_map('trim', explode(',', $request->input('primary_crops', '')))),
-            'secondary' => array_filter(array_map('trim', explode(',', $request->input('secondary_crops', '')))),
+            'primary' => array_filter(array_map('trim', explode(',', $request->input('primary_crops') ?? ''))),
+            'secondary' => array_filter(array_map('trim', explode(',', $request->input('secondary_crops') ?? ''))),
         ];
         $data['crops'] = $crops;
 
@@ -79,8 +79,13 @@ class CustomerController extends Controller
             DB::transaction(function () use ($data, $request) {
                 $customer = Customer::create(collect($data)->except([
                     'address_line1', 'address_line2', 'village', 'taluka', 'district', 'state', 'pincode', 'country', 'post_office', 'latitude', 'longitude',
-                    'primary_crops', 'secondary_crops'
+                    'primary_crops', 'secondary_crops', 'tags'
                 ])->all());
+
+                if ($request->filled('tags')) {
+                    $customer->tags = array_filter(array_map('trim', explode(',', $request->tags)));
+                    $customer->save();
+                }
                 
                 // Create primary address
                 $customer->addresses()->create([
@@ -114,11 +119,20 @@ class CustomerController extends Controller
     {
         $this->authorize('customers view');
 
-        $customer->load(['addresses' => function ($q) {
-            $q->where('is_default', true);
-        }]);
+        $customer->loadCount(['orders', 'interactions']);
+        $customer->load(['addresses']);
 
-        return view('central.customers.show', compact('customer'));
+        $orders = $customer->orders()
+            ->with(['items.product', 'warehouse', 'addresses'])
+            ->latest()
+            ->paginate(10, ['*'], 'orders_page');
+
+        $interactions = $customer->interactions()
+            ->with('user')
+            ->latest()
+            ->paginate(10, ['*'], 'interactions_page');
+
+        return view('central.customers.show', compact('customer', 'orders', 'interactions'));
     }
 
     /**
@@ -157,8 +171,13 @@ class CustomerController extends Controller
             DB::transaction(function () use ($customer, $data, $request) {
                 $customer->update(collect($data)->except([
                     'address_line1', 'address_line2', 'village', 'taluka', 'district', 'state', 'pincode', 'country', 'post_office', 'latitude', 'longitude',
-                    'primary_crops', 'secondary_crops'
+                    'primary_crops', 'secondary_crops', 'tags'
                 ])->all());
+
+                if ($request->has('tags')) {
+                    $customer->tags = array_filter(array_map('trim', explode(',', $request->tags)));
+                    $customer->save();
+                }
 
                 // Update default address
                 $customer->addresses()->where('is_default', true)->update([
@@ -267,7 +286,8 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'outcome' => 'required|string',
             'notes' => 'nullable|string',
-            'type' => 'nullable|string'
+            'type' => 'nullable|string',
+            'close_session' => 'nullable|boolean'
         ]);
 
         $interaction = CustomerInteraction::create([
@@ -279,10 +299,15 @@ class CustomerController extends Controller
             'metadata' => $request->input('metadata', [])
         ]);
 
+        if ($request->boolean('close_session')) {
+            session()->forget('active_customer_id');
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Interaction tagged successfully.',
-            'interaction' => $interaction
+            'interaction' => $interaction,
+            'redirect' => route('central.customers.index')
         ]);
     }
 }

@@ -977,7 +977,7 @@
                                             <label class="block text-sm font-medium text-muted-foreground mb-2">Fulfillment Warehouse</label>
                                             <select name="warehouse_id" class="w-full rounded-lg border-border bg-background text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary py-2.5 transition-all" required>
                                                 @foreach($warehouses as $wh)
-                                                    <option value="{{ $wh->id }}">{{ $wh->name }} ({{ $wh->code }})</option>
+                                                    <option value="{{ $wh->id }}" {{ $orderData->warehouse_id == $wh->id ? 'selected' : '' }}>{{ $wh->name }} ({{ $wh->code }})</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -1179,13 +1179,7 @@
                     // Initialize from existingOrder if available
                     if (this.isEdit) {
                         this.selectedCustomer = existingOrder.customer;
-                        this.cart = existingOrder.items.map(item => {
-                            let p = initialProducts.find(prod => prod.id === item.product_id);
-                            return {
-                                product_id: item.product_id,
-                                name: item.product_name,
-                                sku: item.sku,
-                                price: parseFloat(item.unit_price),
+                        
                         this.order = { 
                             billing_address_id: existingOrder.billing_address_id, 
                             shipping_address_id: existingOrder.shipping_address_id, 
@@ -1196,16 +1190,20 @@
                             discount_value: parseFloat(existingOrder.discount_value || 0)
                         };
 
-                        this.cart = existingOrder.items.map(item => ({
-                            product_id: item.product_id,
-                            name: item.product_name,
-                            price: parseFloat(item.unit_price),
-                            image_url: item.product?.image_url || 'https://placehold.co/100x100?text=IMG',
-                            quantity: parseFloat(item.quantity),
-                            max_stock: 9999, // Should ideally fetch current stock
-                            discount_type: item.discount_type || 'fixed',
-                            discount_value: parseFloat(item.discount_value || 0)
-                        }));
+                        this.cart = existingOrder.items.map(item => {
+                            let p = initialProducts.find(prod => prod.id === item.product_id);
+                            let currentStock = p ? parseFloat(p.stock_on_hand) : 0;
+                            return {
+                                product_id: item.product_id,
+                                name: item.product_name,
+                                price: parseFloat(item.unit_price),
+                                image_url: item.product?.image_url || 'https://placehold.co/100x100?text=IMG',
+                                quantity: parseFloat(item.quantity),
+                                max_stock: currentStock + parseFloat(item.quantity),
+                                discount_type: item.discount_type || 'fixed',
+                                discount_value: parseFloat(item.discount_value || 0)
+                            };
+                        });
                         return; // Skip loading from localstorage for edit
                     }
 

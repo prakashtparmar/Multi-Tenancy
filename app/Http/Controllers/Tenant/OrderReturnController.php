@@ -34,12 +34,19 @@ class OrderReturnController extends Controller
     /**
      * Show the form for creating a new return.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->authorize('orders manage');
-        
+
+        $preSelectedOrderId = $request->query('order_id');
         $orders = Order::where('status', '!=', 'cancelled')->latest()->limit(50)->get();
-        return view('tenant.returns.create', compact('orders'));
+        
+        $preSelectedOrder = null;
+        if ($preSelectedOrderId) {
+            $preSelectedOrder = Order::with('items')->find($preSelectedOrderId);
+        }
+
+        return view('tenant.returns.create', compact('orders', 'preSelectedOrderId', 'preSelectedOrder'));
     }
 
     /**

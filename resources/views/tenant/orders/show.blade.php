@@ -23,7 +23,82 @@
                         </div>
                     </div>
 
-                    <h3 class="text-lg font-bold mb-4">Items</h3>
+                    <!-- Order Progress Stepper -->
+                    <div class="mb-10 p-6 bg-gray-50 rounded-xl border border-gray-100">
+                        <div class="relative flex justify-between items-center w-full">
+                            <div class="absolute left-0 top-5 w-full h-1 bg-gray-200 z-0"></div>
+                            <div class="absolute left-0 top-5 h-1 bg-blue-600 z-0 transition-all duration-1000" style="width: {{ $order->status === 'delivered' ? '100%' : ($order->status === 'shipped' ? '66%' : ($order->status === 'confirmed' || $order->status === 'processing' ? '33%' : '0%')) }}"></div>
+
+                            <!-- Step 1: Placed -->
+                            <div class="relative z-10 flex flex-col items-center">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600 text-white shadow-md ring-4 ring-white">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                                <span class="mt-2 text-xs font-bold text-gray-900">Placed</span>
+                                <span class="text-[10px] text-gray-500">{{ $order->created_at->format('M d') }}</span>
+                            </div>
+
+                            <!-- Step 2: Confirmed -->
+                            @php $isConfirmed = in_array($order->status, ['confirmed', 'processing', 'shipped', 'delivered', 'completed']); @endphp
+                            <div class="relative z-10 flex flex-col items-center">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center {{ $isConfirmed ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400' }} shadow-md ring-4 ring-white transition-colors duration-500">
+                                    @if($isConfirmed)
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    @else
+                                        <span class="text-sm font-bold">2</span>
+                                    @endif
+                                </div>
+                                <span class="mt-2 text-xs font-bold {{ $isConfirmed ? 'text-gray-900' : 'text-gray-400' }}">Confirmed</span>
+                            </div>
+
+                            <!-- Step 3: Shipped -->
+                            @php $isShipped = in_array($order->status, ['shipped', 'delivered', 'completed']); @endphp
+                            <div class="relative z-10 flex flex-col items-center">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center {{ $isShipped ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400' }} shadow-md ring-4 ring-white transition-colors duration-500">
+                                    @if($isShipped)
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    @else
+                                        <span class="text-sm font-bold">3</span>
+                                    @endif
+                                </div>
+                                <span class="mt-2 text-xs font-bold {{ $isShipped ? 'text-gray-900' : 'text-gray-400' }}">Shipped</span>
+                                @if($isShipped && $order->shipments->isNotEmpty())
+                                    <span class="text-[10px] text-gray-500">{{ $order->shipments->first()->shipped_at ? $order->shipments->first()->shipped_at->format('M d') : '' }}</span>
+                                @endif
+                            </div>
+
+                            <!-- Step 4: Delivered -->
+                            @php $isDelivered = in_array($order->status, ['delivered', 'completed', 'delivered']); @endphp
+                            <div class="relative z-10 flex flex-col items-center">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center {{ $isDelivered ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400' }} shadow-md ring-4 ring-white transition-colors duration-500">
+                                    @if($isDelivered)
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    @else
+                                        <span class="text-sm font-bold">4</span>
+                                    @endif
+                                </div>
+                                <span class="mt-2 text-xs font-bold {{ $isDelivered ? 'text-gray-900' : 'text-gray-400' }}">Delivered</span>
+                            </div>
+                        </div>
+
+                        <!-- Tracking Info Box -->
+                        @if($order->shipments->isNotEmpty())
+                            <div class="mt-10 p-4 bg-white rounded-lg border border-gray-200 flex flex-wrap gap-8 items-center shadow-sm">
+                                <div>
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Carrier</p>
+                                    <p class="text-sm font-bold text-gray-900">{{ $order->shipments->first()->carrier ?? 'N/A' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tracking ID</p>
+                                    <p class="text-sm font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{{ $order->shipments->first()->tracking_number ?? 'N/A' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Shipped At</p>
+                                    <p class="text-sm font-bold text-gray-900">{{ $order->shipments->first()->shipped_at ? $order->shipments->first()->shipped_at->format('M d, Y h:i A') : 'N/A' }}</p>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
                     <table class="min-w-full divide-y divide-gray-200 border mb-8">
                         <thead class="bg-gray-50">
                             <tr>
@@ -90,7 +165,17 @@
                     </table>
 
                     <div class="flex flex-wrap gap-4 mt-8" x-data="{ showShipModal: false }">
-                        <a href="{{ route('tenant.orders.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded shadow hover:bg-gray-600 transition">Back to List</a>
+                        <a href="{{ route('tenant.orders.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded shadow hover:bg-gray-600 transition text-sm">Back to List</a>
+                        
+                        @if(!in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned']))
+                            <a href="{{ route('tenant.orders.edit', $order) }}" class="bg-blue-800 text-white px-4 py-2 rounded shadow hover:bg-blue-900 transition text-sm">Edit Order</a>
+                        @endif
+
+                        @if(in_array($order->status, ['completed', 'delivered']))
+                             <a href="{{ route('tenant.returns.create', ['order_id' => $order->id]) }}" class="bg-orange-600 text-white px-4 py-2 rounded shadow hover:bg-orange-700 transition text-sm">
+                                Request Return
+                            </a>
+                        @endif
                         
                         <!-- Print Actions -->
                         <a href="{{ route('tenant.orders.invoice', $order) }}" target="_blank" class="bg-gray-800 text-white px-4 py-2 rounded shadow hover:bg-gray-900 transition flex items-center">

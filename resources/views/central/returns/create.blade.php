@@ -18,7 +18,8 @@
                             <option value="">Select Order</option>
                             @foreach($orders as $order)
                                 <option value="{{ $order->id }}" 
-                                    data-items="{{ json_encode($order->items) }}">
+                                    data-items="{{ json_encode($order->items) }}"
+                                    {{ (isset($preSelectedOrderId) && $preSelectedOrderId == $order->id) ? 'selected' : '' }}>
                                     Order #{{ $order->order_number }} - {{ $order->customer->first_name ?? 'Guest' }} ({{ $order->created_at->format('Y-m-d') }})
                                 </option>
                             @endforeach
@@ -81,16 +82,25 @@
 
     <script>
         function rmaForm() {
+            const initialItems = @json($preSelectedOrder ? $preSelectedOrder->items : []);
             return {
-                selectedOrder: '',
-                orderItems: [],
+                selectedOrder: '{{ $preSelectedOrderId ?? "" }}',
+                orderItems: initialItems,
+                init() {
+                    if (this.selectedOrder) {
+                        this.loadItems();
+                    }
+                },
                 loadItems() {
                     const select = document.querySelector('select[name="order_id"]');
+                    if (!select) return;
                     const option = select.options[select.selectedIndex];
                     if (option && option.dataset.items) {
                         this.orderItems = JSON.parse(option.dataset.items);
                     } else {
-                        this.orderItems = [];
+                        if (!this.orderItems.length) {
+                             this.orderItems = [];
+                        }
                     }
                 }
             }

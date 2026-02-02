@@ -21,7 +21,7 @@
     </div>
 
     <!-- Main Card -->
-    <div class="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-xl shadow-lg shadow-black/5 overflow-hidden" x-data="orderForm()">
+    <div class="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-xl shadow-lg shadow-black/5 overflow-hidden" x-data="orderForm({{ json_encode($customers->map(fn($c) => ['id' => $c->id, 'addresses' => $c->addresses])->values()) }})">
         
         <!-- Decoration Line -->
         <div class="h-1 w-full bg-gradient-to-r from-primary/20 via-primary/50 to-primary/20"></div>
@@ -58,7 +58,7 @@
                         <div class="grid gap-6 sm:grid-cols-2">
                             <div class="space-y-2">
                                 <label for="customer_id" class="text-sm font-medium leading-none text-foreground/80">Customer <span class="text-destructive">*</span></label>
-                                <select name="customer_id" id="customer_id" required class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+                                <select name="customer_id" id="customer_id" x-model="customerId" required class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
                                     <option value="">Select Customer</option>
                                     @foreach($customers as $customer)
                                     <option value="{{ $customer->id }}">{{ $customer->first_name }} {{ $customer->last_name }}</option>
@@ -85,6 +85,41 @@
                                     <input type="text" name="order_number" id="order_number" value="ORD-{{ strtoupper(Str::random(8)) }}" readonly class="flex h-10 w-full pl-9 rounded-xl border border-input bg-muted/50 px-3 py-2 text-sm text-muted-foreground ring-offset-background cursor-not-allowed">
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Address Section -->
+                        <div class="grid gap-6 sm:grid-cols-2 pt-4 border-t border-border/30" x-show="availableAddresses.length > 0" x-transition>
+                            <div class="space-y-2">
+                                <label for="billing_address_id" class="text-sm font-medium leading-none text-foreground/80">Billing Address <span class="text-destructive">*</span></label>
+                                <select name="billing_address_id" id="billing_address_id" x-model="billingAddressId" required class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+                                    <option value="">Select Address</option>
+                                    <template x-for="addr in availableAddresses" :key="addr.id">
+                                        <option :value="addr.id" x-text="addr.label || (addr.address_line1 + ', ' + (addr.city || addr.village))"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <label for="shipping_address_id" class="text-sm font-medium leading-none text-foreground/80">Shipping Address</label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" x-model="sameAsBilling" class="rounded border-primary text-primary focus:ring-primary/20">
+                                        <span class="text-xs text-muted-foreground">Same as Billing</span>
+                                    </label>
+                                </div>
+                                <select name="shipping_address_id" id="shipping_address_id" x-model="shippingAddressId" :disabled="sameAsBilling" class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm disabled:opacity-50">
+                                    <option value="">Select Address</option>
+                                    <template x-for="addr in availableAddresses" :key="addr.id">
+                                        <option :value="addr.id" x-text="addr.label || (addr.address_line1 + ', ' + (addr.city || addr.village))"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- No Address Warning -->
+                        <div x-show="customerId && availableAddresses.length === 0" class="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 text-sm" x-cloak>
+                            <p class="font-medium">Selected customer has no saved addresses.</p>
+                            <p class="text-xs opacity-90 mt-1">Please add an address to the customer profile before placing an order.</p>
                         </div>
 
                          <!-- Order Type Section -->
@@ -263,13 +298,37 @@
 </div>
 
 <script>
-    function orderForm() {
+    function orderForm(customersData = []) {
         return {
+            customers: customersData,
+            customerId: '',
+            billingAddressId: '',
+            shippingAddressId: '',
+            sameAsBilling: true,
+            availableAddresses: [],
+            
             items: [
                 { product_id: '', product_query: '', quantity: 1, price: 0, discount_type: 'fixed', discount_value: 0, searchResults: [] }
             ],
             orderDiscountType: 'fixed',
             orderDiscountValue: 0,
+            
+            init() {
+                this.$watch('customerId', (val) => {
+                    const cust = this.customers.find(c => c.id == val);
+                    this.availableAddresses = cust ? cust.addresses : [];
+                    
+                    // Auto-select default
+                    const def = this.availableAddresses.find(a => a.is_default);
+                    if (def) {
+                        this.billingAddressId = def.id;
+                    } else if (this.availableAddresses.length > 0) {
+                        this.billingAddressId = this.availableAddresses[0].id;
+                    } else {
+                        this.billingAddressId = '';
+                    }
+                });
+            },
             
             get subTotal() {
                 return this.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);

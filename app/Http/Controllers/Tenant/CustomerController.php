@@ -25,6 +25,14 @@ class CustomerController extends Controller
     {
         $this->authorize('customers view');
 
+        // Check for active customer session
+        $activeCustomerId = session('active_customer_id');
+
+        if ($activeCustomerId) {
+             return redirect()->route('tenant.customers.show', $activeCustomerId)
+                ->with('warning', 'You are currently locked to a customer profile. Please close the current profile to view the list.');
+        }
+
         $query = Customer::query();
 
         // Search Filter
@@ -69,8 +77,8 @@ class CustomerController extends Controller
         $data = $request->validated();
         
         $crops = [
-            'primary' => array_filter(array_map('trim', explode(',', $request->input('primary_crops', '')))),
-            'secondary' => array_filter(array_map('trim', explode(',', $request->input('secondary_crops', '')))),
+            'primary' => array_filter(array_map('trim', explode(',', $request->input('primary_crops') ?? ''))),
+            'secondary' => array_filter(array_map('trim', explode(',', $request->input('secondary_crops') ?? ''))),
         ];
         $data['crops'] = $crops;
 
@@ -78,8 +86,13 @@ class CustomerController extends Controller
             DB::transaction(function () use ($data, $request) {
                 $customer = Customer::create(collect($data)->except([
                     'address_line1', 'address_line2', 'village', 'taluka', 'district', 'state', 'pincode', 'country', 'post_office', 'latitude', 'longitude',
-                    'primary_crops', 'secondary_crops'
+                    'primary_crops', 'secondary_crops', 'tags'
                 ])->all());
+                
+                if ($request->filled('tags')) {
+                    $customer->tags = array_filter(array_map('trim', explode(',', $request->tags)));
+                    $customer->save();
+                }
                 
                 // Create primary address
                 $customer->addresses()->create([
@@ -113,11 +126,33 @@ class CustomerController extends Controller
     {
         $this->authorize('customers view');
 
-        $customer->load(['addresses' => function ($q) {
-            $q->where('is_default', true);
-        }]);
+        // Check for active customer session
+        $activeCustomerId = session('active_customer_id');
 
-        return view('tenant.customers.show', compact('customer'));
+        if ($activeCustomerId && $activeCustomerId != $customer->id) {
+            return redirect()->route('tenant.customers.show', $activeCustomerId)
+                ->with('warning', 'You are currently locked to a customer profile. Please close the current profile to switch.');
+        }
+
+        // Lock session to this customer
+        if (!$activeCustomerId) {
+            session(['active_customer_id' => $customer->id]);
+        }
+
+        $customer->loadCount(['orders', 'interactions']);
+        $customer->load(['addresses']);
+
+        $orders = $customer->orders()
+            ->with(['items.product', 'warehouse', 'addresses'])
+            ->latest()
+            ->paginate(10, ['*'], 'orders_page');
+
+        $interactions = $customer->interactions()
+            ->with('user')
+            ->latest()
+            ->paginate(10, ['*'], 'interactions_page');
+
+        return view('tenant.customers.show', compact('customer', 'orders', 'interactions'));
     }
 
     /**
@@ -156,8 +191,13 @@ class CustomerController extends Controller
             DB::transaction(function () use ($customer, $data, $request) {
                 $customer->update(collect($data)->except([
                     'address_line1', 'address_line2', 'village', 'taluka', 'district', 'state', 'pincode', 'country', 'post_office', 'latitude', 'longitude',
-                    'primary_crops', 'secondary_crops'
+                    'primary_crops', 'secondary_crops', 'tags'
                 ])->all());
+
+                if ($request->has('tags')) {
+                    $customer->tags = array_filter(array_map('trim', explode(',', $request->tags)));
+                    $customer->save();
+                }
 
                 // Update default address
                 $customer->addresses()->where('is_default', true)->update([
@@ -257,4 +297,37 @@ class CustomerController extends Controller
 
         return back()->with('success', $message);
     }
+
+    /**
+     * Store a customer interaction outcome.
+     */
+    public function storeInteraction(Request $request, Customer $customer)
+    {
+        $validated = $request->validate([
+            'outcome' => 'required|string',
+            'notes' => 'nullable|string',
+            'type' => 'nullable|string',
+            'close_session' => 'nullable|boolean'
+        ]);
+
+        $interaction = $customer->interactions()->create([
+            'user_id' => auth()->id(),
+            'type' => $validated['type'] ?? 'enquiry',
+            'outcome' => $validated['outcome'],
+            'notes' => $validated['notes'],
+            'metadata' => $request->input('metadata', [])
+        ]);
+
+        if ($request->boolean('close_session')) {
+            session()->forget('active_customer_id');
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Interaction logged successfully.',
+            'interaction' => $interaction,
+            'redirect' => route('tenant.customers.index')
+        ]);
+    }
 }
+

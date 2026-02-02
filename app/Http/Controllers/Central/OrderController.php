@@ -121,8 +121,8 @@ class OrderController extends Controller
             'items.*.price' => 'required|numeric|min:0',
             'items.*.discount_type' => 'nullable|string|in:fixed,percent',
             'items.*.discount_value' => 'nullable|numeric|min:0',
-            'billing_address_id' => 'nullable|integer',
-            'shipping_address_id' => 'nullable|integer',
+            'billing_address_id' => 'required|exists:customer_addresses,id',
+            'shipping_address_id' => 'nullable|exists:customer_addresses,id',
             'payment_method' => 'nullable|string',
             'shipping_method' => 'nullable|string',
             'discount_type' => 'nullable|string|in:fixed,percent',
@@ -184,7 +184,7 @@ class OrderController extends Controller
                     'scheduled_at' => $validated['scheduled_at'] ?? null,
                     'is_future_order' => $validated['is_future_order'] ?? false,
                     'billing_address_id' => $validated['billing_address_id'] ?? null,
-                    'shipping_address_id' => $validated['shipping_address_id'] ?? null,
+                    'shipping_address_id' => $validated['shipping_address_id'] ?? $validated['billing_address_id'],
                     'payment_method' => $validated['payment_method'] ?? 'cash',
                     'shipping_method' => $validated['shipping_method'] ?? 'standard',
                     'grand_total' => $grandTotal, 
@@ -296,6 +296,10 @@ class OrderController extends Controller
     public function edit(Order $order): View
     {
         $this->authorize('orders manage');
+
+        if (in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned'])) {
+            return back()->with('error', 'Cannot edit orders that are already delivered, completed, cancelled, or returned.');
+        }
         
         $products = Product::where('is_active', true)
             ->with(['stocks', 'images'])
@@ -330,6 +334,14 @@ class OrderController extends Controller
     public function update(Request $request, Order $order): JsonResponse|RedirectResponse
     {
         $this->authorize('orders manage');
+
+        if (in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned'])) {
+            $msg = 'Cannot update orders that are already delivered, completed, cancelled, or returned.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
+        }
 
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',

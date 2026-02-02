@@ -60,6 +60,7 @@ class UpdateCustomerRequest extends FormRequest
             'is_active' => 'nullable|boolean',
             'is_blacklisted' => 'nullable|boolean',
             'internal_notes' => 'nullable|string|max:1000',
+            'tags' => 'nullable|string',
         ];
     }
 }

@@ -35,9 +35,7 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     Route::get('/me', [AuthController::class, 'me'])->name('tenant.me');
 
     // Tenant Dashboard & UI
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('tenant.dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Tenant\DashboardController::class, 'index'])->name('tenant.dashboard');
 
     Route::get('/settings', function () {
         return view('settings');
@@ -53,6 +51,7 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     // CRM
     Route::post('customers/bulk', [\App\Http\Controllers\Tenant\CustomerController::class, 'bulk'])->name('tenant.customers.bulk');
     Route::post('customers/{id}/restore', [\App\Http\Controllers\Tenant\CustomerController::class, 'restore'])->name('tenant.customers.restore');
+    Route::post('customers/{customer}/interaction', [\App\Http\Controllers\Tenant\CustomerController::class, 'storeInteraction'])->name('tenant.customers.interaction');
     Route::resource('customers', \App\Http\Controllers\Tenant\CustomerController::class)->names('tenant.customers');
 
     // Enterprise Modules

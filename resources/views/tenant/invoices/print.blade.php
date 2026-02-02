@@ -45,6 +45,9 @@
             <h1>INVOICE</h1>
             <p><strong>Invoice No:</strong> #INV-{{ $order->id }}</p>
             <p><strong>Order No:</strong> {{ $order->order_number }}</p>
+            @if($order->status === 'shipped' && $order->shipments->isNotEmpty())
+                <p><strong>Tracking No:</strong> {{ $order->shipments->first()->tracking_number }}</p>
+            @endif
             <p><strong>Date:</strong> {{ $order->created_at->format('M d, Y') }}</p>
         </div>
         <div class="clear"></div>

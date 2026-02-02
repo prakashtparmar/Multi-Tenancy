@@ -30,6 +30,7 @@ class Customer extends Model
         'land_area' => 'decimal:2',
         'credit_limit' => 'decimal:2',
         'outstanding_balance' => 'decimal:2',
+        'tags' => 'array',
     ];
 
     protected static function boot()
@@ -106,6 +107,11 @@ class Customer extends Model
     public function interactions()
     {
         return $this->hasMany(CustomerInteraction::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 
     public function getNameAttribute(): string

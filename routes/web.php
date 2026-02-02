@@ -37,9 +37,7 @@ Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login']
     ->middleware('throttle:5,1');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Central\DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/settings', function () {
         return view('settings');
@@ -61,7 +59,7 @@ Route::middleware('auth')->group(function () {
     // Customer Management (Central)
     Route::post('customers/bulk', [\App\Http\Controllers\Central\CustomerController::class, 'bulk'])->name('central.customers.bulk');
     Route::post('customers/{id}/restore', [\App\Http\Controllers\Central\CustomerController::class, 'restore'])->name('central.customers.restore');
-    Route::post('api/customers/{customer}/interactions', [\App\Http\Controllers\Central\CustomerController::class, 'storeInteraction'])->name('central.api.customers.interactions.store');
+    Route::post('customers/{customer}/interaction', [\App\Http\Controllers\Central\CustomerController::class, 'storeInteraction'])->name('central.customers.interaction');
     Route::resource('customers', \App\Http\Controllers\Central\CustomerController::class)->names('central.customers');
 
     // Enterprise Modules (Central)
