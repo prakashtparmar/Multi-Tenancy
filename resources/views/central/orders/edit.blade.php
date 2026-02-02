@@ -677,19 +677,36 @@
                                                 <img :src="item.image_url" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100x100?text=IMG'">
                                             </div>
                                             <div class="flex-1 min-w-0">
-                                                <p class="font-medium text-sm text-foreground truncate" x-text="item.name"></p>
+                                                <div class="flex justify-between items-start">
+                                                    <p class="font-medium text-sm text-foreground truncate" x-text="item.name"></p>
+                                                    <p class="font-bold text-sm">
+                                                        <span x-show="item.discount_value > 0" class="text-[10px] text-muted-foreground line-through mr-1" x-text="'Rs ' + (item.price * item.quantity).toFixed(2)"></span>
+                                                        Rs <span x-text="((item.price * item.quantity) - (item.discount_type === 'percent' ? (item.price * item.quantity * item.discount_value / 100) : item.discount_value)).toFixed(2)"></span>
+                                                    </p>
+                                                </div>
                                                 <div class="flex items-center justify-between mt-1">
-                                                    <p class="text-xs text-muted-foreground">Rs <span x-text="item.price.toFixed(2)"></span></p>
+                                                    <p class="text-[10px] text-muted-foreground">Rs <span x-text="item.price.toFixed(2)"></span> x <span x-text="item.quantity"></span></p>
                                                     <div class="flex items-center gap-2">
-                                                        <button @click="updateCartQty(item.product_id, -1)" class="text-muted-foreground hover:text-primary px-1 font-bold">-</button>
+                                                        <button @click="updateCartQty(item.product_id, -1)" class="w-6 h-6 flex items-center justify-center rounded bg-muted hover:bg-muted/80 text-foreground transition-colors font-bold text-xs">-</button>
                                                         <span class="text-xs font-bold w-4 text-center" x-text="item.quantity"></span>
-                                                        <button @click="updateCartQty(item.product_id, 1)" class="text-muted-foreground hover:text-primary px-1 font-bold" :disabled="item.quantity >= item.max_stock">+</button>
+                                                        <button @click="updateCartQty(item.product_id, 1)" class="w-6 h-6 flex items-center justify-center rounded bg-muted hover:bg-muted/80 text-foreground transition-colors font-bold text-xs" :disabled="item.quantity >= item.max_stock">+</button>
                                                     </div>
                                                 </div>
+                                                <!-- Item Discount -->
+                                                <div class="mt-2 flex items-center gap-2">
+                                                    <select x-model="item.discount_type" class="text-[10px] h-6 rounded border-border bg-transparent px-1 focus:ring-primary/20">
+                                                        <option value="fixed">Rs</option>
+                                                        <option value="percent">%</option>
+                                                    </select>
+                                                    <input type="number" x-model="item.discount_value" 
+                                                           class="h-6 w-16 text-[10px] rounded border border-border bg-transparent px-2 focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                                                           placeholder="Disc">
+                                                </div>
                                             </div>
-                                            <div class="text-right flex flex-col justify-between">
-                                                <p class="font-bold text-sm">Rs <span x-text="(item.price * item.quantity).toFixed(2)"></span></p>
-                                                <button @click="removeFromCart(idx)" class="text-[10px] text-red-500 hover:text-red-600 font-medium uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">Remove</button>
+                                            <div class="absolute top-2 right-2">
+                                                <button @click="removeFromCart(idx)" class="text-muted-foreground hover:text-red-500 transition-colors">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                </button>
                                             </div>
                                         </div>
                                     </template>
@@ -697,9 +714,31 @@
                                 
                                 <!-- Cart Footer -->
                                 <div class="p-5 border-t border-border bg-muted/20 rounded-b-xl space-y-4">
-                                    <div class="flex justify-between items-end">
-                                        <span class="text-muted-foreground text-sm font-medium">Total Amount</span>
-                                        <span class="font-bold text-2xl text-foreground">Rs <span x-text="cartTotal.toFixed(2)"></span></span>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between text-xs text-muted-foreground">
+                                            <span>Subtotal</span>
+                                            <span>Rs <span x-text="subTotal.toFixed(2)"></span></span>
+                                        </div>
+                                        <div class="flex justify-between text-xs text-primary" x-show="cartDiscountTotal > 0">
+                                            <span>Product Discounts</span>
+                                            <span>- Rs <span x-text="cartDiscountTotal.toFixed(2)"></span></span>
+                                        </div>
+                                        <div class="flex justify-between items-center bg-primary/5 p-2 rounded-lg border border-primary/20">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[10px] font-bold uppercase">Order Disc</span>
+                                                <select x-model="order.discount_type" class="text-[10px] h-6 rounded border-primary/20 bg-transparent px-1 focus:ring-primary/20">
+                                                    <option value="fixed">Rs</option>
+                                                    <option value="percent">%</option>
+                                                </select>
+                                            </div>
+                                            <input type="number" x-model="order.discount_value" 
+                                                   class="h-6 w-20 text-xs text-right rounded border border-primary/20 bg-transparent px-2 focus:outline-none focus:ring-2 focus:ring-primary/20 font-bold" 
+                                                   placeholder="0.00">
+                                        </div>
+                                        <div class="pt-2 border-t border-border/50 flex justify-between items-end">
+                                            <span class="text-muted-foreground text-sm font-bold uppercase tracking-widest">Grand Total</span>
+                                            <span class="font-black text-2xl text-primary tracking-tighter">Rs <span x-text="grandTotal.toFixed(2)"></span></span>
+                                        </div>
                                     </div>
                                     <button @click="if(cart.length > 0) step = 3" 
                                             :disabled="cart.length === 0"
@@ -959,18 +998,28 @@
                                 <div class="bg-card border border-border rounded-xl shadow-lg p-6 sticky top-24">
                                     <h3 class="font-bold text-lg mb-4">Payment & Confirmation</h3>
                                     
-                                    <div class="flex justify-between items-center mb-3">
-                                        <span class="text-muted-foreground">Subtotal</span>
-                                        <span class="font-semibold text-lg">Rs <span x-text="cartTotal.toFixed(2)"></span></span>
-                                    </div>
-                                    <div class="flex justify-between items-center mb-4 text-sm text-muted-foreground">
-                                        <span>Tax (0%)</span>
-                                        <span>Rs 0.00</span>
-                                    </div>
-                                    <div class="h-px bg-border my-4"></div>
-                                    <div class="flex justify-between items-center text-xl font-bold text-primary mb-6">
-                                        <span>Grand Total</span>
-                                        <span>Rs <span x-text="cartTotal.toFixed(2)"></span></span>
+                                    <div class="space-y-3 mb-6">
+                                        <div class="flex justify-between items-center text-sm font-medium">
+                                            <span class="text-muted-foreground">Subtotal</span>
+                                            <span class="text-foreground">Rs <span x-text="subTotal.toFixed(2)"></span></span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-sm font-medium text-primary" x-show="cartDiscountTotal > 0">
+                                            <span>Product Discounts</span>
+                                            <span>- Rs <span x-text="cartDiscountTotal.toFixed(2)"></span></span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-sm font-medium text-primary" x-show="orderDiscountAmount > 0">
+                                            <span>Order Discount</span>
+                                            <span>- Rs <span x-text="orderDiscountAmount.toFixed(2)"></span></span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-sm font-medium text-muted-foreground">
+                                            <span>Tax (0%)</span>
+                                            <span>Rs 0.00</span>
+                                        </div>
+                                        <div class="h-px bg-border my-2"></div>
+                                        <div class="flex justify-between items-center text-xl font-bold text-primary">
+                                            <span>Grand Total</span>
+                                            <span>Rs <span x-text="grandTotal.toFixed(2)"></span></span>
+                                        </div>
                                     </div>
                                     
                                     <button type="submit" id="submitBtn" class="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold shadow-xl shadow-primary/30 hover:bg-primary/90 transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
@@ -1137,18 +1186,26 @@
                                 name: item.product_name,
                                 sku: item.sku,
                                 price: parseFloat(item.unit_price),
-                                quantity: parseFloat(item.quantity),
-                                image_url: p ? p.image_url : 'https://placehold.co/100x100?text=IMG',
-                                max_stock: p ? (parseFloat(p.stock_on_hand) + parseFloat(item.quantity)) : 9999
-                            };
-                        });
-                        this.order = {
-                            billing_address_id: existingOrder.billing_address_id,
-                            shipping_address_id: existingOrder.shipping_address_id,
+                        this.order = { 
+                            billing_address_id: existingOrder.billing_address_id, 
+                            shipping_address_id: existingOrder.shipping_address_id, 
                             same_as_billing: existingOrder.billing_address_id === existingOrder.shipping_address_id,
-                            is_future_order: !!existingOrder.is_future_order,
-                            scheduled_at: existingOrder.scheduled_at ? existingOrder.scheduled_at.replace(' ', 'T').substring(0, 16) : ''
+                            is_future_order: existingOrder.is_future_order,
+                            scheduled_at: existingOrder.scheduled_at ? existingOrder.scheduled_at.replace(' ', 'T').substring(0, 16) : '',
+                            discount_type: existingOrder.discount_type || 'fixed',
+                            discount_value: parseFloat(existingOrder.discount_value || 0)
                         };
+
+                        this.cart = existingOrder.items.map(item => ({
+                            product_id: item.product_id,
+                            name: item.product_name,
+                            price: parseFloat(item.unit_price),
+                            image_url: item.product?.image_url || 'https://placehold.co/100x100?text=IMG',
+                            quantity: parseFloat(item.quantity),
+                            max_stock: 9999, // Should ideally fetch current stock
+                            discount_type: item.discount_type || 'fixed',
+                            discount_value: parseFloat(item.discount_value || 0)
+                        }));
                         return; // Skip loading from localstorage for edit
                     }
 
@@ -1440,10 +1497,14 @@
                         shipping_address_id: this.order.shipping_address_id,
                         is_future_order: this.order.is_future_order,
                         scheduled_at: this.order.scheduled_at,
+                        discount_type: this.order.discount_type,
+                        discount_value: this.order.discount_value,
                         items: this.cart.map(item => ({
                             product_id: item.product_id,
                             quantity: item.quantity,
-                            price: item.price
+                            price: item.price,
+                            discount_type: item.discount_type,
+                            discount_value: item.discount_value
                         }))
                     };
 
@@ -1559,12 +1620,10 @@
                 },
 
                 addToCart(product) {
-                    if (product.stock_on_hand <= 0) return;
+                    if (product.stock_on_hand <= 1 && !this.isEdit) return; // Allow if edit or has stock
                     let existing = this.cart.find(i => i.product_id === product.id);
                     if (existing) {
-                        if (existing.quantity < product.stock_on_hand) {
-                            existing.quantity++;
-                        }
+                        existing.quantity++;
                     } else {
                         this.cart.push({
                             product_id: product.id,
@@ -1572,7 +1631,9 @@
                             price: parseFloat(product.price),
                             image_url: product.image_url,
                             quantity: 1,
-                            max_stock: product.stock_on_hand
+                            max_stock: product.stock_on_hand || 999,
+                            discount_type: 'fixed',
+                            discount_value: 0
                         });
                     }
                 },
@@ -1648,8 +1709,37 @@
                     this.showCreateCustomerModal = true;
                 },
 
-                get cartTotal() {
+                get subTotal() {
                     return this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                },
+
+                get cartDiscountTotal() {
+                    return this.cart.reduce((sum, item) => {
+                        let d = 0;
+                        if (item.discount_type === 'percent') {
+                            d = (item.price * item.quantity) * (item.discount_value / 100);
+                        } else {
+                            d = parseFloat(item.discount_value || 0);
+                        }
+                        return sum + d;
+                    }, 0);
+                },
+
+                get orderDiscountAmount() {
+                    let netAfterCartDiscounts = this.subTotal - this.cartDiscountTotal;
+                    if (this.order.discount_type === 'percent') {
+                        return netAfterCartDiscounts * (this.order.discount_value / 100);
+                    }
+                    return parseFloat(this.order.discount_value || 0);
+                },
+
+                get grandTotal() {
+                    let total = this.subTotal - this.cartDiscountTotal - this.orderDiscountAmount;
+                    return Math.max(0, total);
+                },
+
+                get cartTotal() {
+                    return this.grandTotal;
                 }
             }
         }

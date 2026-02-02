@@ -16,6 +16,8 @@ class OrderItem extends Model
         'unit_price' => 'decimal:2',
         'total_price' => 'decimal:2',
         'tax_percent' => 'decimal:2',
+        'discount_value' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
     ];
 
     public function order()

@@ -11,10 +11,10 @@
             </a>
             <div class="space-y-1">
                 <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                    Create New Order
+                    Edit Order: {{ $order->order_number }}
                 </h1>
                 <p class="text-muted-foreground text-sm">
-                    Create a new sales order, add products, and assign to a customer.
+                    Modify order details, items, and discounts.
                 </p>
             </div>
         </div>
@@ -26,8 +26,9 @@
         <!-- Decoration Line -->
         <div class="h-1 w-full bg-gradient-to-r from-primary/20 via-primary/50 to-primary/20"></div>
 
-        <form action="{{ route('tenant.orders.store') }}" method="POST" class="p-6 md:p-8 space-y-8">
+        <form action="{{ route('tenant.orders.update', $order->id) }}" method="POST" class="p-6 md:p-8 space-y-8">
             @csrf
+            @method('PUT')
             
             <!-- Error Handling -->
             @if ($errors->any())
@@ -61,7 +62,7 @@
                                 <select name="customer_id" id="customer_id" required class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
                                     <option value="">Select Customer</option>
                                     @foreach($customers as $customer)
-                                    <option value="{{ $customer->id }}">{{ $customer->first_name }} {{ $customer->last_name }}</option>
+                                    <option value="{{ $customer->id }}" {{ $order->customer_id == $customer->id ? 'selected' : '' }}>{{ $customer->first_name }} {{ $customer->last_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -71,7 +72,7 @@
                                 <select name="warehouse_id" id="warehouse_id" required class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
                                     <option value="">Select Warehouse</option>
                                     @foreach($warehouses as $wh)
-                                    <option value="{{ $wh->id }}">{{ $wh->name }}</option>
+                                    <option value="{{ $wh->id }}" {{ $order->warehouse_id == $wh->id ? 'selected' : '' }}>{{ $wh->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -82,22 +83,22 @@
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                                     </div>
-                                    <input type="text" name="order_number" id="order_number" value="ORD-{{ strtoupper(Str::random(8)) }}" readonly class="flex h-10 w-full pl-9 rounded-xl border border-input bg-muted/50 px-3 py-2 text-sm text-muted-foreground ring-offset-background cursor-not-allowed">
+                                    <input type="text" name="order_number" id="order_number" value="{{ $order->order_number }}" readonly class="flex h-10 w-full pl-9 rounded-xl border border-input bg-muted/50 px-3 py-2 text-sm text-muted-foreground ring-offset-background cursor-not-allowed">
                                 </div>
                             </div>
                         </div>
 
                          <!-- Order Type Section -->
-                         <div class="grid gap-6 sm:grid-cols-2 pt-4 border-t border-border/30" x-data="{ isFuture: false }">
+                         <div class="grid gap-6 sm:grid-cols-2 pt-4 border-t border-border/30" x-data="{ isFuture: {{ $order->is_future_order ? 'true' : 'false' }} }">
                             <div class="space-y-4">
                                 <label class="text-sm font-medium leading-none text-foreground/80 block">Order Type</label>
                                 <div class="flex items-center gap-4">
                                     <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="is_future_order" value="0" x-model="isFuture" @click="isFuture = false" checked class="text-primary focus:ring-primary/20">
+                                        <input type="radio" name="is_future_order" value="0" x-model="isFuture" @click="isFuture = false" {{ !$order->is_future_order ? 'checked' : '' }} class="text-primary focus:ring-primary/20">
                                         <span class="text-sm">Immediate</span>
                                     </label>
                                     <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="is_future_order" value="1" x-model="isFuture" @click="isFuture = true" class="text-primary focus:ring-primary/20">
+                                        <input type="radio" name="is_future_order" value="1" x-model="isFuture" @click="isFuture = true" {{ $order->is_future_order ? 'checked' : '' }} class="text-primary focus:ring-primary/20">
                                         <span class="text-sm">Future Order</span>
                                     </label>
                                 </div>
@@ -109,7 +110,7 @@
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                                     </div>
-                                    <input type="datetime-local" name="scheduled_at" id="scheduled_at" :required="isFuture" class="flex h-10 w-full pl-9 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+                                    <input type="datetime-local" name="scheduled_at" id="scheduled_at" value="{{ $order->scheduled_at ? $order->scheduled_at->format('Y-m-d\TH:i') : '' }}" :required="isFuture" class="flex h-10 w-full pl-9 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
                                 </div>
                             </div>
                         </div>
@@ -248,7 +249,7 @@
 
                         <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-200">
                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            Confirm Order
+                            Update Order
                         </button>
                         
                         <a href="{{ route('tenant.orders.index') }}" class="w-full inline-flex items-center justify-center rounded-xl bg-background border border-input px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
@@ -266,10 +267,20 @@
     function orderForm() {
         return {
             items: [
-                { product_id: '', product_query: '', quantity: 1, price: 0, discount_type: 'fixed', discount_value: 0, searchResults: [] }
+                @foreach($order->items as $item)
+                { 
+                    product_id: '{{ $item->product_id }}', 
+                    product_query: '{!! addslashes($item->product->name) !!}', 
+                    quantity: {{ $item->quantity }}, 
+                    price: {{ $item->unit_price }}, 
+                    discount_type: '{{ $item->discount_type ?? 'fixed' }}', 
+                    discount_value: {{ $item->discount_value ?? 0 }}, 
+                    searchResults: [] 
+                },
+                @endforeach
             ],
-            orderDiscountType: 'fixed',
-            orderDiscountValue: 0,
+            orderDiscountType: '{{ $order->discount_type ?? 'fixed' }}',
+            orderDiscountValue: {{ $order->discount_value ?? 0 }},
             
             get subTotal() {
                 return this.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);

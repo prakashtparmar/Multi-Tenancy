@@ -91,7 +91,9 @@ class SearchController extends Controller
                 'is_organic' => $product->is_organic,
                 'origin' => $product->origin,
                 'image_url' => $product->image_url,
-                'category' => $product->category->name ?? 'Uncategorized'
+                'category' => $product->category->name ?? 'Uncategorized',
+                'default_discount_type' => $product->default_discount_type,
+                'default_discount_value' => (float) $product->default_discount_value
             ];
         });
 

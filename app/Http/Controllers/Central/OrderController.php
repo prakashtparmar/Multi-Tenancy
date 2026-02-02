@@ -86,7 +86,9 @@ class OrderController extends Controller
                 'is_organic' => $product->is_organic,
                 'origin' => $product->origin,
                 'image_url' => $product->image_url,
-                'category' => $product->category->name ?? 'Uncategorized'
+                'category' => $product->category->name ?? 'Uncategorized',
+                'default_discount_type' => $product->default_discount_type,
+                'default_discount_value' => $product->default_discount_value
             ]);
 
         return view('central.orders.create', [
@@ -112,29 +114,68 @@ class OrderController extends Controller
             'scheduled_at' => 'required_if:is_future_order,true|nullable|date|after:now',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.quantity' => 'required|numeric|min:1',
             'items.*.price' => 'required|numeric|min:0',
+            'items.*.discount_type' => 'nullable|string|in:fixed,percent',
+            'items.*.discount_value' => 'nullable|numeric|min:0',
             'billing_address_id' => 'nullable|integer',
             'shipping_address_id' => 'nullable|integer',
             'payment_method' => 'nullable|string',
             'shipping_method' => 'nullable|string',
+            'discount_type' => 'nullable|string|in:fixed,percent',
+            'discount_value' => 'nullable|numeric|min:0',
         ]);
 
         try {
             DB::transaction(function () use ($validated) {
-                $totalAmount = 0;
+                $subTotalAmount = 0;
+                $itemDiscountsTotal = 0;
                 $productIds = collect($validated['items'])->pluck('product_id');
                 $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
+                $preparedItems = [];
                 foreach ($validated['items'] as $item) {
-                    $totalAmount += $item['quantity'] * $item['price'];
+                    $itemBasePrice = $item['quantity'] * $item['price'];
+                    $itemDiscount = 0;
+                    $itemDiscountValue = $item['discount_value'] ?? 0;
+                    $itemDiscountType = $item['discount_type'] ?? 'fixed';
+
+                    if ($itemDiscountType === 'percent') {
+                        $itemDiscount = $itemBasePrice * ($itemDiscountValue / 100);
+                    } else {
+                        $itemDiscount = $itemDiscountValue;
+                    }
+
+                    $subTotalAmount += $itemBasePrice;
+                    $itemDiscountsTotal += $itemDiscount;
+
+                    $preparedItems[] = array_merge($item, [
+                        'discount_amount' => $itemDiscount,
+                        'total_price_after_discount' => $itemBasePrice - $itemDiscount
+                    ]);
                 }
+
+                $orderDiscountAmount = 0;
+                $orderDiscountType = $validated['discount_type'] ?? 'fixed';
+                $orderDiscountValue = $validated['discount_value'] ?? 0;
+                $netAfterItems = $subTotalAmount - $itemDiscountsTotal;
+
+                if ($orderDiscountType === 'percent') {
+                    $orderDiscountAmount = $netAfterItems * ($orderDiscountValue / 100);
+                } else {
+                    $orderDiscountAmount = $orderDiscountValue;
+                }
+
+                $grandTotal = $netAfterItems - $orderDiscountAmount;
 
                 $order = Order::create([
                     'customer_id' => $validated['customer_id'],
                     'warehouse_id' => $validated['warehouse_id'],
                     'order_number' => $validated['order_number'],
-                    'total_amount' => $totalAmount,
+                    'total_amount' => $subTotalAmount,
+                    'discount_amount' => $itemDiscountsTotal + $orderDiscountAmount,
+                    'discount_type' => $orderDiscountType,
+                    'discount_value' => $orderDiscountValue,
                     'status' => ($validated['is_future_order'] ?? false) ? 'scheduled' : 'pending',
                     'placed_at' => now(),
                     'scheduled_at' => $validated['scheduled_at'] ?? null,
@@ -143,11 +184,11 @@ class OrderController extends Controller
                     'shipping_address_id' => $validated['shipping_address_id'] ?? null,
                     'payment_method' => $validated['payment_method'] ?? 'cash',
                     'shipping_method' => $validated['shipping_method'] ?? 'standard',
-                    'grand_total' => $totalAmount, 
+                    'grand_total' => $grandTotal, 
                     'created_by' => auth()->id(),
                 ]);
 
-                foreach ($validated['items'] as $item) {
+                foreach ($preparedItems as $item) {
                     $product = $products[$item['product_id']] ?? null;
                     if (!$product) throw new Exception("Product not found.");
                     
@@ -157,7 +198,11 @@ class OrderController extends Controller
                         'product_id' => $item['product_id'],
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['price'],
+                        'discount_type' => $item['discount_type'] ?? 'fixed',
+                        'discount_value' => $item['discount_value'] ?? 0,
+                        'discount_amount' => $item['discount_amount'],
                         'total_price' => $item['quantity'] * $item['price'],
+                        'tax_percent' => 0,
                     ]);
 
                     // Update Inventory
@@ -265,7 +310,9 @@ class OrderController extends Controller
                 'is_organic' => $p->is_organic,
                 'origin' => $p->origin,
                 'image_url' => $p->image_url,
-                'category' => $p->category->name ?? 'Uncategorized'
+                'category' => $p->category->name ?? 'Uncategorized',
+                'default_discount_type' => $p->default_discount_type,
+                'default_discount_value' => $p->default_discount_value
             ]);
 
         $orderData = $order->load(['items', 'customer.addresses', 'customer.interactions']);
@@ -290,6 +337,10 @@ class OrderController extends Controller
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.001',
             'items.*.price' => 'required|numeric|min:0',
+            'items.*.discount_type' => 'nullable|string|in:fixed,percent',
+            'items.*.discount_value' => 'nullable|numeric|min:0',
+            'discount_type' => 'nullable|string|in:fixed,percent',
+            'discount_value' => 'nullable|numeric|min:0',
             'billing_address_id' => 'nullable|integer',
             'shipping_address_id' => 'nullable|integer',
             'payment_method' => 'nullable|string',
@@ -322,50 +373,90 @@ class OrderController extends Controller
 
                 $order->items()->delete();
 
-                $totalAmount = 0;
+                $subTotalAmount = 0;
+                $itemDiscountsTotal = 0;
                 $productIds = collect($validated['items'])->pluck('product_id');
                 $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
+                $preparedItems = [];
                 foreach ($validated['items'] as $item) {
-                    $totalAmount += $item['quantity'] * $item['price'];
-                    
                     $product = $products[$item['product_id']] ?? null;
-                    if (!$product) throw new Exception("Product not found.");
+                    if (!$product) throw new Exception("Product #{$item['product_id']} not found.");
 
-                    $order->items()->create([
-                        'product_name' => $product->name, 
-                        'sku' => $product->sku ?? 'N/A',
+                    $lineSubtotal = $item['quantity'] * $item['price'];
+                    $subTotalAmount += $lineSubtotal;
+
+                    $itemDiscountType = $item['discount_type'] ?? 'fixed';
+                    $itemDiscountValue = $item['discount_value'] ?? 0;
+                    $itemDiscountAmount = 0;
+
+                    if ($itemDiscountType === 'percent') {
+                        $itemDiscountAmount = $lineSubtotal * ($itemDiscountValue / 100);
+                    } else {
+                        $itemDiscountAmount = (float)$itemDiscountValue;
+                    }
+                    $itemDiscountsTotal += $itemDiscountAmount;
+
+                    $preparedItems[] = [
                         'product_id' => $item['product_id'],
+                        'product_name' => $product->name,
+                        'sku' => $product->sku ?? 'N/A',
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['price'],
-                        'total_price' => $item['quantity'] * $item['price'],
-                    ]);
+                        'total_price' => $lineSubtotal,
+                        'discount_type' => $itemDiscountType,
+                        'discount_value' => $itemDiscountValue,
+                        'discount_amount' => $itemDiscountAmount,
+                    ];
+                }
+
+                // Order Level Discount
+                $orderDiscountType = $validated['discount_type'] ?? 'fixed';
+                $orderDiscountValue = $validated['discount_value'] ?? 0;
+                $orderDiscountAmount = 0;
+
+                $netAfterItemDiscounts = $subTotalAmount - $itemDiscountsTotal;
+                if ($orderDiscountType === 'percent') {
+                    $orderDiscountAmount = $netAfterItemDiscounts * ($orderDiscountValue / 100);
+                } else {
+                    $orderDiscountAmount = (float)$orderDiscountValue;
+                }
+
+                $grandTotal = max(0, $netAfterItemDiscounts - $orderDiscountAmount);
+
+                foreach ($preparedItems as $pItem) {
+                    $order->items()->create($pItem);
 
                     // Deduct new inventory
                     $newStock = InventoryStock::firstOrCreate(
-                        ['product_id' => $product->id, 'warehouse_id' => $validated['warehouse_id']],
+                        ['product_id' => $pItem['product_id'], 'warehouse_id' => $validated['warehouse_id']],
                         ['quantity' => 0, 'reserve_quantity' => 0]
                     );
 
-                    $newStock->decrement('quantity', $item['quantity']);
+                    $newStock->decrement('quantity', $pItem['quantity']);
 
                     InventoryMovement::create([
                         'stock_id' => $newStock->id,
                         'type' => 'sale',
-                        'quantity' => -$item['quantity'],
+                        'quantity' => -$pItem['quantity'],
                         'reference_id' => $order->id,
                         'reason' => 'Order Update (New Items Deducted): ' . $order->order_number,
                         'user_id' => auth()->id(),
                     ]);
 
-                    $product->refreshStockOnHand();
+                    if (isset($products[$pItem['product_id']])) {
+                        $products[$pItem['product_id']]->refreshStockOnHand();
+                    }
                 }
 
                 $order->update([
                     'customer_id' => $validated['customer_id'],
                     'warehouse_id' => $validated['warehouse_id'],
-                    'total_amount' => $totalAmount,
-                    'grand_total' => $totalAmount,
+                    'total_amount' => $subTotalAmount,
+                    'discount_amount' => $itemDiscountsTotal + $orderDiscountAmount,
+                    'discount_type' => $orderDiscountType,
+                    'discount_value' => $orderDiscountValue,
+                    'grand_total' => $grandTotal,
                     'scheduled_at' => $validated['scheduled_at'] ?? null,
                     'is_future_order' => $validated['is_future_order'] ?? false,
                     'billing_address_id' => $validated['billing_address_id'] ?? null,
@@ -388,11 +479,12 @@ class OrderController extends Controller
 
             return redirect()->route('central.orders.index')->with('success', 'Order updated successfully.');
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
+            \Log::error("Order Update Error: " . $e->getMessage());
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
             }
-            return back()->withInput()->with('error', 'Failed to update order: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Error updating order: ' . $e->getMessage());
         }
     }
 }

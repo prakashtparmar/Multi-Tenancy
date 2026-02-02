@@ -20,6 +20,9 @@ class Product extends Model
         'price' => 'decimal:2',
         'cost_price' => 'decimal:2',
         'stock_on_hand' => 'decimal:3',
+        'default_discount_value' => 'decimal:2',
+        'harvest_date' => 'datetime',
+        'expiry_date' => 'datetime',
     ];
 
     public function getActivitylogOptions(): LogOptions

@@ -24,6 +24,7 @@ class Order extends Model
         'discount_amount' => 'decimal:2',
         'shipping_amount' => 'decimal:2',
         'grand_total' => 'decimal:2',
+        'discount_value' => 'decimal:2',
     ];
 
     public function getActivitylogOptions(): LogOptions

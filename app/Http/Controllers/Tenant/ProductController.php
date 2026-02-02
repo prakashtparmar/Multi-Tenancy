@@ -54,7 +54,7 @@ class ProductController extends Controller
         $products = Product::where('name', 'LIKE', "%{$query}%")
             ->orWhere('sku', 'LIKE', "%{$query}%")
             ->limit(10)
-            ->get(['id', 'name', 'sku', 'price']);
+            ->get(['id', 'name', 'sku', 'price', 'default_discount_type', 'default_discount_value']);
             
         return response()->json($products);
     }
@@ -72,6 +72,8 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
+            'default_discount_type' => 'nullable|in:fixed,percent',
+            'default_discount_value' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -110,6 +112,8 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
+            'default_discount_type' => 'nullable|in:fixed,percent',
+            'default_discount_value' => 'nullable|numeric|min:0',
         ]);
 
         try {

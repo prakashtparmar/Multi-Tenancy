@@ -24,6 +24,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Default Discount</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
@@ -35,6 +36,13 @@
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $product->sku }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $product->category->name ?? '-' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">Rs {{ number_format($product->price, 2) }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            @if($product->default_discount_value > 0)
+                                                {{ $product->default_discount_type == 'percent' ? $product->default_discount_value . '%' : 'Rs ' . number_format($product->default_discount_value, 2) }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $product->stock_on_hand }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <a href="{{ route('tenant.products.edit', $product) }}" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</a>

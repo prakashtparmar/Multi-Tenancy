@@ -41,7 +41,7 @@
                     </div>
                 </div>
 
-                 <div class="space-y-2">
+                <div class="space-y-2">
                     <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Category</label>
                     <select name="category_id" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                         <option value="">Select Category</option>
@@ -49,6 +49,21 @@
                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                         @endforeach
                     </select>
+                </div>
+            </div>
+
+            <!-- Discount Section -->
+            <div class="grid gap-6 md:grid-cols-2">
+                <div class="space-y-2">
+                     <label class="text-sm font-medium leading-none">Default Discount Type</label>
+                     <select name="default_discount_type" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                        <option value="fixed">Fixed (Amount)</option>
+                        <option value="percent">Percentage (%)</option>
+                    </select>
+                </div>
+                 <div class="space-y-2">
+                     <label class="text-sm font-medium leading-none">Default Discount Value</label>
+                     <input type="number" step="0.01" name="default_discount_value" value="0" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g 10">
                 </div>
             </div>
 

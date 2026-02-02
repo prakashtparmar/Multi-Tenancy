@@ -102,6 +102,7 @@
                             <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Type</th>
                             <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Origin</th>
                             <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Price</th>
+                            <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Details</th>
                             <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Stock</th>
                             <th class="h-12 px-6 text-right align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Actions</th>
                         </tr>
@@ -140,6 +141,17 @@
                             </td>
                             <td class="p-6 align-middle font-medium">
                                 Rs {{ number_format($product->price, 2) }}
+                            </td>
+                            <td class="p-6 align-middle">
+                                @if($product->default_discount_value > 0)
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-xs font-medium text-emerald-600">
+                                            Discount: {{ $product->default_discount_type == 'percent' ? $product->default_discount_value . '%' : 'Rs ' . number_format($product->default_discount_value, 2) }}
+                                        </span>
+                                    </div>
+                                @else
+                                    <span class="text-xs text-muted-foreground">-</span>
+                                @endif
                             </td>
                             <td class="p-6 align-middle">
                                 @if($product->stock_on_hand > 10)

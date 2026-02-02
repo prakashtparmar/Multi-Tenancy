@@ -93,7 +93,16 @@
                                     <td class="p-4 align-middle text-muted-foreground">{{ $item->sku }}</td>
                                     <td class="p-4 align-middle text-right">Rs {{ number_format($item->unit_price, 2) }}</td>
                                     <td class="p-4 align-middle text-right">{{ $item->quantity }}</td>
-                                    <td class="p-4 align-middle text-right font-semibold">Rs {{ number_format($item->total_price, 2) }}</td>
+                                    <td class="p-4 align-middle text-right font-semibold">
+                                        <div class="flex flex-col items-end">
+                                            @if($item->discount_amount > 0)
+                                                <span class="text-[10px] text-muted-foreground line-through">Rs {{ number_format($item->unit_price * $item->quantity, 2) }}</span>
+                                                <span class="text-primary">Rs {{ number_format(($item->unit_price * $item->quantity) - $item->discount_amount, 2) }}</span>
+                                            @else
+                                                <span>Rs {{ number_format($item->unit_price * $item->quantity, 2) }}</span>
+                                            @endif
+                                        </div>
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -141,14 +150,26 @@
                         <div>
                             <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Billing Address</span>
                             <div class="mt-1 text-foreground/80 leading-relaxed">
-                                N/A (Not implemented)
+                                @if($order->billingAddress)
+                                    {{ $order->billingAddress->address_line1 }}<br>
+                                    @if($order->billingAddress->address_line2) {{ $order->billingAddress->address_line2 }}<br> @endif
+                                    {{ $order->billingAddress->village }}, {{ $order->billingAddress->state }} - {{ $order->billingAddress->pincode }}
+                                @else
+                                    N/A
+                                @endif
                             </div>
                         </div>
                         <div class="h-px bg-border/50"></div>
                         <div>
                             <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shipping Address</span>
                             <div class="mt-1 text-foreground/80 leading-relaxed">
-                                {{ $order->warehouse->name }} (Warehouse Pick)
+                                @if($order->shippingAddress)
+                                    {{ $order->shippingAddress->address_line1 }}<br>
+                                    @if($order->shippingAddress->address_line2) {{ $order->shippingAddress->address_line2 }}<br> @endif
+                                    {{ $order->shippingAddress->village }}, {{ $order->shippingAddress->state }} - {{ $order->shippingAddress->pincode }}
+                                @else
+                                    {{ $order->warehouse->name }} (Warehouse Pick)
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -162,6 +183,22 @@
                             <span class="text-muted-foreground">Subtotal</span>
                             <span>Rs {{ number_format($order->total_amount, 2) }}</span>
                         </div>
+                        @php 
+                            $itemDiscounts = $order->items->sum('discount_amount');
+                            $orderDiscount = $order->discount_amount - $itemDiscounts;
+                        @endphp
+                        @if($itemDiscounts > 0)
+                        <div class="flex justify-between text-primary">
+                            <span class="">Item Discounts</span>
+                            <span>- Rs {{ number_format($itemDiscounts, 2) }}</span>
+                        </div>
+                        @endif
+                        @if($orderDiscount > 0)
+                        <div class="flex justify-between text-primary">
+                            <span class="">Order Discount</span>
+                            <span>- Rs {{ number_format($orderDiscount, 2) }}</span>
+                        </div>
+                        @endif
                         <div class="flex justify-between">
                             <span class="text-muted-foreground">Shipping</span>
                             <span>Rs {{ number_format($order->shipping_amount ?? 0, 2) }}</span>
@@ -171,7 +208,7 @@
                             <span>Rs {{ number_format($order->tax_amount ?? 0, 2) }}</span>
                         </div>
                         <div class="h-px bg-border my-2"></div>
-                        <div class="flex justify-between font-bold text-lg">
+                        <div class="flex justify-between font-bold text-lg text-primary">
                             <span>Total</span>
                             <span>Rs {{ number_format($order->grand_total, 2) }}</span>
                         </div>
