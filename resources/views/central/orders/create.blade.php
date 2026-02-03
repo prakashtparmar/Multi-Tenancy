@@ -1065,7 +1065,7 @@
                 <p class="text-sm text-muted-foreground">Enter address details for delivery or billing.</p>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-4 relative">
                 <div>
                     <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Label <span class="text-red-500">*</span></label>
                     <input type="text" x-model="addressForm.label" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="e.g. Home, Farm, Warehouse">
@@ -1084,27 +1084,46 @@
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Village/City</label>
-                        <input type="text" x-model="addressForm.village" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Village Name">
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Pincode <span class="text-red-500">*</span></label>
+                        <input type="text" id="modal_pincode" x-model="addressForm.pincode" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="6-digit code">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Pincode <span class="text-red-500">*</span></label>
-                        <input type="text" x-model="addressForm.pincode" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="6-digit code">
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Post Office</label>
+                        <input type="text" id="modal_post_office" x-model="addressForm.post_office" readonly tabindex="0" class="w-full cursor-pointer rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Select Post Office">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Village/City</label>
+                        <input type="text" id="modal_village" x-model="addressForm.village" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Type to search">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Taluka</label>
+                        <input type="text" id="modal_taluka" x-model="addressForm.taluka" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Type to search">
                     </div>
                 </div>
                  
                  <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">State <span class="text-red-500">*</span></label>
-                        <input type="text" x-model="addressForm.state" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="State Name">
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">District</label>
+                        <input type="text" id="modal_district" x-model="addressForm.district" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Type to search">
                     </div>
                     <div>
-                        <label class="flex items-center gap-2 mt-8 cursor-pointer">
-                            <input type="checkbox" x-model="addressForm.is_default" class="rounded border-border text-primary focus:ring-primary/20 bg-background w-4 h-4">
-                            <span class="text-sm">Set as Default</span>
-                        </label>
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">State <span class="text-red-500">*</span></label>
+                        <input type="text" id="modal_state" x-model="addressForm.state" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Type to search">
                     </div>
                 </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" x-model="addressForm.is_default" class="rounded border-border text-primary focus:ring-primary/20 bg-background w-4 h-4">
+                        <span class="text-sm">Set as Default</span>
+                    </label>
+                </div>
+
+                <!-- Address Lookup Dropdown -->
+                <div id="addressDropdown" class="hidden absolute bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto z-50" style="min-width: 200px;"></div>
 
                 <div x-show="addressForm.error" class="text-sm text-red-500 bg-red-500/10 p-2 rounded-lg" x-text="addressForm.error"></div>
 
@@ -1162,6 +1181,9 @@
                     address_line1: '',
                     address_line2: '',
                     village: '',
+                    taluka: '',
+                    district: '',
+                    post_office: '',
                     state: 'Maharashtra',
                     pincode: '',
                     is_default: false,
@@ -1420,6 +1442,9 @@
                         address_line1: '',
                         address_line2: '',
                         village: '',
+                        taluka: '',
+                        district: '',
+                        post_office: '',
                         state: 'Maharashtra',
                         pincode: '',
                         is_default: false,
@@ -1428,6 +1453,11 @@
                         error: ''
                     };
                     this.showAddressModal = true;
+                    
+                    // Setup auto-complete after modal is shown
+                    this.$nextTick(() => {
+                        this.setupAddressAutoComplete();
+                    });
                 },
 
                 editAddress(addr) {
@@ -1438,6 +1468,9 @@
                         address_line1: addr.address_line1 || '',
                         address_line2: addr.address_line2 || '',
                         village: addr.village || addr.city || '',
+                        taluka: addr.taluka || '',
+                        district: addr.district || '',
+                        post_office: addr.post_office || '',
                         state: addr.state || 'Maharashtra',
                         pincode: addr.pincode || '',
                         is_default: addr.is_default || false,
@@ -1446,6 +1479,144 @@
                         error: ''
                     };
                     this.showAddressModal = true;
+                    
+                    // Setup auto-complete after modal is shown
+                    this.$nextTick(() => {
+                        this.setupAddressAutoComplete();
+                    });
+                },
+
+                // Village Lookup Logic - Enhanced to match customer create page
+                setupAddressAutoComplete() {
+                    const fields = ['pincode', 'post_office', 'village', 'taluka', 'district', 'state'];
+                    const dropdown = document.getElementById('addressDropdown');
+                    
+                    if (!dropdown) return;
+
+                    let activeField = null;
+                    let debounceTimer = null;
+                    let preventBlurClose = false;
+
+                    const setAll = (data) => {
+                        Object.keys(data).forEach(key => {
+                            if (key === 'pincode') this.addressForm.pincode = data[key] ?? this.addressForm.pincode;
+                            if (key === 'post_office') this.addressForm.post_office = data[key] ?? this.addressForm.post_office;
+                            if (key === 'village') this.addressForm.village = data[key] ?? this.addressForm.village;
+                            if (key === 'taluka') this.addressForm.taluka = data[key] ?? this.addressForm.taluka;
+                            if (key === 'district') this.addressForm.district = data[key] ?? this.addressForm.district;
+                            if (key === 'state') this.addressForm.state = data[key] ?? this.addressForm.state;
+                        });
+                    };
+
+                    const hideDropdown = (force = false) => {
+                        if (preventBlurClose && !force) return;
+                        dropdown.classList.add('hidden');
+                        dropdown.innerHTML = '';
+                    };
+
+                    const showDropdown = (list, anchor) => {
+                        dropdown.innerHTML = '';
+                        dropdown.classList.remove('hidden');
+
+                        // Position dropdown relative to input
+                        dropdown.style.minWidth = anchor.offsetWidth + 'px';
+                        dropdown.style.left = anchor.offsetLeft + 'px';
+                        dropdown.style.top = (anchor.offsetTop + anchor.offsetHeight + 4) + 'px';
+
+                        list.forEach(item => {
+                            const option = document.createElement('div');
+                            option.className = 'px-3 py-2 cursor-pointer hover:bg-muted text-sm border-b border-border/50 last:border-0';
+                            option.innerHTML = `
+                                <div class="font-medium">${item.label || ''}</div>
+                            `;
+
+                            option.addEventListener('mousedown', e => {
+                                e.preventDefault();
+                                setAll(item.data);
+                                hideDropdown(true);
+                            });
+
+                            dropdown.appendChild(option);
+                        });
+                    };
+
+                    const lookup = (query, anchor) => {
+                        fetch(`{{ url('/api/village-lookup') }}?${query}`, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(res => res.ok ? res.json() : null)
+                        .then(res => {
+                            if (!res || !res.found) {
+                                hideDropdown();
+                                return;
+                            }
+
+                            if (res.mode === 'single') {
+                                setAll(res.data);
+                                hideDropdown();
+                            }
+
+                            if (res.mode === 'multiple') {
+                                showDropdown(res.list, anchor);
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Lookup error:', err);
+                            hideDropdown();
+                        });
+                    };
+
+                    fields.forEach(id => {
+                        const el = document.getElementById('modal_' + id);
+                        if (!el) return;
+
+                        const isReadonly = el.hasAttribute('readonly');
+
+                        // For typing fields
+                        el.addEventListener('input', e => {
+                            if (isReadonly) return;
+
+                            const value = e.target.value.trim();
+                            activeField = el;
+
+                            clearTimeout(debounceTimer);
+                            debounceTimer = setTimeout(() => {
+                                if (id === 'pincode' && value.length < 6) return;
+                                if (id !== 'pincode' && value.length < 2) return;
+
+                                lookup(`${id}=${encodeURIComponent(value)}`, el);
+                            }, 300);
+                        });
+
+                        // For readonly dropdown fields (Post Office)
+                        el.addEventListener('focus', () => {
+                            activeField = el;
+
+                            if (isReadonly) {
+                                const baseValue =
+                                    document.getElementById('modal_pincode')?.value ||
+                                    document.getElementById('modal_village')?.value ||
+                                    '';
+
+                                if (baseValue.length >= 2) {
+                                    lookup(`post_office=${encodeURIComponent(baseValue)}`, el);
+                                }
+                            }
+                        });
+
+                        el.addEventListener('click', () => {
+                            if (isReadonly) {
+                                el.dispatchEvent(new Event('focus'));
+                            }
+                        });
+
+                        el.addEventListener('blur', () => {
+                            setTimeout(() => hideDropdown(), 150);
+                        });
+                    });
                 },
 
                 async submitOrder() {

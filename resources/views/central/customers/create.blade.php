@@ -121,49 +121,87 @@
                         </div>
                     </div>
 
-                    <!-- Address -->
-                    <div>
-                         <div class="flex items-center gap-2 mb-6 pb-2 border-b border-border/40">
-                            <h2 class="text-lg font-semibold tracking-tight text-foreground/80">Address</h2>
-                        </div>
-                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                             <div class="space-y-2 sm:col-span-2 lg:col-span-3">
-                                <label class="text-sm font-medium leading-none text-foreground/80">Address Line 1</label>
-                                <input type="text" name="address_line1" value="{{ old('address_line1') }}"
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                            </div>
-                             <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none text-foreground/80">Village/Town</label>
-                                <input type="text" name="village" value="{{ old('village') }}"
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                            </div>
-                             <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none text-foreground/80">Taluka</label>
-                                <input type="text" name="taluka" value="{{ old('taluka') }}"
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                            </div>
-                             <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none text-foreground/80">District</label>
-                                <input type="text" name="district" value="{{ old('district') }}"
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none text-foreground/80">State</label>
-                                <input type="text" name="state" value="{{ old('state') }}"
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                            </div>
-                             <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none text-foreground/80">Pincode</label>
-                                <input type="text" name="pincode" value="{{ old('pincode') }}"
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                            </div>
-                             <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none text-foreground/80">Country</label>
-                                <input type="text" name="country" value="{{ old('country', 'India') }}"
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                            </div>
-                        </div>
-                    </div>
+
+
+<!-- Address -->
+<div class="relative">
+    <div class="flex items-center gap-2 mb-6 pb-2 border-b border-border/40">
+        <h2 class="text-lg font-semibold tracking-tight text-foreground/80">Address</h2>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" id="address-wrapper">
+
+        <!-- Address Line 1 -->
+        <div class="space-y-2 sm:col-span-2 lg:col-span-3">
+            <label class="text-sm font-medium leading-none text-foreground/80">Address Line 1</label>
+            <input type="text" name="address_line1" value="{{ old('address_line1') }}"
+                class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+        </div>
+
+        <!-- Address Line 2 -->
+        <div class="space-y-2 sm:col-span-2 lg:col-span-3">
+            <label class="text-sm font-medium leading-none text-foreground/80">Address Line 2</label>
+            <input type="text" name="address_line2" value="{{ old('address_line2') }}"
+                class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+        </div>
+
+        <!-- Post Office (SELECTION ONLY) -->
+        <div class="space-y-2">
+            <label class="text-sm font-medium leading-none text-foreground/80">Post Office</label>
+            <input type="text" name="post_office" id="post_office" value="{{ old('post_office') }}"
+                readonly tabindex="0" placeholder="Select Post Office"
+                class="flex h-10 w-full cursor-pointer rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+        </div>
+
+        <!-- Village -->
+        <div class="space-y-2">
+            <label class="text-sm font-medium leading-none text-foreground/80">Village / Town</label>
+            <input type="text" name="village" id="village" value="{{ old('village') }}" placeholder="Type to search"
+                class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+        </div>
+
+        <!-- Taluka -->
+        <div class="space-y-2">
+            <label class="text-sm font-medium leading-none text-foreground/80">Taluka</label>
+            <input type="text" name="taluka" id="taluka" value="{{ old('taluka') }}" placeholder="Type to search"
+                class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+        </div>
+
+        <!-- District -->
+        <div class="space-y-2">
+            <label class="text-sm font-medium leading-none text-foreground/80">District</label>
+            <input type="text" name="district" id="district" value="{{ old('district') }}" placeholder="Type to search"
+                class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+        </div>
+
+        <!-- State -->
+        <div class="space-y-2">
+            <label class="text-sm font-medium leading-none text-foreground/80">State</label>
+            <input type="text" name="state" id="state" value="{{ old('state') }}" placeholder="Type to search"
+                class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+        </div>
+
+        <!-- Pincode -->
+        <div class="space-y-2">
+            <label class="text-sm font-medium leading-none text-foreground/80">Pincode</label>
+            <input type="text" name="pincode" id="pincode" value="{{ old('pincode') }}" placeholder="Enter pincode"
+                class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+        </div>
+
+    </div>
+
+    <!-- Dropdown -->
+    <div id="village-suggestions"
+        class="hidden absolute z-[9999] bg-background border border-border rounded-xl shadow-lg max-h-64 overflow-y-auto">
+    </div>
+</div>
+
+
+
+
+
+
+                    
 
                     <!-- Agriculture & Finance -->
                     <div>
@@ -338,7 +376,10 @@
 
 <style>
     .tag-remove:hover { color: #ef4444; }
+    
 </style>
+
+
 
 <script>
    function tagInput(boxId, inputId, hiddenId) {
@@ -414,4 +455,153 @@
        last.addEventListener('input', updateDisplayName);
    });
 </script>
+
+ <!-- -- Address Auto-fill Script -- -->
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const fields = ['pincode', 'post_office', 'village', 'taluka', 'district', 'state'];
+    const dropdown = document.getElementById('village-suggestions');
+
+    if (!dropdown) return;
+
+    let activeField = null;
+    let debounceTimer = null;
+    let preventBlurClose = false;
+
+    function setAll(data) {
+        Object.keys(data).forEach(key => {
+            const el = document.getElementById(key);
+            if (!el) return;
+            if (el === activeField) return;
+            el.value = data[key] ?? '';
+        });
+    }
+
+    function hideDropdown(force = false) {
+        if (preventBlurClose && !force) return;
+        dropdown.classList.add('hidden');
+        dropdown.innerHTML = '';
+    }
+
+    function showDropdown(list, anchor) {
+    console.log('showDropdown called with', list.length, 'items');
+    dropdown.innerHTML = '';
+    dropdown.classList.remove('hidden');
+
+    // Simple positioning relative to the input field
+    dropdown.style.minWidth = anchor.offsetWidth + 'px';
+    dropdown.style.left = anchor.offsetLeft + 'px';
+    dropdown.style.top = (anchor.offsetTop + anchor.offsetHeight + 4) + 'px';
+
+    list.forEach(item => {
+        const option = document.createElement('div');
+        option.className =
+            'px-3 py-2 cursor-pointer hover:bg-muted text-sm';
+
+        option.textContent = item.label;
+
+        option.addEventListener('mousedown', e => {
+            e.preventDefault();
+            setAll(item.data);
+            hideDropdown(true);
+        });
+
+        dropdown.appendChild(option);
+    });
+}
+
+    function lookup(query, anchor) {
+        console.log('Lookup called with query:', query);
+        fetch(`{{ url('/api/village-lookup') }}?${query}`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.ok ? res.json() : null)
+        .then(res => {
+            console.log('API Response:', res);
+            if (!res || !res.found) {
+                console.log('No results found');
+                hideDropdown();
+                return;
+            }
+
+            if (res.mode === 'single') {
+                console.log('Single result, auto-filling');
+                setAll(res.data);
+                hideDropdown();
+            }
+
+            if (res.mode === 'multiple') {
+                console.log('Multiple results, showing dropdown');
+                showDropdown(res.list, anchor);
+            }
+        })
+        .catch(err => {
+            console.error('Lookup error:', err);
+            hideDropdown();
+        });
+    }
+
+    fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const isReadonly = el.hasAttribute('readonly');
+
+    // For typing fields
+    el.addEventListener('input', e => {
+        if (isReadonly) return;
+
+        const value = e.target.value.trim();
+        activeField = el;
+
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+
+            if (id === 'pincode' && value.length < 6) return;
+            if (id !== 'pincode' && value.length < 2) return;
+
+            lookup(`${id}=${encodeURIComponent(value)}`, el);
+
+        }, 300);
+    });
+
+    // ✅ For readonly dropdown fields (Post Office)
+    el.addEventListener('focus', () => {
+        activeField = el;
+
+        if (isReadonly) {
+            const baseValue =
+                document.getElementById('pincode')?.value ||
+                document.getElementById('village')?.value ||
+                '';
+
+            if (baseValue.length >= 2) {
+                lookup(`post_office=${encodeURIComponent(baseValue)}`, el);
+            }
+        }
+    });
+
+    el.addEventListener('click', () => {
+        if (isReadonly) {
+            el.dispatchEvent(new Event('focus'));
+        }
+    });
+
+    el.addEventListener('blur', () => {
+        setTimeout(() => hideDropdown(), 150);
+    });
+});
+
+
+});
+</script>
+
+
+
 @endsection
