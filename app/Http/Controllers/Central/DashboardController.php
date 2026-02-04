@@ -6,31 +6,97 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Customer;
 use App\Models\Tenant;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $totalSales = Order::where('status', '!=', 'cancelled')->sum('grand_total');
-        $ordersCount = Order::count();
-        $customersCount = Customer::count();
-        $tenantsCount = Tenant::count();
+        $user = auth()->user();
+        $isSuperAdmin = $user->hasRole('Super Admin');
+        $period = $request->input('period', '30days');
 
-        // Calculate changes (mocking for now as we don't have historical snapshots easily, 
-        // but let's try to get last 30 days vs 30-60 days)
-        $sales30Days = Order::where('status', '!=', 'cancelled')
-            ->where('created_at', '>=', now()->subDays(30))
-            ->sum('grand_total');
-        
-        $salesPrev30Days = Order::where('status', '!=', 'cancelled')
-            ->where('created_at', '>=', now()->subDays(60))
-            ->where('created_at', '<', now()->subDays(30))
-            ->sum('grand_total');
+        $orderQuery = Order::where('status', '!=', 'cancelled');
+        $customerQuery = Customer::query();
+        $tenantQuery = Tenant::query();
 
-        $salesChange = $salesPrev30Days > 0 
-            ? (($sales30Days - $salesPrev30Days) / $salesPrev30Days) * 100 
-            : 100;
+        // 1. Role-based isolation
+        if (!$isSuperAdmin) {
+            $orderQuery->where('created_by', $user->id);
+            $customerQuery->where('created_by', $user->id);
+            $tenantQuery->where('id', 0);
+        }
+
+        // 2. Time-based filtering
+        $startDate = null;
+        $endDate = null;
+        $compareStartDate = null;
+        $compareEndDate = null;
+
+        switch ($period) {
+            case 'today':
+                $startDate = now()->startOfDay();
+                $compareStartDate = now()->subDay()->startOfDay();
+                $compareEndDate = now()->subDay()->endOfDay();
+                break;
+            case 'yesterday':
+                $startDate = now()->subDay()->startOfDay();
+                $endDate = now()->subDay()->endOfDay();
+                $compareStartDate = now()->subDays(2)->startOfDay();
+                $compareEndDate = now()->subDays(2)->endOfDay();
+                break;
+            case 'week':
+                $startDate = now()->startOfWeek();
+                $compareStartDate = now()->subWeek()->startOfWeek();
+                $compareEndDate = now()->subWeek()->endOfWeek();
+                break;
+            case 'month':
+                $startDate = now()->startOfMonth();
+                $compareStartDate = now()->subMonth()->startOfMonth();
+                $compareEndDate = now()->subMonth()->endOfMonth();
+                break;
+            case 'year':
+                $startDate = now()->startOfYear();
+                $compareStartDate = now()->subYear()->startOfYear();
+                $compareEndDate = now()->subYear()->endOfYear();
+                break;
+            case '30days':
+            default:
+                $startDate = now()->subDays(30);
+                $compareStartDate = now()->subDays(60);
+                $compareEndDate = now()->subDays(30);
+                $period = '30days';
+                break;
+        }
+
+        $filteredOrderQuery = (clone $orderQuery);
+        $filteredCustomerQuery = (clone $customerQuery);
+
+        if ($startDate) {
+            $filteredOrderQuery->where('created_at', '>=', $startDate);
+            $filteredCustomerQuery->where('created_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $filteredOrderQuery->where('created_at', '<=', $endDate);
+            $filteredCustomerQuery->where('created_at', '<=', $endDate);
+        }
+
+        $totalSales = (float) $filteredOrderQuery->sum('grand_total');
+        $ordersCount = $filteredOrderQuery->count();
+        $customersCount = $filteredCustomerQuery->count();
+        $tenantsCount = $tenantQuery->count();
+
+        // Calculate comparison for change percentage
+        $prevOrderQuery = (clone $orderQuery)->where('created_at', '>=', $compareStartDate);
+        if ($compareEndDate) {
+            $prevOrderQuery->where('created_at', '<=', $compareEndDate);
+        }
+        $prevSales = (float) $prevOrderQuery->sum('grand_total');
+
+        $salesChange = $prevSales > 0
+            ? (($totalSales - $prevSales) / $prevSales) * 100
+            : ($totalSales > 0 ? 100 : 0);
 
         $stats = [
             [
@@ -42,12 +108,12 @@ class DashboardController extends Controller
                 'icon' => 'dollar-sign'
             ],
             [
-                'title' => 'Active Tenants',
-                'value' => number_format($tenantsCount),
+                'title' => $isSuperAdmin ? 'Active Tenants' : 'My Records',
+                'value' => $isSuperAdmin ? number_format($tenantsCount) : number_format($ordersCount + $customersCount),
                 'change' => '+100%',
                 'trend' => 'up',
-                'desc' => 'Total registered',
-                'icon' => 'users'
+                'desc' => $isSuperAdmin ? 'Platform-wide total' : 'Activity in period',
+                'icon' => $isSuperAdmin ? 'users' : 'refresh-cw'
             ],
             [
                 'title' => 'Total Orders',
@@ -67,10 +133,10 @@ class DashboardController extends Controller
             ],
         ];
 
-        $recentOrders = Order::with('customer')->latest()->take(5)->get();
-        
+        $recentOrders = (clone $orderQuery)->with('customer')->latest()->take(5)->get();
+
         // Prepare chart data (last 30 days)
-        $chartDataRaw = Order::where('status', '!=', 'cancelled')
+        $chartDataRaw = (clone $orderQuery)
             ->where('created_at', '>=', now()->subDays(30))
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(grand_total) as total'))
             ->groupBy('date')
@@ -82,9 +148,11 @@ class DashboardController extends Controller
         $chartData = [];
         for ($i = 29; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
-            $chartData[] = $chartDataRaw[$date] ?? 0;
+            $chartData[] = (float) ($chartDataRaw[$date] ?? 0);
         }
 
-        return view('dashboard', compact('stats', 'recentOrders', 'chartData'));
+        $orderHistory = (clone $orderQuery)->with(['customer', 'creator'])->latest()->take(20)->get();
+
+        return view('dashboard', compact('stats', 'recentOrders', 'chartData', 'orderHistory', 'period'));
     }
 }

@@ -228,259 +228,261 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        @endcan
-        <!-- Premeum Registration Modal (Teleported to Body to avoid Header Clipping) -->
-        <template x-teleport="body">
-            <div x-show="showModal" x-transition.opacity.duration.400ms
-                class="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4"
-                style="display: none;">
-                <div class="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[40px] shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 fade-in duration-500 ease-out"
-                    @click.away="showModal = false">
-                    <div class="px-10 pt-10 pb-6 relative overflow-hidden">
-                        <div class="absolute -top-20 -right-20 size-60 bg-primary/20 blur-[80px] rounded-full"></div>
-                        <div class="relative z-10">
-                            <h3 class="font-black text-3xl tracking-tighter">Fast Enrollment</h3>
-                            <p class="text-sm text-muted-foreground font-medium mt-1">Creating a new identity in the
-                                current ledger.</p>
+                <!-- Premeum Registration Modal (Teleported to Body to avoid Header Clipping) -->
+                <template x-teleport="body">
+                    <div x-show="showModal" x-transition.opacity.duration.400ms
+                        class="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4"
+                        style="display: none;">
+                        <div class="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[40px] shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 fade-in duration-500 ease-out"
+                            @click.away="showModal = false">
+                            <div class="px-10 pt-10 pb-6 relative overflow-hidden">
+                                <div class="absolute -top-20 -right-20 size-60 bg-primary/20 blur-[80px] rounded-full">
+                                </div>
+                                <div class="relative z-10">
+                                    <h3 class="font-black text-3xl tracking-tighter">Fast Enrollment</h3>
+                                    <p class="text-sm text-muted-foreground font-medium mt-1">Creating a new identity in the
+                                        current ledger.</p>
+                                </div>
+                                <button @click="showModal = false"
+                                    class="absolute top-8 right-8 text-muted-foreground hover:text-foreground p-2 hover:bg-white/10 rounded-full transition-all duration-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="size-6">
+                                        <path d="M18 6 6 18" />
+                                        <path d="m6 6 12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="px-10 pb-10 overflow-y-auto space-y-8 custom-scrollbar">
+                                <div class="grid grid-cols-2 gap-6">
+                                    <div class="space-y-2 group/field">
+                                        <label
+                                            class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">First
+                                            Name</label>
+                                        <input type="text" x-model="newCustomer.first_name"
+                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
+                                            placeholder="Rahul" />
+                                    </div>
+                                    <div class="space-y-2 group/field">
+                                        <label
+                                            class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">Last
+                                            Name</label>
+                                        <input type="text" x-model="newCustomer.last_name"
+                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
+                                            placeholder="Sharma" />
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2 group/field">
+                                    <label
+                                        class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">Mobile
+                                        Identity (Verify)</label>
+                                    <div class="relative">
+                                        <span
+                                            class="absolute left-5 top-1/2 -translate-y-1/2 text-primary font-black text-sm">+91</span>
+                                        <input type="text" x-model="newCustomer.mobile"
+                                            class="w-full h-14 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-[20px] pl-16 pr-5 text-lg font-black tracking-widest focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans" />
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-6">
+                                    <div class="space-y-2 group/field">
+                                        <label
+                                            class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Contact
+                                            Email</label>
+                                        <input type="email" x-model="newCustomer.email"
+                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans"
+                                            placeholder="name@domain.com" />
+                                    </div>
+                                    <div class="space-y-2 group/field">
+                                        <label
+                                            class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Classification</label>
+                                        <select x-model="newCustomer.type"
+                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans">
+                                            <option value="farmer">🏢 Farmer / Individual</option>
+                                            <option value="buyer">💼 Corporate Buyer</option>
+                                            <option value="dealer">📦 Retail Dealer</option>
+                                            <option value="vendor">🚚 Service Vendor</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div x-show="error" x-transition
+                                    class="p-5 rounded-3xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-bold leading-relaxed shadow-inner"
+                                    x-text="error"></div>
+                            </div>
+
+                            <div class="px-10 py-8 border-t border-border/50 bg-muted/20 flex justify-end gap-4">
+                                <button @click="showModal = false"
+                                    class="px-6 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all">Discard</button>
+                                <button @click="createCustomer()" :disabled="saving"
+                                    class="inline-flex items-center justify-center gap-3 rounded-[22px] bg-gradient-to-r from-primary to-purple-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-2xl hover:-translate-y-1 active:scale-95 transition-all duration-500 disabled:opacity-50">
+                                    <span x-text="saving ? 'AUTHENTICATING...' : 'ENROLL & CONTINUE'"></span>
+                                    <svg x-show="!saving" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                                        stroke-linecap="round" stroke-linejoin="round" class="size-4">
+                                        <path d="m9 18 6-6-6-6" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
-                        <button @click="showModal = false"
-                            class="absolute top-8 right-8 text-muted-foreground hover:text-foreground p-2 hover:bg-white/10 rounded-full transition-all duration-300">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="size-6">
-                                <path d="M18 6 6 18" />
-                                <path d="m6 6 12 12" />
-                            </svg>
-                        </button>
                     </div>
+                </template>
 
-                    <div class="px-10 pb-10 overflow-y-auto space-y-8 custom-scrollbar">
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="space-y-2 group/field">
-                                <label
-                                    class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">First
-                                    Name</label>
-                                <input type="text" x-model="newCustomer.first_name"
-                                    class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
-                                    placeholder="Rahul" />
-                            </div>
-                            <div class="space-y-2 group/field">
-                                <label
-                                    class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">Last
-                                    Name</label>
-                                <input type="text" x-model="newCustomer.last_name"
-                                    class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
-                                    placeholder="Sharma" />
-                            </div>
-                        </div>
+                <script>
+                    function headerCustomerSearch() {
+                        return {
+                            customerQuery: '',
+                            customerResults: [],
+                            open: false,
+                            loading: false,
+                            showModal: false,
+                            saving: false,
+                            error: '',
+                            newCustomer: { first_name: '', last_name: '', mobile: '', email: '', type: 'farmer' },
 
-                        <div class="space-y-2 group/field">
-                            <label
-                                class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">Mobile
-                                Identity (Verify)</label>
-                            <div class="relative">
-                                <span
-                                    class="absolute left-5 top-1/2 -translate-y-1/2 text-primary font-black text-sm">+91</span>
-                                <input type="text" x-model="newCustomer.mobile"
-                                    class="w-full h-14 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-[20px] pl-16 pr-5 text-lg font-black tracking-widest focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans" />
-                            </div>
-                        </div>
+                            async searchCustomers() {
+                                if (this.customerQuery.length < 2) {
+                                    this.customerResults = [];
+                                    return;
+                                }
+                                this.loading = true;
+                                try {
+                                    const url = `{{ tenant() ? route('tenant.api.search.customers') : route('central.api.search.customers') }}?q=${this.customerQuery}`;
+                                    let res = await fetch(url);
+                                    if (!res.ok) throw new Error('Search failed');
+                                    this.customerResults = await res.json();
+                                    this.open = true;
+                                } catch (e) { console.error(e); }
+                                finally { this.loading = false; }
+                            },
 
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="space-y-2 group/field">
-                                <label
-                                    class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Contact
-                                    Email</label>
-                                <input type="email" x-model="newCustomer.email"
-                                    class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans"
-                                    placeholder="name@domain.com" />
-                            </div>
-                            <div class="space-y-2 group/field">
-                                <label
-                                    class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Classification</label>
-                                <select x-model="newCustomer.type"
-                                    class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans">
-                                    <option value="farmer">🏢 Farmer / Individual</option>
-                                    <option value="buyer">💼 Corporate Buyer</option>
-                                    <option value="dealer">📦 Retail Dealer</option>
-                                    <option value="vendor">🚚 Service Vendor</option>
-                                </select>
-                            </div>
-                        </div>
+                            selectCustomer(cust) {
+                                const baseUrl = `{{ tenant() ? route('tenant.orders.create') : route('central.orders.create') }}`;
+                                window.location.href = `${baseUrl}?customer_id=${cust.id}&reset=1`;
+                            },
 
-                        <div x-show="error" x-transition
-                            class="p-5 rounded-3xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-bold leading-relaxed shadow-inner"
-                            x-text="error"></div>
-                    </div>
+                            openCreateCustomerModal() {
+                                this.open = false;
+                                this.showModal = true;
+                                this.error = '';
+                                this.newCustomer = { first_name: '', last_name: '', mobile: '', email: '', type: 'farmer' };
+                                if (/^\d+$/.test(this.customerQuery)) {
+                                    this.newCustomer.mobile = this.customerQuery;
+                                } else {
+                                    this.newCustomer.first_name = this.customerQuery;
+                                }
+                            },
 
-                    <div class="px-10 py-8 border-t border-border/50 bg-muted/20 flex justify-end gap-4">
-                        <button @click="showModal = false"
-                            class="px-6 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all">Discard</button>
-                        <button @click="createCustomer()" :disabled="saving"
-                            class="inline-flex items-center justify-center gap-3 rounded-[22px] bg-gradient-to-r from-primary to-purple-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-2xl hover:-translate-y-1 active:scale-95 transition-all duration-500 disabled:opacity-50">
-                            <span x-text="saving ? 'AUTHENTICATING...' : 'ENROLL & CONTINUE'"></span>
-                            <svg x-show="!saving" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round" class="size-4">
-                                <path d="m9 18 6-6-6-6" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </template>
-
-        <script>
-            function headerCustomerSearch() {
-                return {
-                    customerQuery: '',
-                    customerResults: [],
-                    open: false,
-                    loading: false,
-                    showModal: false,
-                    saving: false,
-                    error: '',
-                    newCustomer: { first_name: '', last_name: '', mobile: '', email: '', type: 'farmer' },
-
-                    async searchCustomers() {
-                        if (this.customerQuery.length < 2) {
-                            this.customerResults = [];
-                            return;
-                        }
-                        this.loading = true;
-                        try {
-                            const url = `{{ tenant() ? route('tenant.api.search.customers') : route('central.api.search.customers') }}?q=${this.customerQuery}`;
-                            let res = await fetch(url);
-                            if (!res.ok) throw new Error('Search failed');
-                            this.customerResults = await res.json();
-                            this.open = true;
-                        } catch (e) { console.error(e); }
-                        finally { this.loading = false; }
-                    },
-
-                    selectCustomer(cust) {
-                        const baseUrl = `{{ tenant() ? route('tenant.orders.create') : route('central.orders.create') }}`;
-                        window.location.href = `${baseUrl}?customer_id=${cust.id}&reset=1`;
-                    },
-
-                    openCreateCustomerModal() {
-                        this.open = false;
-                        this.showModal = true;
-                        this.error = '';
-                        this.newCustomer = { first_name: '', last_name: '', mobile: '', email: '', type: 'farmer' };
-                        if (/^\d+$/.test(this.customerQuery)) {
-                            this.newCustomer.mobile = this.customerQuery;
-                        } else {
-                            this.newCustomer.first_name = this.customerQuery;
-                        }
-                    },
-
-                    async createCustomer() {
-                        if (!this.newCustomer.first_name || !this.newCustomer.mobile) {
-                            this.error = 'Legal name and mobile hash required.';
-                            return;
-                        }
-                        this.saving = true;
-                        this.error = '';
-                        try {
-                            const url = `{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}`;
-                            let res = await fetch(url, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                                },
-                                body: JSON.stringify(this.newCustomer)
-                            });
-                            let data = await res.json();
-                            if (data.success) {
-                                this.selectCustomer(data.customer);
-                            } else {
-                                this.error = data.message || 'System rejection. Contact core admin.';
+                            async createCustomer() {
+                                if (!this.newCustomer.first_name || !this.newCustomer.mobile) {
+                                    this.error = 'Legal name and mobile hash required.';
+                                    return;
+                                }
+                                this.saving = true;
+                                this.error = '';
+                                try {
+                                    const url = `{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}`;
+                                    let res = await fetch(url, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Accept': 'application/json',
+                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                        },
+                                        body: JSON.stringify(this.newCustomer)
+                                    });
+                                    let data = await res.json();
+                                    if (data.success) {
+                                        this.selectCustomer(data.customer);
+                                    } else {
+                                        this.error = data.message || 'System rejection. Contact core admin.';
+                                    }
+                                } catch (e) {
+                                    console.error(e);
+                                    this.error = 'Network failure in ledger sync.';
+                                } finally {
+                                    this.saving = false;
+                                }
                             }
-                        } catch (e) {
-                            console.error(e);
-                            this.error = 'Network failure in ledger sync.';
-                        } finally {
-                            this.saving = false;
                         }
                     }
-                }
-            }
-        </script>
+                </script>
+            </div>
+        @endcan
 
-    <!-- Premium Action Group -->
-    <div
-        class="flex items-center gap-1.5 p-1 bg-secondary/20 dark:bg-white/5 border border-white/10 rounded-2xl shadow-inner backdrop-blur-md">
-        <!-- Theme Toggle -->
-        <x-layout.theme-toggle />
+        <!-- Premium Action Group -->
+        <div
+            class="flex items-center gap-1.5 p-1 bg-secondary/20 dark:bg-white/5 border border-white/10 rounded-2xl shadow-inner backdrop-blur-md">
+            <!-- Theme Toggle -->
+            <x-layout.theme-toggle />
 
-        <!-- Premeum Notifications -->
-        <div class="relative" x-data="{ open: false }" @click.away="open = false" @keydown.escape.window="open = false">
-            <button @click="open = !open"
-                class="group relative inline-flex items-center justify-center rounded-xl size-10 text-muted-foreground hover:bg-white/50 dark:hover:bg-white/10 hover:text-primary transition-all duration-300 active:scale-90">
-                <span
-                    class="absolute top-2 right-2 size-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                    class="size-5 relative z-10 transition-all group-hover:rotate-[15deg] group-active:scale-110">
-                    <path d="M6 8a6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                </svg>
-            </button>
+            <!-- Premeum Notifications -->
+            <div class="relative" x-data="{ open: false }" @click.away="open = false"
+                @keydown.escape.window="open = false">
+                <button @click="open = !open"
+                    class="group relative inline-flex items-center justify-center rounded-xl size-10 text-muted-foreground hover:bg-white/50 dark:hover:bg-white/10 hover:text-primary transition-all duration-300 active:scale-90">
+                    <span
+                        class="absolute top-2 right-2 size-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        class="size-5 relative z-10 transition-all group-hover:rotate-[15deg] group-active:scale-110">
+                        <path d="M6 8a6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                    </svg>
+                </button>
 
-            <!-- Dropdown Panel -->
-            <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 translate-y-4 scale-[0.98]"
-                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                class="absolute right-0 mt-3 w-80 sm:w-96 rounded-3xl border border-white/20 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 overflow-hidden ring-1 ring-black/5">
-                <div
-                    class="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-white/5 dark:bg-white/2">
-                    <h3 class="text-xs font-black uppercase tracking-widest">Feed</h3>
-                    <button
-                        class="text-[10px] font-bold text-primary hover:text-primary/70 underline underline-offset-4 decoration-primary/30 transition-all">Clear
-                        All</button>
-                </div>
-
-                <div class="max-h-[70vh] overflow-y-auto p-4 space-y-2 no-scrollbar">
+                <!-- Dropdown Panel -->
+                <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 translate-y-4 scale-[0.98]"
+                    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                    class="absolute right-0 mt-3 w-80 sm:w-96 rounded-3xl border border-white/20 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 overflow-hidden ring-1 ring-black/5">
                     <div
-                        class="flex flex-col items-center justify-center py-10 text-center space-y-4 opacity-50 italic">
-                        <div class="size-16 rounded-full bg-muted/50 flex items-center justify-center shadow-inner">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"
-                                stroke-linejoin="round" class="size-8 text-muted-foreground/50">
-                                <path d="M6 8a6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                            </svg>
-                        </div>
-                        <div class="space-y-1">
-                            <p class="text-xs font-bold uppercase tracking-widest">Digital Silence</p>
-                            <p class="text-[10px] opacity-70">The system ledger is currently quiet.</p>
+                        class="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-white/5 dark:bg-white/2">
+                        <h3 class="text-xs font-black uppercase tracking-widest">Feed</h3>
+                        <button
+                            class="text-[10px] font-bold text-primary hover:text-primary/70 underline underline-offset-4 decoration-primary/30 transition-all">Clear
+                            All</button>
+                    </div>
+
+                    <div class="max-h-[70vh] overflow-y-auto p-4 space-y-2 no-scrollbar">
+                        <div
+                            class="flex flex-col items-center justify-center py-10 text-center space-y-4 opacity-50 italic">
+                            <div class="size-16 rounded-full bg-muted/50 flex items-center justify-center shadow-inner">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"
+                                    stroke-linejoin="round" class="size-8 text-muted-foreground/50">
+                                    <path d="M6 8a6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                                </svg>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-xs font-bold uppercase tracking-widest">Digital Silence</p>
+                                <p class="text-[10px] opacity-70">The system ledger is currently quiet.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Premeum Settings -->
+            @can('settings view')
+                <a href="/settings"
+                    class="group relative inline-flex items-center justify-center rounded-xl size-10 text-muted-foreground hover:bg-white/50 dark:hover:bg-white/10 hover:text-primary transition-all duration-300 active:scale-90 {{ request()->is('settings*') ? 'text-primary bg-primary/10' : '' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        class="size-5 relative z-10 transition-transform duration-700 group-hover:rotate-180">
+                        <path
+                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.74l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                </a>
+            @endcan
         </div>
 
-        <!-- Premeum Settings -->
-        @can('settings view')
-            <a href="/settings"
-                class="group relative inline-flex items-center justify-center rounded-xl size-10 text-muted-foreground hover:bg-white/50 dark:hover:bg-white/10 hover:text-primary transition-all duration-300 active:scale-90 {{ request()->is('settings*') ? 'text-primary bg-primary/10' : '' }}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                    class="size-5 relative z-10 transition-transform duration-700 group-hover:rotate-180">
-                    <path
-                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.74l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                    <circle cx="12" cy="12" r="3" />
-                </svg>
-            </a>
-        @endcan
-    </div>
+        <div class="h-8 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent mx-2"></div>
 
-    <div class="h-8 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent mx-2"></div>
-
-    <x-layout.user-dropdown />
+        <x-layout.user-dropdown />
     </div>
 </header>

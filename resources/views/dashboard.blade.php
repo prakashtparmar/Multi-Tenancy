@@ -23,11 +23,56 @@
         </div>
         
         <div class="flex items-center gap-3">
-             <!-- Date Range Picker (Static) -->
-            <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-background/50 border border-input px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/20 transition-all duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                Last 30 Days
-            </button>
+             <!-- Tab Switcher -->
+             <div class="flex p-1 bg-muted/50 rounded-xl border border-border/50 backdrop-blur-md mr-2">
+                 <button @click="activeTab = 'overview'" 
+                         :class="activeTab === 'overview' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+                         class="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all duration-200">
+                     Overview
+                 </button>
+                 <button @click="activeTab = 'orders'" 
+                         :class="activeTab === 'orders' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+                         class="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all duration-200">
+                     Order History
+                 </button>
+             </div>
+
+             <!-- Premium Period Selector -->
+             <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" 
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-background/50 border border-input px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/20 transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                    <span>
+                        {{ [
+                            'today' => 'Today',
+                            'yesterday' => 'Yesterday',
+                            'week' => 'This Week',
+                            'month' => 'This Month',
+                            'year' => 'This Year',
+                            '30days' => 'Last 30 Days'
+                        ][$period ?? '30days'] }}
+                    </span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-200" :class="open ? 'rotate-180' : ''"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+
+                <div x-show="open" @click.away="open = false" 
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+                     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                     class="absolute right-0 mt-2 w-48 rounded-2xl border border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl z-[100] overflow-hidden py-1 ring-1 ring-black/5" 
+                     style="display: none;">
+                    @foreach(['today' => 'Today', 'yesterday' => 'Yesterday', 'week' => 'This Week', 'month' => 'This Month', 'year' => 'This Year', '30days' => 'Last 30 Days'] as $key => $label)
+                        <a href="{{ request()->fullUrlWithQuery(['period' => $key]) }}" 
+                           class="flex items-center px-4 py-2.5 text-xs font-bold uppercase tracking-widest hover:bg-primary/10 hover:text-primary transition-colors {{ ($period ?? '30days') === $key ? 'bg-primary/5 text-primary' : 'text-muted-foreground' }}">
+                           {{ $label }}
+                           @if(($period ?? '30days') === $key)
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="ml-auto"><polyline points="20 6 9 17 4 12"/></svg>
+                           @endif
+                        </a>
+                    @endforeach
+                </div>
+             </div>
+
             <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-200">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                 Download Report
@@ -39,7 +84,7 @@
     <div class="p-6 lg:p-8 space-y-8 min-h-screen">
         
         <!-- Tab Content: Overview -->
-        <div class="space-y-6">
+        <div x-show="activeTab === 'overview'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
             
             <!-- Enterprise KPI Grid -->
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -232,6 +277,79 @@
                         </div>
                     </div>
                     
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Order History -->
+        <div x-show="activeTab === 'orders'" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
+            <div class="rounded-3xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-border/40 flex items-center justify-between bg-muted/20">
+                    <div>
+                        <h3 class="text-xl font-bold font-heading tracking-tight">System-Wide Records</h3>
+                        <p class="text-sm text-muted-foreground">Comprehensive overview of recent order activity</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest px-3 py-1 bg-secondary/30 rounded-lg">
+                            {{ count($orderHistory) }} Recent Entries
+                        </span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-border/40 bg-muted/10">
+                                <th class="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Order Ref</th>
+                                <th class="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Entity</th>
+                                <th class="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Timeline</th>
+                                <th class="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground text-right">Valuation</th>
+                                <th class="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground text-center">Status</th>
+                                <th class="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Originator</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border/40">
+                            @foreach($orderHistory as $order)
+                            <tr class="group hover:bg-primary/5 transition-all cursor-pointer" @click="window.location.href='{{ tenant('id') ? route('tenant.orders.show', $order) : route('central.orders.show', $order) }}'">
+                                <td class="px-6 py-5">
+                                    <span class="font-mono text-sm font-black text-foreground group-hover:text-primary transition-colors">#{{ $order->order_number }}</span>
+                                </td>
+                                <td class="px-6 py-5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-[10px] border border-primary/20">
+                                            {{ substr($order->customer->name ?? 'G', 0, 1) }}
+                                        </div>
+                                        <span class="text-sm font-bold text-foreground">{{ $order->customer->name ?? 'Guest Entity' }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5">
+                                    <span class="text-xs font-medium text-muted-foreground">{{ $order->created_at->format('M d, H:i') }}</span>
+                                </td>
+                                <td class="px-6 py-5 text-right">
+                                    <span class="font-mono text-sm font-black text-foreground">Rs {{ number_format($order->grand_total, 2) }}</span>
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    @php
+                                        $statusClass = [
+                                            'completed' => 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+                                            'processing' => 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+                                            'cancelled' => 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+                                            'pending' => 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+                                            'shipped' => 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
+                                        ][$order->status] ?? 'bg-muted text-muted-foreground border-border';
+                                    @endphp
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border {{ $statusClass }}">
+                                        {{ $order->status }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-5">
+                                    <span class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                                        {{ $order->creator->name ?? 'System' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
