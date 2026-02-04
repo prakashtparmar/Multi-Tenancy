@@ -2,10 +2,9 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Invoice') }} {{ $invoice->invoice_number }}
+                Invoice #{{ $invoice->invoice_number }}
             </h2>
 
-            <!-- PDF Actions -->
             <div class="flex gap-2">
                 <a href="{{ route('central.invoices.pdf', $invoice) }}"
                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-semibold">
@@ -21,19 +20,19 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="py-10 print:p-0">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 print:max-w-full print:px-0">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 print:grid-cols-1">
 
-                <!-- Invoice Details -->
-                <div class="col-span-2 bg-white shadow-sm rounded-lg">
-                    <div class="p-6 text-gray-900">
+                <!-- ================= INVOICE DETAILS ================= -->
+                <div class="col-span-2 bg-white shadow rounded-lg print:shadow-none print:rounded-none">
+                    <div class="p-6 print:p-4 text-gray-900">
 
-                        <!-- Header -->
+                        <!-- ===== Invoice Header ===== -->
                         <div class="flex justify-between items-start border-b pb-4 mb-6">
                             <div>
-                                <h3 class="text-2xl font-bold">INVOICE</h3>
-                                <p class="text-gray-500">#{{ $invoice->invoice_number }}</p>
+                                <h3 class="text-2xl font-bold tracking-wide">INVOICE</h3>
+                                <p class="text-sm text-gray-500">Invoice No: {{ $invoice->invoice_number }}</p>
                                 <p class="text-sm text-gray-500">
                                     Issued: {{ $invoice->issue_date->format('d M Y') }}
                                 </p>
@@ -43,15 +42,15 @@
                             </div>
 
                             <div class="text-right">
-                                <h4 class="font-bold text-lg">
+                                <p class="font-bold text-lg">
                                     {{ $invoice->order->customer->first_name ?? 'Guest' }}
                                     {{ $invoice->order->customer->last_name ?? '' }}
-                                </h4>
+                                </p>
                                 <p class="text-sm text-gray-600">
                                     {{ $invoice->order->customer->email ?? '' }}
                                 </p>
 
-                                <span class="inline-block mt-2 px-3 py-1 rounded-full text-sm font-bold
+                                <span class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold
                                     {{ $invoice->status === 'paid'
                                         ? 'bg-green-100 text-green-800'
                                         : ($invoice->status === 'partial'
@@ -62,11 +61,60 @@
                             </div>
                         </div>
 
-                        <!-- Line Items -->
+                        <!-- ===== Addresses ===== -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="border rounded p-4">
+                                <h4 class="font-bold mb-2">Billing Address</h4>
+                                <p class="text-sm">
+                                    <strong>Customer:</strong>
+                                    {{ $invoice->order->customer->first_name ?? '' }}
+                                    {{ $invoice->order->customer->last_name ?? '' }}<br>
+
+                                    <strong>Mobile:</strong>
+                                    {{ $invoice->order->customer->mobile ?? 'N/A' }}<br>
+
+                                    @if($invoice->order->billingAddress)
+                                        {{ $invoice->order->billingAddress->address_line1 }}<br>
+                                        @if($invoice->order->billingAddress->address_line2)
+                                            {{ $invoice->order->billingAddress->address_line2 }}<br>
+                                        @endif
+                                        {{ $invoice->order->billingAddress->village }},
+                                        {{ $invoice->order->billingAddress->state }} -
+                                        {{ $invoice->order->billingAddress->pincode }}
+                                    @endif
+                                </p>
+                            </div>
+
+                            <div class="border rounded p-4">
+                                <h4 class="font-bold mb-2">Shipping Address</h4>
+                                <p class="text-sm">
+                                    <strong>Customer:</strong>
+                                    {{ $invoice->order->customer->first_name ?? '' }}
+                                    {{ $invoice->order->customer->last_name ?? '' }}<br>
+
+                                    <strong>Mobile:</strong>
+                                    {{ $invoice->order->customer->mobile ?? 'N/A' }}<br>
+
+                                    @if($invoice->order->shippingAddress)
+                                        {{ $invoice->order->shippingAddress->address_line1 }}<br>
+                                        @if($invoice->order->shippingAddress->address_line2)
+                                            {{ $invoice->order->shippingAddress->address_line2 }}<br>
+                                        @endif
+                                        {{ $invoice->order->shippingAddress->village }},
+                                        {{ $invoice->order->shippingAddress->state }} -
+                                        {{ $invoice->order->shippingAddress->pincode }}
+                                    @else
+                                        Same as Billing
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- ===== Line Items ===== -->
                         <table class="w-full text-sm border-collapse mb-6">
-                            <thead class="border-b">
-                                <tr class="text-left">
-                                    <th class="py-2">Item</th>
+                            <thead class="border-b bg-gray-100">
+                                <tr>
+                                    <th class="py-2 text-left">Item</th>
                                     <th class="py-2 text-right">Qty</th>
                                     <th class="py-2 text-right">Price</th>
                                     <th class="py-2 text-right">Total</th>
@@ -80,40 +128,50 @@
                                             <span class="block text-xs text-gray-500">{{ $item->sku }}</span>
                                         </td>
                                         <td class="py-2 text-right">{{ $item->quantity }}</td>
-                                        <td class="py-2 text-right">₹ {{ number_format($item->unit_price, 2) }}</td>
-                                        <td class="py-2 text-right">₹ {{ number_format($item->total_price, 2) }}</td>
+                                        <td class="py-2 text-right">
+                                            ₹ {{ number_format($item->unit_price, 2) }}
+                                        </td>
+                                        <td class="py-2 text-right">
+                                            ₹ {{ number_format($item->total_price, 2) }}
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
-                            <tfoot>
-                                <tr class="font-semibold">
-                                    <td colspan="3" class="py-2 text-right">Total</td>
-                                    <td class="py-2 text-right">₹ {{ number_format($invoice->total_amount, 2) }}</td>
+                        </table>
+
+                        <!-- ===== Totals ===== -->
+                        <div class="flex justify-end">
+                            <table class="w-full max-w-sm text-sm">
+                                <tr>
+                                    <td class="py-1 text-right font-semibold">Subtotal</td>
+                                    <td class="py-1 text-right">
+                                        ₹ {{ number_format($invoice->total_amount, 2) }}
+                                    </td>
                                 </tr>
-                                <tr class="text-green-600">
-                                    <td colspan="3" class="py-2 text-right">Paid</td>
-                                    <td class="py-2 text-right">
+                                <tr>
+                                    <td class="py-1 text-right font-semibold">Paid</td>
+                                    <td class="py-1 text-right text-green-600">
                                         -₹ {{ number_format($invoice->paid_amount, 2) }}
                                     </td>
                                 </tr>
-                                <tr class="font-bold text-red-600 text-lg">
-                                    <td colspan="3" class="py-2 text-right">Balance Due</td>
+                                <tr class="text-lg font-bold text-red-600">
+                                    <td class="py-2 text-right">Balance Due</td>
                                     <td class="py-2 text-right">
                                         ₹ {{ number_format($invoice->total_amount - $invoice->paid_amount, 2) }}
                                     </td>
                                 </tr>
-                            </tfoot>
-                        </table>
+                            </table>
+                        </div>
 
                         <a href="{{ route('central.invoices.index') }}"
-                           class="text-gray-500 hover:underline">
+                           class="inline-block mt-6 text-gray-500 hover:underline print:hidden">
                             ← Back to Invoices
                         </a>
                     </div>
                 </div>
 
-                <!-- Payment Sidebar -->
-                <div class="bg-white shadow-sm rounded-lg h-fit">
+                <!-- ================= PAYMENT SIDEBAR ================= -->
+                <div class="bg-white shadow rounded-lg h-fit print:hidden">
                     <div class="p-6">
 
                         <h3 class="font-bold text-lg mb-4">Record Payment</h3>
@@ -146,10 +204,7 @@
 
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium">Notes</label>
-                                    <input
-                                        type="text"
-                                        name="notes"
-                                        class="mt-1 w-full rounded border-gray-300">
+                                    <input type="text" name="notes" class="mt-1 w-full rounded border-gray-300">
                                 </div>
 
                                 <button
@@ -164,9 +219,11 @@
                             </div>
                         @endif
 
-                        <!-- Payment History -->
+                        <!-- ===== Payment History ===== -->
                         <div class="mt-6 border-t pt-4">
-                            <h4 class="text-xs font-bold text-gray-500 uppercase mb-2">Payment History</h4>
+                            <h4 class="text-xs font-bold text-gray-500 uppercase mb-2">
+                                Payment History
+                            </h4>
                             <ul class="space-y-2 text-sm">
                                 @forelse($invoice->payments as $payment)
                                     <li class="flex justify-between">

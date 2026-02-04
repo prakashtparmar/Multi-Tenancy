@@ -168,6 +168,7 @@ Route::middleware('auth')->group(function () {
 
 
 
+
     Route::resource('invoices', \App\Http\Controllers\Central\InvoiceController::class)
         ->only(['index', 'store', 'show'])
         ->names('central.invoices');

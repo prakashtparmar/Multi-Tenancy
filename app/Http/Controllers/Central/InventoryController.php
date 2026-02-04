@@ -17,13 +17,13 @@ class InventoryController extends Controller
     {
         $this->authorize('inventory manage');
 
-        $query = \App\Models\Product::with(['stocks.warehouse', 'category']);
+        $query = \App\Models\Product::with(['stocks.warehouse', 'category', 'stocks']);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -96,7 +96,7 @@ class InventoryController extends Controller
                 $product = \App\Models\Product::find($validated['product_id']);
                 $oldTotal = $product->stock_on_hand;
                 $totalStock = \App\Models\InventoryStock::where('product_id', $product->id)->sum('quantity');
-                
+
                 $product->update(['stock_on_hand' => $totalStock]);
 
                 return back()->with('success', "Stock updated successfully. Total is now {$totalStock} (was {$oldTotal}).");

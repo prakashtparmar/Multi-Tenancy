@@ -212,9 +212,19 @@
                             <th class="h-12 px-6 text-center align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">SKU</th>
                             <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Category</th>
                              @foreach($warehouses as $wh)
-                                <th class="h-12 px-6 text-center align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">{{ $wh->code }}</th>
+                                <th class="h-12 px-6 text-center align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
+                                    <div class="flex flex-col">
+                                        <span>{{ $wh->code }}</span>
+                                        <span class="text-[9px] text-muted-foreground/50 lowercase font-normal">(OH / Res / Avl)</span>
+                                    </div>
+                                </th>
                             @endforeach
-                            <th class="h-12 px-6 text-right align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Total Stock</th>
+                            <th class="h-12 px-6 text-right align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
+                                <div class="flex flex-col items-end">
+                                    <span>Total Stock</span>
+                                    <span class="text-[9px] text-muted-foreground/50 lowercase font-normal">(Total OH / Total Res)</span>
+                                </div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="[&_tr:last-child]:border-0 text-sm">
@@ -250,18 +260,33 @@
                             @foreach($warehouses as $wh)
                                 @php 
                                     $stock = $product->stocks->firstWhere('warehouse_id', $wh->id);
-                                    $qty = $stock ? $stock->quantity : 0;
+                                    $oh = $stock ? $stock->quantity : 0;
+                                    $res = $stock ? $stock->reserve_quantity : 0;
+                                    $avl = $oh - $res;
                                 @endphp
                                 <td class="p-6 align-middle text-center">
-                                    <span class="font-medium {{ $qty <= 10 ? 'text-amber-600' : 'text-foreground' }}">
-                                        {{ number_format($qty, 0) }}
-                                    </span>
+                                    <div class="flex flex-col items-center">
+                                        <span class="font-medium {{ $oh <= 5 ? 'text-amber-600' : 'text-foreground' }}">
+                                            {{ number_format($oh, 0) }}
+                                        </span>
+                                        <div class="flex gap-2 text-[10px] text-muted-foreground/60">
+                                            <span title="Reserved">{{ number_format($res, 0) }}</span>
+                                            <span>/</span>
+                                            <span title="Available" class="{{ $avl <= 0 ? 'text-destructive font-bold' : '' }}">{{ number_format($avl, 0) }}</span>
+                                        </div>
+                                    </div>
                                 </td>
                             @endforeach
                             <td class="p-6 align-middle text-right">
                                 <div class="flex flex-col items-end">
+                                    @php
+                                        $totalRes = $product->stocks->sum('reserve_quantity');
+                                    @endphp
                                     <span class="text-lg font-bold {{ $product->stock_on_hand <= 10 ? 'text-destructive' : 'text-primary' }}">
                                         {{ number_format($product->stock_on_hand, 0) }}
+                                    </span>
+                                    <span class="text-[10px] text-muted-foreground font-medium">
+                                        Res: {{ number_format($totalRes, 0) }}
                                     </span>
                                     @if($product->stock_on_hand <= 10)
                                         <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold bg-destructive/10 text-destructive border border-destructive/20 mt-1">

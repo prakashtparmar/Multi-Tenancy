@@ -80,33 +80,51 @@
         </x-ui.button>
     @endif
 
-    {{-- PRINT BUTTONS --}}
-    <div class="flex gap-2 ml-2 border-l pl-4 border-border/50">
+   {{-- PRINT BUTTONS --}}
+<div class="flex gap-2 ml-2 border-l pl-4 border-border/50">
 
-        {{-- Print Invoice (visible from Ready to Ship onwards) --}}
-        @if($order->invoices->isNotEmpty())
-            @php $invoice = $order->invoices->first(); @endphp
-            <x-ui.button
-                variant="secondary"
-                href="{{ route('central.invoices.pdf', $invoice) }}"
+    {{-- Print Invoice --}}
+    @if($order->invoices->isNotEmpty())
+        @php $invoice = $order->invoices->first(); @endphp
+        <div class="relative group">
+            <x-ui.button 
+                variant="secondary" 
+                href="{{ route('central.invoices.pdf', $invoice) }}" 
                 target="_blank"
-                title="Print Invoice"
+                class="px-3"
             >
-                🧾
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
+                </svg>
             </x-ui.button>
-        @endif
+            <span class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap z-50 shadow-sm">
+                Print Invoice
+            </span>
+        </div>
+    @endif
 
-        {{-- Print Receipt --}}
-        <x-ui.button
-            variant="secondary"
-            href="{{ route('central.orders.receipt', $order) }}"
+    {{-- Print COD / Post Receipt --}}
+    <div class="relative group">
+        <x-ui.button 
+            variant="secondary" 
+            href="{{ route('central.orders.receipt', $order) }}" 
             target="_blank"
-            title="Print Receipt"
+            class="px-3"
         >
-            🧾
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                <path d="m3.3 7 8.7 5 8.7-5"/>
+                <path d="M12 22V12"/>
+            </svg>
         </x-ui.button>
-
+        <span class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap z-50 shadow-sm">
+            Print COD Receipt
+        </span>
     </div>
+
+</div>
 </div>
 
       </div>
@@ -139,14 +157,14 @@ $isConfirmed = in_array($order->status, [
                $isCurrent = $order->status === 'processing';
                @endphp
                <div class="flex flex-col items-center gap-2">
-                  <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm {{ in_array($order->status, ['processing', 'ready_to_ship', 'shipped', 'in_transit', 'completed']) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground' }} shadow-lg ring-4 ring-card transition-colors duration-500">
-                     @if(in_array($order->status, ['processing', 'ready_to_ship', 'shipped', 'in_transit', 'completed'])) 
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm {{ in_array($order->status, ['confirmed', 'processing', 'ready_to_ship', 'shipped', 'in_transit', 'completed']) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground' }} shadow-lg ring-4 ring-card transition-colors duration-500">
+                     @if(in_array($order->status, ['confirmed', 'processing', 'ready_to_ship', 'shipped', 'in_transit', 'completed'])) 
                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"/>
                      </svg>
                      @else 2 @endif
                   </div>
-                  <span class="text-sm font-medium {{ in_array($order->status, ['processing', 'ready_to_ship', 'shipped', 'in_transit', 'completed']) ? 'text-foreground' : 'text-muted-foreground' }}">Processing</span>
+                  <span class="text-sm font-medium {{ in_array($order->status, ['confirmed', 'processing', 'ready_to_ship', 'shipped', 'in_transit', 'completed']) ? 'text-foreground' : 'text-muted-foreground' }}">Processing</span>
                </div>
                <!-- Step 3: Shipped -->
                @php 
