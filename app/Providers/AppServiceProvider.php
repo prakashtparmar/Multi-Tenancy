@@ -19,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Allow Super Admin to bypass all permission checks
+        \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
+            return $user->hasRole('Super Admin') ? true : null;
+        });
+
         // if (config('app.url')) {
         //     \Illuminate\Support\Facades\URL::forceRootUrl(config('app.url'));
         // }

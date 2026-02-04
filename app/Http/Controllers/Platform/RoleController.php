@@ -31,13 +31,15 @@ class RoleController extends Controller
      */
     public function index(): View
     {
-        $this->authorize('users manage');
+        $this->authorize('roles view');
 
         $roles = Role::with('permissions')->withCount('users')->paginate(10);
-        
+
+        $routePrefix = $this->getRoutePrefix();
         return view('tenant.roles.index', [
             'roles' => $roles,
-            'routePrefix' => $this->getRoutePrefix(),
+            'routePrefix' => $routePrefix,
+            'createUrl' => route($routePrefix . '.roles.create'),
         ]);
     }
 
@@ -46,14 +48,17 @@ class RoleController extends Controller
      */
     public function create(): View
     {
-        $this->authorize('users manage');
+        $this->authorize('roles create');
 
         $permissions = Permission::all()->groupBy(fn($p) => explode(' ', $p->name)[0]);
 
+        $routePrefix = $this->getRoutePrefix();
         return view('tenant.roles.form', [
             'permissions' => $permissions,
-            'routePrefix' => $this->getRoutePrefix(),
-            'role' => new Role(), // For form model binding if used
+            'routePrefix' => $routePrefix,
+            'role' => new Role(),
+            'indexUrl' => route($routePrefix . '.roles.index'),
+            'actionUrl' => route($routePrefix . '.roles.store'),
         ]);
     }
 
@@ -62,7 +67,7 @@ class RoleController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $this->authorize('users manage');
+        $this->authorize('roles create');
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
@@ -84,14 +89,17 @@ class RoleController extends Controller
      */
     public function edit(Role $role): View
     {
-        $this->authorize('users manage');
+        $this->authorize('roles edit');
 
         $permissions = Permission::all()->groupBy(fn($p) => explode(' ', $p->name)[0]);
 
+        $routePrefix = $this->getRoutePrefix();
         return view('tenant.roles.form', [
             'role' => $role,
             'permissions' => $permissions,
-            'routePrefix' => $this->getRoutePrefix(),
+            'routePrefix' => $routePrefix,
+            'indexUrl' => route($routePrefix . '.roles.index'),
+            'actionUrl' => route($routePrefix . '.roles.update', $role),
         ]);
     }
 
@@ -100,7 +108,7 @@ class RoleController extends Controller
      */
     public function update(Request $request, Role $role): RedirectResponse
     {
-        $this->authorize('users manage');
+        $this->authorize('roles edit');
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('roles', 'name')->ignore($role->id)],
@@ -124,14 +132,14 @@ class RoleController extends Controller
      */
     public function destroy(Role $role): RedirectResponse
     {
-        $this->authorize('users manage');
+        $this->authorize('roles delete');
 
         if (in_array($role->name, ['admin', 'Super Admin'])) {
             return back()->with('error', 'Cannot delete system roles.');
         }
 
         $role->delete();
-        
+
         return redirect()->route($this->getRoutePrefix() . '.roles.index')
             ->with('success', 'Role deleted successfully.');
     }

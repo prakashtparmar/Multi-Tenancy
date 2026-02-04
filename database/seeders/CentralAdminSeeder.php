@@ -15,15 +15,37 @@ class CentralAdminSeeder extends Seeder
     {
         // 1. Define Permissions (Parity with Tenant)
         $permissions = [
-            'dashboard view', 'analytics view',
-            'users view', 'users create', 'users edit', 'users delete',
-            'roles view', 'roles create', 'roles edit', 'roles delete',
-            'products view', 'products create', 'products edit', 'products delete', 'inventory manage',
-            'orders view', 'orders manage', 'customers view', 'customers manage',
-            'marketing view', 'marketing manage',
-            'reports view', 'reports export',
-            'settings view', 'settings manage', 'activity-logs view',
-            'tenants view', 'tenants manage', // Extra for Central
+            'dashboard view',
+            'analytics view',
+            'users view',
+            'users create',
+            'users edit',
+            'users delete',
+            'roles view',
+            'roles create',
+            'roles edit',
+            'roles delete',
+            'products view',
+            'products create',
+            'products edit',
+            'products delete',
+            'inventory manage',
+            'purchase-orders view',
+            'suppliers view',
+            'warehouses view',
+            'orders view',
+            'orders manage',
+            'customers view',
+            'customers manage',
+            'marketing view',
+            'marketing manage',
+            'reports view',
+            'reports export',
+            'settings view',
+            'settings manage',
+            'activity-logs view',
+            'tenants view',
+            'tenants manage', // Extra for Central
         ];
 
         foreach ($permissions as $permission) {

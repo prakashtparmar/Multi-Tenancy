@@ -40,6 +40,9 @@ class TenantDatabaseSeeder extends Seeder
             'products edit',
             'products delete',
             'inventory manage',
+            'purchase-orders view',
+            'suppliers view',
+            'warehouses view',
 
             // Sales
             'orders view',
@@ -74,12 +77,25 @@ class TenantDatabaseSeeder extends Seeder
         // Manager (Most Permissions, except destructive system actions)
         $manager = Role::firstOrCreate(['name' => 'Manager', 'guard_name' => 'web']);
         $manager->givePermissionTo([
-            'dashboard view', 'analytics view',
-            'users view', 'users create', 'users edit',
-            'products view', 'products create', 'products edit', 'products delete', 'inventory manage',
-            'orders view', 'orders manage',
-            'customers view', 'customers manage',
-            'marketing view', 'marketing manage',
+            'dashboard view',
+            'analytics view',
+            'users view',
+            'users create',
+            'users edit',
+            'products view',
+            'products create',
+            'products edit',
+            'products delete',
+            'inventory manage',
+            'purchase-orders view',
+            'suppliers view',
+            'warehouses view',
+            'orders view',
+            'orders manage',
+            'customers view',
+            'customers manage',
+            'marketing view',
+            'marketing manage',
             'reports view',
             'settings view',
         ]);
@@ -88,7 +104,9 @@ class TenantDatabaseSeeder extends Seeder
         $editor = Role::firstOrCreate(['name' => 'Editor', 'guard_name' => 'web']);
         $editor->givePermissionTo([
             'dashboard view',
-            'products view', 'products create', 'products edit',
+            'products view',
+            'products create',
+            'products edit',
             'inventory manage',
             'marketing view',
         ]);
@@ -97,7 +115,8 @@ class TenantDatabaseSeeder extends Seeder
         $support = Role::firstOrCreate(['name' => 'Support', 'guard_name' => 'web']);
         $support->givePermissionTo([
             'dashboard view',
-            'orders view', 'orders manage',
+            'orders view',
+            'orders manage',
             'customers view',
             'products view',
         ]);
@@ -133,7 +152,7 @@ class TenantDatabaseSeeder extends Seeder
                 'created_by' => $user->id,
             ]);
 
-             CustomerAddress::create([
+            CustomerAddress::create([
                 'customer_id' => $customer->id,
                 'type' => 'shipping',
                 'address_line1' => 'Plot No 1, Farm Road',

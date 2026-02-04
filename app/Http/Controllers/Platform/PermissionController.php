@@ -30,7 +30,7 @@ class PermissionController extends Controller
      */
     public function index(): View
     {
-        $this->authorize('users manage');
+        $this->authorize('roles view');
 
         $permissions = Permission::with('roles')->latest()->paginate(15);
 
@@ -45,7 +45,7 @@ class PermissionController extends Controller
      */
     public function create(): View
     {
-        $this->authorize('users manage');
+        $this->authorize('roles create');
 
         return view('tenant.permissions.form', [
             'routePrefix' => $this->getRoutePrefix(),
@@ -57,7 +57,7 @@ class PermissionController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $this->authorize('users manage');
+        $this->authorize('roles create');
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:permissions,name'],
@@ -74,7 +74,7 @@ class PermissionController extends Controller
      */
     public function edit(Permission $permission): View
     {
-        $this->authorize('users manage');
+        $this->authorize('roles edit');
 
         return view('tenant.permissions.form', [
             'permission' => $permission,
@@ -87,7 +87,7 @@ class PermissionController extends Controller
      */
     public function update(Request $request, Permission $permission): RedirectResponse
     {
-        $this->authorize('users manage');
+        $this->authorize('roles edit');
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('permissions', 'name')->ignore($permission->id)],
@@ -103,7 +103,7 @@ class PermissionController extends Controller
      */
     public function destroy(Permission $permission): RedirectResponse
     {
-        $this->authorize('users manage');
+        $this->authorize('roles delete');
 
         $permission->delete();
 
