@@ -79,6 +79,66 @@
                             @error('email') <p class="text-[0.8rem] font-medium text-destructive mt-1">{{ $message }}</p> @enderror
                         </div>
 
+                        <!-- Phone Number -->
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium leading-none text-foreground/80" for="phone">
+                                Phone Number
+                            </label>
+                            <div class="relative group">
+                                <span class="absolute left-3 top-2.5 text-muted-foreground group-focus-within:text-primary transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                </span>
+                                <input class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 pl-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm" 
+                                       id="phone" name="phone" placeholder="+1 (555) 000-0000" 
+                                       value="{{ old('phone', $user->phone ?? '') }}">
+                            </div>
+                            @error('phone') <p class="text-[0.8rem] font-medium text-destructive mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <!-- Designation -->
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium leading-none text-foreground/80" for="designation">
+                                Designation
+                            </label>
+                            <div class="relative group">
+                                <span class="absolute left-3 top-2.5 text-muted-foreground group-focus-within:text-primary transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                                </span>
+                                <input class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 pl-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm" 
+                                       id="designation" name="designation" placeholder="Manager / Supervisor" 
+                                       value="{{ old('designation', $user->designation ?? '') }}">
+                            </div>
+                            @error('designation') <p class="text-[0.8rem] font-medium text-destructive mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <!-- Location -->
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium leading-none text-foreground/80" for="location">
+                                Location
+                            </label>
+                            <div class="relative group">
+                                <span class="absolute left-3 top-2.5 text-muted-foreground group-focus-within:text-primary transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                </span>
+                                <input class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 pl-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm" 
+                                       id="location" name="location" placeholder="City, Country" 
+                                       value="{{ old('location', $user->location ?? '') }}">
+                            </div>
+                            @error('location') <p class="text-[0.8rem] font-medium text-destructive mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <!-- Bio -->
+                        <div class="space-y-2 sm:col-span-2">
+                            <label class="text-sm font-medium leading-none text-foreground/80" for="bio">
+                                Short Biography
+                            </label>
+                            <div class="relative group">
+                                <textarea class="flex min-h-[100px] w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm" 
+                                          id="bio" name="bio" placeholder="Tell us a little bit about the user...">{{ old('bio', $user->bio ?? '') }}</textarea>
+                            </div>
+                            @error('bio') <p class="text-[0.8rem] font-medium text-destructive mt-1">{{ $message }}</p> @enderror
+                        </div>
+
                         <!-- Password -->
                         <div class="space-y-2">
                             <label class="text-sm font-medium leading-none text-foreground/80" for="password">

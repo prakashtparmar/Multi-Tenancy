@@ -98,11 +98,19 @@ class UserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'roles' => ['nullable', 'array'],
             'status' => ['nullable', 'in:active,inactive'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'designation' => ['nullable', 'string', 'max:255'],
+            'bio' => ['nullable', 'string'],
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'location' => $validated['location'] ?? null,
+            'designation' => $validated['designation'] ?? null,
+            'bio' => $validated['bio'] ?? null,
             'password' => Hash::make($validated['password']),
             'status' => $validated['status'] ?? 'active',
         ]);
@@ -146,11 +154,19 @@ class UserController extends Controller
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'roles' => ['nullable', 'array'],
             'status' => ['nullable', 'in:active,inactive'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'designation' => ['nullable', 'string', 'max:255'],
+            'bio' => ['nullable', 'string'],
         ]);
 
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? $user->phone,
+            'location' => $validated['location'] ?? $user->location,
+            'designation' => $validated['designation'] ?? $user->designation,
+            'bio' => $validated['bio'] ?? $user->bio,
             'status' => $validated['status'] ?? $user->status,
         ]);
 
