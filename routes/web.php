@@ -160,6 +160,14 @@ Route::middleware('auth')->group(function () {
 
     Route::post('invoices/{invoice}/payment', [\App\Http\Controllers\Central\InvoiceController::class, 'addPayment'])
         ->name('central.invoices.add-payment');
+
+
+    Route::get('invoices/{invoice}/pdf',
+    [\App\Http\Controllers\Central\InvoiceController::class, 'pdf']
+)->name('central.invoices.pdf');
+
+
+
     Route::resource('invoices', \App\Http\Controllers\Central\InvoiceController::class)
         ->only(['index', 'store', 'show'])
         ->names('central.invoices');
@@ -192,8 +200,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('orders/{order}/update-status', [\App\Http\Controllers\Central\OrderController::class, 'updateStatus'])
         ->name('central.orders.update-status');
-    Route::get('orders/{order}/invoice', [\App\Http\Controllers\Central\OrderController::class, 'downloadInvoice'])
-        ->name('central.orders.invoice');
+    // Route::get('orders/{order}/invoice', [\App\Http\Controllers\Central\OrderController::class, 'downloadInvoice'])
+    //     ->name('central.orders.invoice');
     Route::get('orders/{order}/receipt', [\App\Http\Controllers\Central\OrderController::class, 'downloadReceipt'])
         ->name('central.orders.receipt');
     Route::post('orders/export', [\App\Http\Controllers\Central\OrderController::class, 'export'])

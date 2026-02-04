@@ -969,10 +969,10 @@
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <div>
+                                        <!-- <div>
                                              <label class="block text-sm font-medium text-muted-foreground mb-2">Order ID (Auto-generated)</label>
                                              <input type="text" name="order_number" value="ORD-{{ strtoupper(\Illuminate\Support\Str::random(10)) }}" class="w-full bg-muted/50 border border-border rounded-lg text-muted-foreground font-mono" readonly>
-                                        </div>
+                                        </div> -->
                                         <div class="md:col-span-2">
                                             <label class="block text-sm font-medium text-muted-foreground mb-2">Internal Notes</label>
                                             <textarea name="notes" rows="3" placeholder="Add any special instructions for this order..." class="w-full rounded-lg border-border bg-background shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"></textarea>
@@ -1640,7 +1640,7 @@
                     const payload = {
                         customer_id: this.selectedCustomer.id,
                         warehouse_id: document.querySelector('[name="warehouse_id"]')?.value,
-                        order_number: document.querySelector('[name="order_number"]')?.value,
+                        // order_number: document.querySelector('[name="order_number"]')?.value,
                         notes: document.querySelector('[name="notes"]')?.value,
                         billing_address_id: this.order.billing_address_id,
                         shipping_address_id: this.order.shipping_address_id,

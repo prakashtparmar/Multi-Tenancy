@@ -46,7 +46,7 @@ class OrderService
                 'status' => 'processing',
                 'payment_status' => 'unpaid'
             ]);
-            
+
             return $order->fresh();
         });
     }
@@ -56,8 +56,8 @@ class OrderService
      */
     public function shipOrder(Order $order, ?string $trackingNumber = null, ?string $carrier = null): Order
     {
-        if ($order->status !== 'processing') {
-            throw new Exception("Order must be processing to be shipped.");
+        if (!in_array($order->status, ['processing', 'ready_to_ship'])) {
+            throw new Exception("Order must be processing or ready to ship to be shipped.");
         }
 
         return DB::transaction(function () use ($order, $trackingNumber, $carrier) {
@@ -104,7 +104,7 @@ class OrderService
      */
     public function deliverOrder(Order $order): Order
     {
-         if ($order->status !== 'shipped') {
+        if ($order->status !== 'shipped') {
             throw new Exception("Order must be shipped to be delivered.");
         }
 
@@ -113,7 +113,7 @@ class OrderService
             'shipping_status' => 'delivered',
             'completed_by' => Auth::id(),
         ]);
-        
+
         $order->shipments()->where('status', 'shipped')->update([
             'status' => 'delivered',
             'delivered_at' => now(),
@@ -134,10 +134,10 @@ class OrderService
         return DB::transaction(function () use ($order) {
             if ($order->status === 'processing') {
                 foreach ($order->items as $item) {
-                     $stock = InventoryStock::where('product_id', $item->product_id)
+                    $stock = InventoryStock::where('product_id', $item->product_id)
                         ->where('warehouse_id', $order->warehouse_id)
                         ->first();
-                    
+
                     if ($stock) {
                         $stock->decrement('reserve_quantity', $item->quantity);
                     }

@@ -320,10 +320,28 @@
                                 </select>
                             </div>
                             <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none text-foreground/80">Source</label>
-                                <input type="text" name="source" value="{{ old('source') }}" placeholder="e.g. Referral, Walk-in"
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                            </div>
+    <label class="text-sm font-medium leading-none text-foreground/80">Source</label>
+    <select name="source"
+        class="flex h-10 w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary/30">
+        <option value="">Select source</option>
+        @foreach ([
+            'Referral',
+            'Walk-in',
+            'Phone Call',
+            'WhatsApp',
+            'Facebook',
+            'Instagram',
+            'Google',
+            'Dealer',
+            'Agent'
+        ] as $src)
+            <option value="{{ $src }}" @selected(old('source') === $src)>
+                {{ $src }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
                         </div>
                      </div>
 

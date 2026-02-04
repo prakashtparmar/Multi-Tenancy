@@ -21,6 +21,13 @@ return new class extends Migration
             $table->string('display_name')->nullable();
             $table->string('mobile', 20)->unique();
             $table->string('email')->nullable()->index();
+            // Identity (Extra Phones)
+$table->string('phone_number_2', 20)->nullable();
+$table->string('relative_phone', 20)->nullable();
+
+
+            // ✅ Source (NEW)
+            $table->string('source', 50)->nullable();
 
             // Classification
             $table->enum('type', ['farmer', 'buyer', 'vendor', 'dealer'])->default('farmer');

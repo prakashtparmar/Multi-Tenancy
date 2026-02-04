@@ -28,22 +28,20 @@ class CustomerController extends Controller
 
         $query = Customer::query();
 
-        // Search Filter
         if ($request->filled('search')) {
             $query->search($request->search);
         }
 
-        // Filter by Status
         if ($request->filled('status') && in_array($request->status, ['active', 'inactive'])) {
             $query->where('is_active', $request->status === 'active' ? 1 : 0);
         }
 
-        // Filter by Trashed
         if ($request->query('trashed') === 'only') {
             $query->onlyTrashed();
         }
 
         $perPage = (int) $request->input('per_page', 10);
+
         $customers = $query->with(['addresses' => function ($q) {
             $q->where('is_default', true);
         }])->latest()->paginate($perPage)->withQueryString();
@@ -68,26 +66,31 @@ class CustomerController extends Controller
         $this->authorize('customers manage');
 
         $data = $request->validated();
-        
+
         $crops = [
-            'primary' => array_filter(array_map('trim', explode(',', $request->input('primary_crops') ?? ''))),
-            'secondary' => array_filter(array_map('trim', explode(',', $request->input('secondary_crops') ?? ''))),
+            'primary' => array_filter(array_map('trim', explode(',', (string) $request->input('primary_crops', '')))),
+            'secondary' => array_filter(array_map('trim', explode(',', (string) $request->input('secondary_crops', '')))),
         ];
+
         $data['crops'] = $crops;
 
         try {
             DB::transaction(function () use ($data, $request) {
-                $customer = Customer::create(collect($data)->except([
-                    'address_line1', 'address_line2', 'village', 'taluka', 'district', 'state', 'pincode', 'country', 'post_office', 'latitude', 'longitude',
-                    'primary_crops', 'secondary_crops', 'tags'
-                ])->all());
+                $customer = Customer::create(
+                    collect($data)->except([
+                        'address_line1', 'address_line2', 'village', 'taluka', 'district', 'state',
+                        'pincode', 'country', 'post_office', 'latitude', 'longitude',
+                        'primary_crops', 'secondary_crops', 'tags'
+                    ])->all()
+                );
 
                 if ($request->filled('tags')) {
-                    $customer->tags = array_filter(array_map('trim', explode(',', $request->tags)));
+                    $customer->tags = array_filter(
+                        array_map('trim', explode(',', (string) $request->input('tags', '')))
+                    );
                     $customer->save();
                 }
-                
-                // Create primary address
+
                 $customer->addresses()->create([
                     'address_line1' => $request->address_line1 ?? '',
                     'address_line2' => $request->address_line2,
@@ -105,10 +108,12 @@ class CustomerController extends Controller
                 ]);
             });
 
-            return redirect()->route('central.customers.index')->with('success', 'Customer created successfully.');
+            return redirect()->route('central.customers.index')
+                ->with('success', 'Customer created successfully.');
 
         } catch (\Exception $e) {
-            return back()->withInput()->withErrors(['error' => 'Failed to create customer: ' . $e->getMessage()]);
+            return back()->withInput()
+                ->withErrors(['error' => 'Failed to create customer: ' . $e->getMessage()]);
         }
     }
 
@@ -159,27 +164,38 @@ class CustomerController extends Controller
         $data = $request->validated();
 
         $crops = $customer->crops ?? [];
-        if ($request->has('primary_crops')) {
-            $crops['primary'] = array_filter(array_map('trim', explode(',', $request->primary_crops)));
+
+        if ($request->filled('primary_crops')) {
+            $crops['primary'] = array_filter(
+                array_map('trim', explode(',', (string) $request->input('primary_crops')))
+            );
         }
-        if ($request->has('secondary_crops')) {
-            $crops['secondary'] = array_filter(array_map('trim', explode(',', $request->secondary_crops)));
+
+        if ($request->filled('secondary_crops')) {
+            $crops['secondary'] = array_filter(
+                array_map('trim', explode(',', (string) $request->input('secondary_crops')))
+            );
         }
+
         $data['crops'] = $crops;
 
         try {
             DB::transaction(function () use ($customer, $data, $request) {
-                $customer->update(collect($data)->except([
-                    'address_line1', 'address_line2', 'village', 'taluka', 'district', 'state', 'pincode', 'country', 'post_office', 'latitude', 'longitude',
-                    'primary_crops', 'secondary_crops', 'tags'
-                ])->all());
+                $customer->update(
+                    collect($data)->except([
+                        'address_line1', 'address_line2', 'village', 'taluka', 'district', 'state',
+                        'pincode', 'country', 'post_office', 'latitude', 'longitude',
+                        'primary_crops', 'secondary_crops', 'tags'
+                    ])->all()
+                );
 
-                if ($request->has('tags')) {
-                    $customer->tags = array_filter(array_map('trim', explode(',', $request->tags)));
+                if ($request->filled('tags')) {
+                    $customer->tags = array_filter(
+                        array_map('trim', explode(',', (string) $request->input('tags')))
+                    );
                     $customer->save();
                 }
 
-                // Update default address
                 $customer->addresses()->where('is_default', true)->update([
                     'address_line1' => $request->address_line1 ?? '',
                     'address_line2' => $request->address_line2,
@@ -195,10 +211,12 @@ class CustomerController extends Controller
                 ]);
             });
 
-            return redirect()->route('central.customers.index')->with('success', 'Customer updated successfully');
-            
+            return redirect()->route('central.customers.index')
+                ->with('success', 'Customer updated successfully');
+
         } catch (\Exception $e) {
-             return back()->withInput()->withErrors(['error' => 'Failed to update customer: ' . $e->getMessage()]);
+            return back()->withInput()
+                ->withErrors(['error' => 'Failed to update customer: ' . $e->getMessage()]);
         }
     }
 
@@ -213,11 +231,13 @@ class CustomerController extends Controller
 
         if ($customer->trashed()) {
             $customer->forceDelete();
-            return redirect()->route('central.customers.index', ['trashed' => 'only'])->with('success', 'Customer permanently deleted.');
-        } else {
-            $customer->delete();
-            return redirect()->route('central.customers.index')->with('success', 'Customer moved to trash.');
+            return redirect()->route('central.customers.index', ['trashed' => 'only'])
+                ->with('success', 'Customer permanently deleted.');
         }
+
+        $customer->delete();
+        return redirect()->route('central.customers.index')
+            ->with('success', 'Customer moved to trash.');
     }
 
     /**
@@ -230,7 +250,8 @@ class CustomerController extends Controller
         $customer = Customer::onlyTrashed()->findOrFail($id);
         $customer->restore();
 
-        return redirect()->route('central.customers.index')->with('success', 'Customer restored successfully.');
+        return redirect()->route('central.customers.index')
+            ->with('success', 'Customer restored successfully.');
     }
 
     /**
@@ -254,7 +275,7 @@ class CustomerController extends Controller
                 Customer::whereIn('id', $ids)->delete();
                 $message = 'Selected customers moved to trash.';
                 break;
-            
+
             case 'force_delete':
                 Customer::onlyTrashed()->whereIn('id', $ids)->forceDelete();
                 $message = 'Selected customers permanently deleted.';
@@ -267,10 +288,11 @@ class CustomerController extends Controller
 
             case 'active':
             case 'inactive':
-                $status = $action === 'active' ? 1 : 0;
-                Customer::whereIn('id', $ids)->update(['is_active' => $status]);
+                Customer::whereIn('id', $ids)
+                    ->update(['is_active' => $action === 'active' ? 1 : 0]);
                 $message = "Selected customers marked as $action.";
                 break;
+
             default:
                 $message = 'Invalid action.';
         }

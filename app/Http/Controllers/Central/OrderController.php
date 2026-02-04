@@ -22,6 +22,8 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Exception;
+use App\Models\Invoice;
+
 
 class OrderController extends Controller
 {
@@ -112,7 +114,7 @@ class OrderController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
-            'order_number' => 'required|unique:orders,order_number',
+            // 'order_number' => 'required|unique:orders,order_number',
             'is_future_order' => 'boolean',
             'scheduled_at' => 'required_if:is_future_order,true|nullable|date|after:now',
             'items' => 'required|array|min:1',
@@ -174,7 +176,7 @@ class OrderController extends Controller
                 $order = Order::create([
                     'customer_id' => $validated['customer_id'],
                     'warehouse_id' => $validated['warehouse_id'],
-                    'order_number' => $validated['order_number'],
+                    // 'order_number' => $validated['order_number'],
                     'total_amount' => $subTotalAmount,
                     'discount_amount' => $itemDiscountsTotal + $orderDiscountAmount,
                     'discount_type' => $orderDiscountType,
@@ -260,35 +262,162 @@ class OrderController extends Controller
     /**
      * Update the specified order's status.
      */
-    public function updateStatus(Request $request, Order $order): RedirectResponse
-    {
-        $this->authorize('orders manage');
-        $action = (string) $request->input('action');
+    /**
+ * Update the specified order's status.
+ */
+public function updateStatus(Request $request, Order $order): RedirectResponse
+{
+    $this->authorize('orders manage');
 
-        try {
-            $order->update(['updated_by' => auth()->id()]);
-            
-            switch ($action) {
-                case 'confirm':
-                    $this->orderService->confirmOrder($order);
-                    break;
-                case 'ship':
-                    $this->orderService->shipOrder($order, (string) $request->input('tracking_number'), (string) $request->input('carrier'));
-                    break;
-                case 'deliver':
-                    $this->orderService->deliverOrder($order);
-                    break;
-                case 'cancel':
-                    $this->orderService->cancelOrder($order);
-                    break;
-                default:
-                    throw new Exception("Invalid action.");
-            }
-            return back()->with('success', 'Order status updated successfully.');
-        } catch (Exception $e) {
-            return back()->with('error', $e->getMessage());
-        }
+    // ✅ Always work with latest DB state
+    $order->refresh();
+
+    $action = (string) $request->input('action');
+
+
+    try {
+       
+
+        switch ($action) {
+
+        
+            /**
+             * PENDING / PLACED → CONFIRMED
+             */
+            case 'confirm':
+                $order->update([
+                    'status' => 'confirmed',
+                    'shipping_status' => 'pending',
+                    'updated_by' => auth()->id(),
+                ]);
+                break;
+
+            /**
+             * CONFIRMED → PROCESSING
+             */
+            case 'process':
+    if ($order->status !== 'confirmed') {
+        throw new Exception('Order must be Confirmed before Processing.');
     }
+
+    $order->update([
+        'status' => 'processing',
+        'shipping_status' => 'pending',
+        'updated_by' => auth()->id(),
+    ]);
+    break;
+
+
+            /**
+             * PROCESSING → READY TO SHIP
+             * ✅ Invoice is generated here (once)
+             */
+            case 'ready_to_ship':
+
+    if ($order->status !== 'processing') {
+        throw new Exception('Order must be Processing before Ready to Ship.');
+    }
+
+    $order->update([
+        'status' => 'ready_to_ship',
+        'shipping_status' => 'pending',
+        'updated_by' => auth()->id(),
+    ]);
+
+    // Create invoice only if not exists
+    if ($order->invoices()->doesntExist()) {
+        Invoice::create([
+            'order_id'       => $order->id,
+            'customer_id'    => $order->customer_id,
+            'invoice_number' => 'INV-' . now()->format('Ymd') . '-' . str_pad((string) $order->id, 4, '0', STR_PAD_LEFT),
+            'issue_date'     => now(),
+            'due_date'       => now(),
+            'total_amount'   => $order->grand_total,
+            'paid_amount'    => 0,
+            'status'         => 'unpaid',
+        ]);
+    }
+    break;
+
+
+            /**
+             * READY TO SHIP → SHIPPED
+             */
+            case 'ship':
+
+    if ($order->status !== 'ready_to_ship') {
+        throw new Exception('Order must be Ready to Ship before shipping.');
+    }
+
+    $this->orderService->shipOrder(
+        $order,
+        (string) $request->input('tracking_number'),
+        (string) $request->input('carrier')
+    );
+
+    $order->update([
+        'status' => 'shipped',
+        'shipping_status' => 'shipped',
+        'updated_by' => auth()->id(),
+    ]);
+    break;
+
+
+            /**
+             * SHIPPED → IN TRANSIT
+             */
+            case 'in_transit':
+                $order->update([
+                    'status' => 'in_transit',
+                    'shipping_status' => 'in_transit',
+                ]);
+                break;
+
+            /**
+             * IN TRANSIT → DELIVERED / COMPLETED
+             */
+           case 'deliver':
+    if (!in_array($order->status, ['shipped', 'in_transit'])) {
+        throw new Exception('Order must be Shipped before delivery.');
+    }
+
+    $order->update([
+        'status' => 'completed',
+        'shipping_status' => 'delivered',
+        'completed_by' => auth()->id(),
+        'updated_by' => auth()->id(),
+    ]);
+    break;
+
+
+            /**
+             * CANCEL (ANY STAGE)
+             */
+            case 'cancel':
+                $this->orderService->cancelOrder($order);
+                break;
+
+            default:
+                throw new Exception("Invalid action: {$action}");
+        }
+
+        return redirect()
+    ->route('central.orders.show', $order)
+    ->with('success', 'Order status updated successfully.');
+
+
+    } catch (Exception $e) {
+        \Log::error('Order Status Update Error', [
+            'order_id' => $order->id,
+            'action' => $action,
+            'error' => $e->getMessage(),
+        ]);
+
+        return back()->with('error', $e->getMessage());
+    }
+}
+
+
 
     /**
      * Show the form for editing the specified order.
