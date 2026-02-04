@@ -6,71 +6,127 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Customer;
 use App\Models\Product;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $totalSales = Order::where('status', '!=', 'cancelled')->sum('grand_total');
-        $ordersCount = Order::count();
-        $customersCount = Customer::count();
-        $productsCount = Product::count();
+        // Period (DEFAULT = TODAY)
+        $period = $request->query('period', 'today');
 
-        // Calculate changes
-        $sales30Days = Order::where('status', '!=', 'cancelled')
-            ->where('created_at', '>=', now()->subDays(30))
+        // Date range resolver
+        switch ($period) {
+            case 'today':
+                $startDate = now()->startOfDay();
+                $endDate = now()->endOfDay();
+                break;
+
+            case 'yesterday':
+                $startDate = now()->subDay()->startOfDay();
+                $endDate = now()->subDay()->endOfDay();
+                break;
+
+            case 'week':
+                $startDate = now()->startOfWeek();
+                $endDate = now()->endOfWeek();
+                break;
+
+            case 'month':
+                $startDate = now()->startOfMonth();
+                $endDate = now()->endOfMonth();
+                break;
+
+            case 'year':
+                $startDate = now()->startOfYear();
+                $endDate = now()->endOfYear();
+                break;
+
+            case '30days':
+            default:
+                $startDate = now()->subDays(29)->startOfDay();
+                $endDate = now()->endOfDay();
+                break;
+        }
+
+        // KPI logic (date-aware)
+        $totalSales = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$startDate, $endDate])
             ->sum('grand_total');
-        
-        $salesPrev30Days = Order::where('status', '!=', 'cancelled')
-            ->where('created_at', '>=', now()->subDays(60))
-            ->where('created_at', '<', now()->subDays(30))
+
+        $ordersCount = Order::whereBetween('created_at', [$startDate, $endDate])->count();
+        $customersCount = Customer::whereBetween('created_at', [$startDate, $endDate])->count();
+        $productsCount = Product::whereBetween('created_at', [$startDate, $endDate])->count();
+
+        // Sales comparison (Dynamic based on period)
+        $duration = $startDate->diffInDays($endDate) + 1;
+        $compareStartDate = (clone $startDate)->subDays($duration);
+        $compareEndDate = (clone $endDate)->subDays($duration);
+
+        $prevSales = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$compareStartDate, $compareEndDate])
             ->sum('grand_total');
 
-        $salesChange = $salesPrev30Days > 0 
-            ? (($sales30Days - $salesPrev30Days) / $salesPrev30Days) * 100 
-            : ($sales30Days > 0 ? 100 : 0);
+        $salesChange = $prevSales > 0
+            ? (($totalSales - $prevSales) / $prevSales) * 100
+            : ($totalSales > 0 ? 100 : 0);
 
+        $periodLabel = match ($period) {
+            'today' => 'yesterday',
+            'yesterday' => 'day before',
+            'week' => 'last week',
+            'month' => 'last month',
+            'year' => 'last year',
+            default => 'previous ' . $duration . ' days',
+        };
+
+        // Stats array
         $stats = [
             [
                 'title' => 'Gross Sales',
                 'value' => 'Rs ' . number_format($totalSales, 2),
                 'change' => ($salesChange >= 0 ? '+' : '') . number_format($salesChange, 1) . '%',
                 'trend' => $salesChange >= 0 ? 'up' : 'down',
-                'desc' => 'vs. previous 30 days',
+                'desc' => 'vs. ' . $periodLabel,
                 'icon' => 'dollar-sign'
             ],
             [
-                'title' => 'Total Orders',
+                'title' => 'Orders',
                 'value' => number_format($ordersCount),
-                'change' => '+100%',
+                'change' => '',
                 'trend' => 'up',
-                'desc' => 'Lifetime volume',
+                'desc' => 'In selected period',
                 'icon' => 'shopping-cart'
             ],
             [
                 'title' => 'Customers',
                 'value' => number_format($customersCount),
-                'change' => '+100%',
+                'change' => '',
                 'trend' => 'up',
-                'desc' => 'Unified CRM',
+                'desc' => 'New registrations',
                 'icon' => 'users'
             ],
             [
-                'title' => 'Total Products',
+                'title' => 'Products',
                 'value' => number_format($productsCount),
-                'change' => '+100%',
+                'change' => '',
                 'trend' => 'up',
-                'desc' => 'Inventory items',
+                'desc' => 'Active inventory',
                 'icon' => 'refresh-cw'
             ],
         ];
 
-        $recentOrders = Order::with('customer')->latest()->take(5)->get();
-        
-        // Prepare chart data (last 30 days)
+        // Recent Orders (date-aware)
+        $recentOrders = Order::with('customer')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // Chart Data (date-aware)
         $chartDataRaw = Order::where('status', '!=', 'cancelled')
-            ->where('created_at', '>=', now()->subDays(30))
+            ->whereBetween('created_at', [$startDate, $endDate])
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(grand_total) as total'))
             ->groupBy('date')
             ->orderBy('date')
@@ -79,11 +135,32 @@ class DashboardController extends Controller
             ->toArray();
 
         $chartData = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $date = now()->subDays($i)->format('Y-m-d');
-            $chartData[] = $chartDataRaw[$date] ?? 0;
+        $days = match ($period) {
+            'today' => 1,
+            'week' => 7,
+            'month' => now()->daysInMonth,
+            'year' => 12,
+            default => 30,
+        };
+
+        for ($i = $days - 1; $i >= 0; $i--) {
+            // For year, we might want to show months, but let's stick to days for now to keep charts consistent
+            // or switch to month-based if period is 'year'
+            $date = (clone $endDate)->subDays($i)->format('Y-m-d');
+            $chartData[] = (float) ($chartDataRaw[$date] ?? 0);
         }
 
-        return view('dashboard', compact('stats', 'recentOrders', 'chartData'));
+        // ✅ REQUIRED ADDITION (ORDER HISTORY) - NOW FILTERED
+        $orderHistory = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->latest()
+            ->get();
+
+        return view('dashboard', compact(
+            'stats',
+            'recentOrders',
+            'chartData',
+            'orderHistory',
+            'period'
+        ));
     }
 }
