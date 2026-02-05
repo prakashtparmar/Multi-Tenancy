@@ -57,7 +57,7 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     // Enterprise Modules
     Route::patch('shipments/{shipment}/status', [\App\Http\Controllers\Tenant\ShipmentController::class, 'updateStatus'])->name('tenant.shipments.update-status');
     Route::resource('shipments', \App\Http\Controllers\Tenant\ShipmentController::class)->names('tenant.shipments');
-    
+
     Route::patch('returns/{orderReturn}/status', [\App\Http\Controllers\Tenant\OrderReturnController::class, 'updateStatus'])->name('tenant.returns.update-status');
     Route::resource('returns', \App\Http\Controllers\Tenant\OrderReturnController::class)->names('tenant.returns');
 
@@ -87,6 +87,16 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     // Inventory Management
     Route::get('inventory', [\App\Http\Controllers\Tenant\InventoryController::class, 'index'])->name('tenant.inventory.index');
     Route::post('inventory/adjust', [\App\Http\Controllers\Tenant\InventoryController::class, 'adjust'])->name('tenant.inventory.adjust');
+
+    // Search Endpoints (AJAX) - "Command Center" Functionality
+    Route::prefix('api')->group(function () {
+        Route::get('search/customers', [\App\Http\Controllers\Tenant\SearchController::class, 'customers'])
+            ->name('tenant.api.search.customers');
+        Route::post('customers/quick', [\App\Http\Controllers\Tenant\SearchController::class, 'storeCustomer'])
+            ->name('tenant.api.customers.store-quick');
+        Route::get('search/products', [\App\Http\Controllers\Tenant\SearchController::class, 'products'])
+            ->name('tenant.api.search.products');
+    });
 });
 
 
@@ -96,12 +106,12 @@ Route::get('/', function () {
     // Explicitly use the current host for redirects to avoid any central/tenant confusion
     $protocol = request()->secure() ? 'https://' : 'http://';
     $host = request()->getHost();
-    $port = request()->getPort() ? ':'.request()->getPort() : '';
-    $baseUrl = $protocol.$host.$port;
+    $port = request()->getPort() ? ':' . request()->getPort() : '';
+    $baseUrl = $protocol . $host . $port;
 
-    if (! auth()->check()) {
-        return redirect($baseUrl.'/login');
+    if (!auth()->check()) {
+        return redirect($baseUrl . '/login');
     }
 
-    return redirect($baseUrl.'/dashboard');
+    return redirect($baseUrl . '/dashboard');
 });

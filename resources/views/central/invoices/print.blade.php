@@ -2,161 +2,237 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice - {{ $order->order_number }}</title>
+    <title>Delivery Challan - {{ $invoice->invoice_number }}</title>
+    
     <style>
-        @page { margin: 100px 25px; }
-        body { font-family: 'Helvetica', Arial, sans-serif; color: #333; line-height: 1.4; font-size: 13px; }
-        .header { width: 100%; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .logo { width: 50%; float: left; font-size: 24px; font-weight: bold; }
-        .invoice-details { width: 50%; float: right; text-align: right; }
-        .invoice-details h1 { margin: 0; font-size: 28px; color: #444; }
-        .invoice-details p { margin: 2px 0; }
-        .clear { clear: both; }
-        
-        .addresses { width: 100%; margin-bottom: 30px; margin-top: 20px; }
-        .address-box { width: 48%; float: left; }
-        .address-box-right { width: 48%; float: right; }
-        .address-box h3 { margin-bottom: 5px; border-bottom: 1px solid #ddd; padding-bottom: 5px; font-size: 14px; }
-        .address-box p { margin: 0; }
-        
-        table.items { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        table.items th { background-color: #f8f9fa; font-weight: bold; border-bottom: 2px solid #ddd; }
-        table.items th, table.items td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+        @page { size: A4; margin: 25px; }
+
+        body {
+            font-family: DejaVu Sans, Helvetica, Arial, sans-serif;
+            font-size: 10.8px;
+            color: #111;
+            line-height: 1.35;
+        }
+
         .text-right { text-align: right; }
-        
-        .summary-container { width: 100%; margin-top: 20px; }
-        .total-section { float: right; width: 250px; }
-        .total-table { width: 100%; border-collapse: collapse; }
-        .total-table td { padding: 5px 0; }
-        .grand-total { font-weight: bold; font-size: 1.2em; color: #000; border-top: 2px solid #333; }
-        
-        .footer { position: fixed; bottom: -60px; left: 0px; right: 0px; height: 50px; text-align: center; color: #777; font-size: 0.8em; border-top: 1px solid #eee; padding-top: 10px; }
-        .print-btn { text-align: right; margin-bottom: 20px; }
-        @media print { .print-btn { display: none; } }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+
+        .title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 6px;
+            border: 2px solid #000;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            page-break-inside: avoid;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f1f1f1;
+            font-weight: bold;
+        }
+
+        .no-border td {
+            border: none;
+            padding: 2px 4px;
+        }
+
+        .label {
+            width: 38%;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .company-name {
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .muted { color: #444; }
+
+        .items th {
+            text-align: center;
+            background: #eaeaea;
+        }
+
+        .items td {
+            padding: 6px 5px;
+        }
+
+        .totals td {
+            padding: 6px;
+        }
+
+        .grand-total {
+            font-size: 13px;
+            font-weight: bold;
+            background: #efefef;
+        }
+
+        .terms {
+            font-size: 10px;
+            line-height: 1.35;
+        }
     </style>
 </head>
+
 <body>
-    <div class="header">
-        <div class="logo">
-            {{ config('app.name', 'Central Admin') }}
-        </div>
-        <div class="invoice-details">
-            <h1>INVOICE</h1>
-            <p><strong>Invoice No:</strong> #INV-{{ $order->id }}</p>
-            <p><strong>Order No:</strong> {{ $order->order_number }}</p>
-            @if($order->shipping_status === 'shipped' && $order->shipments->isNotEmpty())
-                <p><strong>Tracking No:</strong> {{ $order->shipments->first()->tracking_number }}</p>
-            @endif
-            <p><strong>Date:</strong> {{ $order->created_at->format('M d, Y') }}</p>
-        </div>
-        <div class="clear"></div>
-    </div>
 
-    <div class="addresses">
-        <div class="address-box">
-            <h3>Bill To:</h3>
-            <p>
-                <strong>{{ $order->customer->first_name }} {{ $order->customer->last_name }}</strong><br>
-                @if($order->customer->company_name){{ $order->customer->company_name }}<br>@endif
-                {{ $order->customer->email }}<br>
-                {{ $order->customer->mobile }}
-            </p>
-            @if($order->billingAddress)
-                <p style="margin-top: 5px;">
-                    {{ $order->billingAddress->address_line1 }}<br>
-                    @if($order->billingAddress->address_line2){{ $order->billingAddress->address_line2 }}<br>@endif
-                    {{ $order->billingAddress->district }}, {{ $order->billingAddress->state }} - {{ $order->billingAddress->pincode }}
-                </p>
-            @endif
-        </div>
-        <div class="address-box-right">
-            <h3>Ship To:</h3>
-            <p>
-                @if($order->shippingAddress)
-                    <strong>{{ $order->shippingAddress->contact_name ?? $order->customer->name }}</strong><br>
-                    {{ $order->shippingAddress->address_line1 }}<br>
-                    @if($order->shippingAddress->address_line2){{ $order->shippingAddress->address_line2 }}<br>@endif
-                    {{ $order->shippingAddress->district }}, {{ $order->shippingAddress->state }} - {{ $order->shippingAddress->pincode }}<br>
-                    Phone: {{ $order->shippingAddress->contact_phone ?? $order->customer->mobile }}
-                @else
-                    <strong>{{ $order->customer->first_name }} {{ $order->customer->last_name }}</strong><br>
-                    @if($order->customer->company_name){{ $order->customer->company_name }}<br>@endif
-                    {{ $order->customer->email }}<br>
-                    {{ $order->customer->mobile }}
-                @endif
-            </p>
-        </div>
-        <div class="clear"></div>
-    </div>
+<div class="title">DELIVERY CHALLAN</div>
 
-    <table class="items">
-        <thead>
-            <tr>
-                <th>Item</th>
-                <th class="text-right">Qty</th>
-                <th class="text-right">Price</th>
-                <th class="text-right">Discount</th>
-                <th class="text-right">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($order->items as $item)
-            <tr>
-                <td>
-                    <strong>{{ $item->product_name ?? $item->product->name ?? 'Unknown Item' }}</strong><br>
-                    <small style="color: #666;">SKU: {{ $item->sku ?? $item->product->sku ?? 'N/A' }}</small>
-                </td>
-                <td class="text-right">{{ $item->quantity }}</td>
-                <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
-                <td class="text-right">
-                    @if($item->discount_amount > 0)
-                        -{{ number_format($item->discount_amount, 2) }}
-                    @else
-                        -
+<!-- ================= HEADER ================= -->
+<table>
+    <tr>
+        <td width="60%">
+            <div class="company-name">Krushify</div>
+            <div class="muted">
+                <strong>Mobile:</strong> 9199125925<br>
+                <strong>Address:</strong> The One World (B), 1005, Ayodhya Circle<br>
+                <strong>Email:</strong> info@krushifyagro.com<br>
+                <strong>GST:</strong> 24AAMCK0386L1Z6
+            </div>
+        </td>
+        <td width="40%">
+            <strong>Invoice No:</strong> {{ $invoice->invoice_number }}<br>
+            <strong>Dated:</strong> {{ $invoice->issue_date->format('d-m-Y') }}<br><br>
+            <strong>Reference No.</strong><br>
+            Seed Lic No.: GAN/FSR220001380/2022-2023<br>
+            Pesti Lic No.: GAN/FP1220002020/2022-2023
+        </td>
+    </tr>
+</table>
+
+<br>
+
+<!-- ================= ADDRESSES ================= -->
+<table>
+    <tr>
+        <th width="50%" align="left">Customer Address</th>
+        <th width="50%" align="left">Shipping Address</th>
+    </tr>
+
+    <tr>
+        <!-- Billing -->
+        <td>
+            <table class="no-border">
+                <tr><td class="label">Name</td><td>{{ $invoice->order->customer->first_name ?? '' }} {{ $invoice->order->customer->last_name ?? '' }}</td></tr>
+                <tr><td class="label">Mobile</td><td>{{ $invoice->order->customer->mobile ?? 'N/A' }}</td></tr>
+
+                @if($invoice->order->billingAddress)
+                    <tr><td class="label">Address</td><td>{{ $invoice->order->billingAddress->address_line1 }}</td></tr>
+                    @if($invoice->order->billingAddress->address_line2)
+                        <tr><td class="label"></td><td>{{ $invoice->order->billingAddress->address_line2 }}</td></tr>
                     @endif
-                </td>
-                <td class="text-right">{{ number_format(($item->quantity * $item->unit_price) - $item->discount_amount, 2) }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <div class="summary-container">
-        <div class="total-section">
-            <table class="total-table">
-                <tr>
-                    <td>Subtotal:</td>
-                    <td class="text-right">{{ number_format($order->total_amount, 2) }}</td>
-                </tr>
-                @php
-                    $itemDiscounts = $order->items->sum('discount_amount');
-                    $orderLevelDiscount = $order->discount_amount - $itemDiscounts;
-                @endphp
-                @if($itemDiscounts > 0)
-                <tr>
-                    <td>Item Discounts:</td>
-                    <td class="text-right">-{{ number_format($itemDiscounts, 2) }}</td>
-                </tr>
+                    <tr><td class="label">Village</td><td>{{ $invoice->order->billingAddress->village }}</td></tr>
+                    <tr><td class="label">Taluka</td><td>{{ $invoice->order->billingAddress->taluka ?? '-' }}</td></tr>
+                    <tr><td class="label">District</td><td>{{ $invoice->order->billingAddress->district ?? '-' }}</td></tr>
+                    <tr><td class="label">Post Office</td><td>{{ $invoice->order->billingAddress->post_office ?? '-' }}</td></tr>
+                    <tr><td class="label">State / PIN</td><td>{{ $invoice->order->billingAddress->state }} - {{ $invoice->order->billingAddress->pincode }}</td></tr>
+                    <tr><td class="label">Country</td><td>{{ $invoice->order->billingAddress->country ?? 'India' }}</td></tr>
+                @else
+                    <tr><td colspan="2">N/A</td></tr>
                 @endif
-                @if($orderLevelDiscount > 0)
-                <tr>
-                    <td>Order Discount:</td>
-                    <td class="text-right">-{{ number_format($orderLevelDiscount, 2) }}</td>
-                </tr>
-                @endif
-                <tr class="grand-total">
-                    <td style="padding-top: 10px;">Total (Rs):</td>
-                    <td class="text-right" style="padding-top: 10px;">{{ number_format($order->grand_total, 2) }}</td>
-                </tr>
             </table>
-        </div>
-        <div class="clear"></div>
-    </div>
+        </td>
 
-    <div class="footer">
-        <p>Thank you for your business! | Payment Status: {{ ucfirst($order->payment_status) }}</p>
-        <p>This is a computer generated invoice.</p>
-    </div>
+        <!-- Shipping -->
+        <td>
+            <table class="no-border">
+                <tr><td class="label">Name</td><td>{{ $invoice->order->customer->first_name ?? '' }} {{ $invoice->order->customer->last_name ?? '' }}</td></tr>
+                <tr><td class="label">Mobile</td><td>{{ $invoice->order->customer->mobile ?? 'N/A' }}</td></tr>
+
+                @if($invoice->order->shippingAddress)
+                    <tr><td class="label">Address</td><td>{{ $invoice->order->shippingAddress->address_line1 }}</td></tr>
+                    @if($invoice->order->shippingAddress->address_line2)
+                        <tr><td class="label"></td><td>{{ $invoice->order->shippingAddress->address_line2 }}</td></tr>
+                    @endif
+                    <tr><td class="label">Village</td><td>{{ $invoice->order->shippingAddress->village }}</td></tr>
+                    <tr><td class="label">Taluka</td><td>{{ $invoice->order->shippingAddress->taluka ?? '-' }}</td></tr>
+                    <tr><td class="label">District</td><td>{{ $invoice->order->shippingAddress->district ?? '-' }}</td></tr>
+                    <tr><td class="label">Post Office</td><td>{{ $invoice->order->shippingAddress->post_office ?? '-' }}</td></tr>
+                    <tr><td class="label">State / PIN</td><td>{{ $invoice->order->shippingAddress->state }} - {{ $invoice->order->shippingAddress->pincode }}</td></tr>
+                    <tr><td class="label">Country</td><td>{{ $invoice->order->shippingAddress->country ?? 'India' }}</td></tr>
+                @else
+                    <tr><td colspan="2">Same as Billing</td></tr>
+                @endif
+            </table>
+        </td>
+    </tr>
+</table>
+
+<br>
+
+<!-- ================= ITEMS ================= -->
+<table class="items">
+    <thead>
+        <tr>
+            <th width="5%">Sl</th>
+            <th width="40%">Description of Goods</th>
+            <th width="10%">Qty</th>
+            <th width="15%">Unit Cost</th>
+            <th width="10%">Disc.</th>
+            <th width="20%">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($invoice->order->items as $i => $item)
+            <tr>
+                <td class="text-center">{{ $i + 1 }}</td>
+                <td>{{ $item->product_name }}<br><small class="muted">{{ $item->sku }}</small></td>
+                <td class="text-center">{{ $item->quantity }}</td>
+                <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
+                <td class="text-right">{{ number_format($item->discount_amount ?? 0, 2) }}</td>
+                <td class="text-right">{{ number_format($item->total_price, 2) }}</td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+
+<br>
+
+<!-- ================= TOTALS ================= -->
+<table class="totals">
+    <tr>
+        <td colspan="5" class="text-right bold">Subtotal</td>
+        <td class="text-right">{{ number_format($invoice->order->total_amount, 2) }}</td>
+    </tr>
+    <tr>
+        <td colspan="5" class="text-right bold">Discount on All</td>
+        <td class="text-right">{{ number_format($invoice->order->discount_amount, 2) }}</td>
+    </tr>
+    <tr class="grand-total">
+        <td colspan="5" class="text-right">Grand Total</td>
+        <td class="text-right">{{ number_format($invoice->total_amount, 2) }}</td>
+    </tr>
+</table>
+
+<br>
+
+<!-- ================= TERMS ================= -->
+<table class="terms">
+    <tr>
+        <td>
+            <strong>Terms & Conditions</strong><br>
+            1. Composition taxable person, not eligible to collect tax on supplies.<br>
+            2. Goods once sold will not be taken back.<br>
+            3. Subject to local jurisdiction.<br>
+            4. This is a computer-generated invoice.
+        </td>
+    </tr>
+</table>
+
 </body>
 </html>

@@ -6,80 +6,122 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // 1. Enhance Orders
+        /* ------------------------------------------------------------------ */
+        /* Orders                                                             */
+        /* ------------------------------------------------------------------ */
         Schema::table('orders', function (Blueprint $table) {
+
             if (!Schema::hasColumn('orders', 'tags')) {
-                $table->json('tags')->nullable()->after('status');
+                $table->json('tags')->nullable();
             }
+
             if (!Schema::hasColumn('orders', 'currency')) {
-                $table->string('currency')->default('INR')->after('grand_total');
+                $table->string('currency', 10)->default('INR');
             }
+
             if (!Schema::hasColumn('orders', 'channel')) {
-                $table->string('channel')->default('web')->after('order_number'); // web, app, pos
+                $table->string('channel', 20)->default('web'); // web, app, pos
             }
         });
 
-        // 2. Enhance Shipments
+        /* ------------------------------------------------------------------ */
+        /* Shipments                                                          */
+        /* ------------------------------------------------------------------ */
         Schema::table('shipments', function (Blueprint $table) {
+
             if (!Schema::hasColumn('shipments', 'estimated_delivery_date')) {
-                $table->date('estimated_delivery_date')->nullable()->after('shipped_at');
+                $table->date('estimated_delivery_date')->nullable();
             }
+
             if (!Schema::hasColumn('shipments', 'packages_count')) {
-                $table->integer('packages_count')->default(1)->after('weight');
+                $table->unsignedInteger('packages_count')->default(1);
             }
+
             if (!Schema::hasColumn('shipments', 'dimensions')) {
-                 $table->string('dimensions')->nullable()->after('weight'); // LxWxH
+                $table->string('dimensions', 50)->nullable(); // LxWxH
             }
         });
 
-        // 3. Enhance Invoices
+        /* ------------------------------------------------------------------ */
+        /* Invoices                                                           */
+        /* ------------------------------------------------------------------ */
         Schema::table('invoices', function (Blueprint $table) {
-             if (!Schema::hasColumn('invoices', 'pdf_path')) {
-                $table->string('pdf_path')->nullable()->after('status');
-            }
-            if (!Schema::hasColumn('invoices', 'notes')) {
-                $table->text('notes')->nullable()->after('pdf_path');
-            }
+
             if (!Schema::hasColumn('invoices', 'gstin')) {
-                $table->string('gstin')->nullable()->after('invoice_number');
+                $table->string('gstin', 20)->nullable();
+            }
+
+            if (!Schema::hasColumn('invoices', 'pdf_path')) {
+                $table->string('pdf_path')->nullable();
+            }
+
+            if (!Schema::hasColumn('invoices', 'notes')) {
+                $table->text('notes')->nullable();
             }
         });
 
-        // 4. Enhance Payments
+        /* ------------------------------------------------------------------ */
+        /* Payments                                                           */
+        /* ------------------------------------------------------------------ */
         Schema::table('payments', function (Blueprint $table) {
+
             if (!Schema::hasColumn('payments', 'gateway')) {
-                $table->string('gateway')->nullable()->after('method'); // stripe, razorpay
+                $table->string('gateway', 30)->nullable(); // stripe, razorpay
             }
+
             if (!Schema::hasColumn('payments', 'gateway_response')) {
-                $table->json('gateway_response')->nullable()->after('transaction_id');
+                $table->json('gateway_response')->nullable();
             }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            $table->dropColumn(['gateway', 'gateway_response']);
+            if (Schema::hasColumn('payments', 'gateway_response')) {
+                $table->dropColumn('gateway_response');
+            }
+            if (Schema::hasColumn('payments', 'gateway')) {
+                $table->dropColumn('gateway');
+            }
         });
 
         Schema::table('invoices', function (Blueprint $table) {
-             $table->dropColumn(['pdf_path', 'notes', 'gstin']);
+            if (Schema::hasColumn('invoices', 'notes')) {
+                $table->dropColumn('notes');
+            }
+            if (Schema::hasColumn('invoices', 'pdf_path')) {
+                $table->dropColumn('pdf_path');
+            }
+            if (Schema::hasColumn('invoices', 'gstin')) {
+                $table->dropColumn('gstin');
+            }
         });
 
         Schema::table('shipments', function (Blueprint $table) {
-            $table->dropColumn(['estimated_delivery_date', 'packages_count', 'dimensions']);
+            if (Schema::hasColumn('shipments', 'dimensions')) {
+                $table->dropColumn('dimensions');
+            }
+            if (Schema::hasColumn('shipments', 'packages_count')) {
+                $table->dropColumn('packages_count');
+            }
+            if (Schema::hasColumn('shipments', 'estimated_delivery_date')) {
+                $table->dropColumn('estimated_delivery_date');
+            }
         });
 
         Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn(['tags', 'currency', 'channel']);
+            if (Schema::hasColumn('orders', 'channel')) {
+                $table->dropColumn('channel');
+            }
+            if (Schema::hasColumn('orders', 'currency')) {
+                $table->dropColumn('currency');
+            }
+            if (Schema::hasColumn('orders', 'tags')) {
+                $table->dropColumn('tags');
+            }
         });
     }
 };

@@ -25,7 +25,7 @@ class User extends Authenticatable
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email', 'status']);
+            ->logOnly(['name', 'email', 'phone', 'location', 'designation', 'status']);
     }
 
     /**
@@ -36,6 +36,10 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
+        'location',
+        'designation',
+        'bio',
         'password',
         'status',
     ];

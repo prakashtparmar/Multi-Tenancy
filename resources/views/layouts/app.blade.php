@@ -83,8 +83,11 @@
             <!-- Page Content -->
             <main class="flex-1 w-full max-w-full relative overflow-hidden">
                 <div class="relative flex-1 flex flex-col min-h-full">
-                    {{ $slot ?? '' }}
-                    @yield('content')
+                    @isset($slot)
+                        {{ $slot }}
+                    @else
+                        @yield('content')
+                    @endisset
                 </div>
             </main>
             

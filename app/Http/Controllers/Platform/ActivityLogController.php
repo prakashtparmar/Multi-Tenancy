@@ -19,7 +19,7 @@ class ActivityLogController extends Controller
     public function index(): View
     {
         // Require specific permission or admin role
-        if (!auth()->user()->hasRole('admin') && !auth()->user()->can('system view')) {
+        if (!auth()->user()->hasRole('admin') && !auth()->user()->can('activity-logs view')) {
             abort(403);
         }
 

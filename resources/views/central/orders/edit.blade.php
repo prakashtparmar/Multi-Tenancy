@@ -1057,7 +1057,7 @@
                 <p class="text-sm text-muted-foreground">Enter address details for delivery or billing.</p>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-4 relative">
                 <div>
                     <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Label <span class="text-red-500">*</span></label>
                     <input type="text" x-model="addressForm.label" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="e.g. Home, Farm, Warehouse">
@@ -1076,27 +1076,46 @@
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Village/City</label>
-                        <input type="text" x-model="addressForm.village" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Village Name">
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Pincode <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="addressForm.pincode" @input="handleAddressInput($event, 'pincode')" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="6-digit code">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Pincode <span class="text-red-500">*</span></label>
-                        <input type="text" x-model="addressForm.pincode" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="6-digit code">
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Post Office</label>
+                        <input type="text" x-model="addressForm.post_office" @input="handleAddressInput($event, 'post_office')" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Post Office">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Village/City</label>
+                        <input type="text" x-model="addressForm.village" @input="handleAddressInput($event, 'village')" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Village Name">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Taluka</label>
+                        <input type="text" x-model="addressForm.taluka" @input="handleAddressInput($event, 'taluka')" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Taluka">
                     </div>
                 </div>
                  
                  <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">State <span class="text-red-500">*</span></label>
-                        <input type="text" x-model="addressForm.state" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="State Name">
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">District</label>
+                        <input type="text" x-model="addressForm.district" @input="handleAddressInput($event, 'district')" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="District">
                     </div>
                     <div>
-                        <label class="flex items-center gap-2 mt-8 cursor-pointer">
-                            <input type="checkbox" x-model="addressForm.is_default" class="rounded border-border text-primary focus:ring-primary/20 bg-background w-4 h-4">
-                            <span class="text-sm">Set as Default</span>
-                        </label>
+                        <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">State <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="addressForm.state" @input="handleAddressInput($event, 'state')" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="State Name">
                     </div>
                 </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" x-model="addressForm.is_default" class="rounded border-border text-primary focus:ring-primary/20 bg-background w-4 h-4">
+                        <span class="text-sm">Set as Default</span>
+                    </label>
+                </div>
+
+                <!-- Address Lookup Dropdown -->
+                <div id="addressDropdown" class="hidden absolute bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto z-50" style="min-width: 200px;"></div>
 
                 <div x-show="addressForm.error" class="text-sm text-red-500 bg-red-500/10 p-2 rounded-lg" x-text="addressForm.error"></div>
 
@@ -1151,6 +1170,9 @@
                     address_line1: '',
                     address_line2: '',
                     village: '',
+                    taluka: '',
+                    district: '',
+                    post_office: '',
                     state: 'Maharashtra',
                     pincode: '',
                     is_default: false,
@@ -1440,6 +1462,9 @@
                         address_line1: '',
                         address_line2: '',
                         village: '',
+                        taluka: '',
+                        district: '',
+                        post_office: '',
                         state: 'Maharashtra',
                         pincode: '',
                         is_default: false,
@@ -1458,6 +1483,9 @@
                         address_line1: addr.address_line1 || '',
                         address_line2: addr.address_line2 || '',
                         village: addr.village || addr.city || '',
+                        taluka: addr.taluka || '',
+                        district: addr.district || '',
+                        post_office: addr.post_office || '',
                         state: addr.state || 'Maharashtra',
                         pincode: addr.pincode || '',
                         is_default: addr.is_default || false,
@@ -1466,6 +1494,115 @@
                         error: ''
                     };
                     this.showAddressModal = true;
+                },
+
+                // Village Lookup Logic
+                handleAddressInput(event, fieldName) {
+                    console.log('handleAddressInput called:', fieldName, event.target.value);
+                    const value = event.target.value;
+                    const dropdown = document.getElementById('addressDropdown');
+                    console.log('Dropdown element:', dropdown);
+                    
+                    // Clear timeout if exists
+                    if (this.addressLookupTimeout) {
+                        clearTimeout(this.addressLookupTimeout);
+                    }
+
+                    // Minimum length check
+                    const minLength = fieldName === 'pincode' ? 6 : 2;
+                    if (value.length < minLength) {
+                        console.log('Value too short:', value.length, 'min:', minLength);
+                        dropdown.classList.add('hidden');
+                        return;
+                    }
+
+                    console.log('Triggering lookup for:', value);
+                    // Debounce the lookup
+                    this.addressLookupTimeout = setTimeout(() => {
+                        this.performAddressLookup(value, fieldName, event.target);
+                    }, 300);
+                },
+
+                async performAddressLookup(value, fieldName, inputElement) {
+                    console.log('performAddressLookup called:', value, fieldName);
+                    const dropdown = document.getElementById('addressDropdown');
+                    
+                    try {
+                        const params = new URLSearchParams();
+                        params.append(fieldName, value);
+                        
+                        const url = `{{ url('/api/village-lookup') }}?${params.toString()}`;
+                        console.log('Fetching from:', url);
+                        
+                        const response = await fetch(url, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        console.log('Response status:', response.status, response.ok);
+
+                        if (!response.ok) {
+                            dropdown.classList.add('hidden');
+                            return;
+                        }
+
+                        const data = await response.json();
+                        console.log('API Response data:', data);
+
+                        if (data.mode === 'single' && data.data) {
+                            console.log('Single result - auto-filling');
+                            // Auto-fill all fields
+                            this.addressForm.village = data.data.village || this.addressForm.village;
+                            this.addressForm.taluka = data.data.taluka || this.addressForm.taluka;
+                            this.addressForm.district = data.data.district || this.addressForm.district;
+                            this.addressForm.state = data.data.state || this.addressForm.state;
+                            this.addressForm.pincode = data.data.pincode || this.addressForm.pincode;
+                            this.addressForm.post_office = data.data.post_office || this.addressForm.post_office;
+                            dropdown.classList.add('hidden');
+                        } else if (data.mode === 'multiple' && data.data && data.data.length > 0) {
+                            console.log('Multiple results - showing dropdown with', data.data.length, 'items');
+                            // Show dropdown
+                            this.showAddressDropdown(data.data, inputElement);
+                        } else {
+                            console.log('No valid results');
+                            dropdown.classList.add('hidden');
+                        }
+                    } catch (error) {
+                        console.error('Address lookup error:', error);
+                        dropdown.classList.add('hidden');
+                    }
+                },
+
+                showAddressDropdown(results, inputElement) {
+                    const dropdown = document.getElementById('addressDropdown');
+                    dropdown.innerHTML = '';
+                    dropdown.classList.remove('hidden');
+
+                    // Position dropdown below the input
+                    dropdown.style.minWidth = inputElement.offsetWidth + 'px';
+                    dropdown.style.left = inputElement.offsetLeft + 'px';
+                    dropdown.style.top = (inputElement.offsetTop + inputElement.offsetHeight + 4) + 'px';
+
+                    results.forEach(item => {
+                        const option = document.createElement('div');
+                        option.className = 'px-3 py-2 hover:bg-primary/10 cursor-pointer text-sm border-b border-border/50 last:border-0';
+                        option.innerHTML = `
+                            <div class="font-medium">${item.village || ''}</div>
+                            <div class="text-xs text-muted-foreground">${item.taluka || ''}, ${item.district || ''}, ${item.state || ''} - ${item.pincode || ''}</div>
+                        `;
+                        option.addEventListener('click', () => {
+                            this.addressForm.village = item.village || this.addressForm.village;
+                            this.addressForm.taluka = item.taluka || this.addressForm.taluka;
+                            this.addressForm.district = item.district || this.addressForm.district;
+                            this.addressForm.state = item.state || this.addressForm.state;
+                            this.addressForm.pincode = item.pincode || this.addressForm.pincode;
+                            this.addressForm.post_office = item.post_office || this.addressForm.post_office;
+                            dropdown.classList.add('hidden');
+                        });
+                        dropdown.appendChild(option);
+                    });
                 },
 
                 async submitOrder() {

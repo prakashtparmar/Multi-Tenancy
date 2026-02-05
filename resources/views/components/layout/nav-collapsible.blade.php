@@ -16,9 +16,12 @@
      @mouseleave="closeTimer = setTimeout(() => hoverOpen = false, 150)"
      class="group/collapsible relative">
     <button @click="open = !open"
-            class="peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-start text-sm outline-none transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground {{ $active ? 'font-medium text-sidebar-accent-foreground' : 'text-sidebar-foreground' }}"
+            class="peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-xl p-2.5 text-start text-sm outline-none transition-all duration-300 hover:bg-primary/5 hover:text-primary focus-visible:ring-2 active:bg-primary/10 {{ $active ? 'font-bold text-primary border border-primary/10 bg-primary/5' : 'text-sidebar-foreground border border-transparent' }}"
             :class="sidebarCollapsed ? 'justify-center p-2' : ''"
     >
+        @if($active)
+             <div class="absolute left-[-12px] top-1/2 -translate-y-1/2 w-1.5 h-6 bg-primary rounded-r-full shadow-[2px_0_8px_rgba(var(--primary-rgb),0.4)] z-50"></div>
+        @endif
         @if($icon)
             <div class="shrink-0">
                 {!! $icon !!}
@@ -51,7 +54,7 @@
     >
         @foreach($items as $item)
             <a href="{{ $item['url'] ?? '#' }}" 
-               class="flex h-7 items-center gap-2 rounded-md px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all {{ ($item['active'] ?? false) ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground' : '' }}">
+               class="flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm text-sidebar-foreground hover:bg-primary/5 hover:text-primary transition-all duration-300 {{ ($item['active'] ?? false) ? 'bg-primary/5 font-bold text-primary border border-primary/10' : 'border border-transparent' }}">
                 @if($item['icon'] ?? null)
                     {!! $item['icon'] !!}
                 @endif

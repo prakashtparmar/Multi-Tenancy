@@ -203,7 +203,10 @@
                                         </span>
                                     </div>
                                     <div class="flex flex-col space-y-0.5">
-                                        <span class="font-semibold text-foreground text-sm tracking-tight">{{ $customer->first_name }} {{ $customer->last_name }}</span>
+<a href="{{ url('/customers/' . $customer->id) }}"
+   class="font-semibold text-foreground text-sm tracking-tight hover:text-primary transition-colors">
+    {{ $customer->first_name }} {{ $customer->last_name }}
+</a>
                                         <span class="text-xs text-muted-foreground font-mono">{{ $customer->email ?? $customer->mobile }}</span>
                                     </div>
                                 </div>
