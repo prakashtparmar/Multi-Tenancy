@@ -1,5 +1,5 @@
 <header
-    class="sticky top-0 z-40 flex h-20 w-full items-center justify-between border-b border-white/10 bg-white/70 dark:bg-zinc-950/70 px-6 backdrop-blur-2xl transition-all duration-500 ease-in-out shadow-[0_4px_30px_rgba(0,0,0,0.03)] group/header">
+    class="sticky top-0 z-40 flex h-20 w-full items-center justify-between border-b border-zinc-200/50 dark:border-white/10 bg-white/70 dark:bg-zinc-950/80 px-6 backdrop-blur-3xl transition-all duration-500 ease-in-out shadow-[0_4px_30px_rgba(0,0,0,0.03)] group/header">
 
     <!-- Premium Ambient Glow -->
     <div class="absolute inset-0 z-[-1] overflow-hidden pointer-events-none">
@@ -7,18 +7,18 @@
             class="absolute top-0 left-1/4 w-[500px] h-full bg-primary/5 blur-[80px] opacity-50 transform -translate-y-1/2 rounded-full transition-opacity duration-700 group-hover/header:opacity-80">
         </div>
         <div
-            class="absolute top-0 right-1/4 w-[400px] h-full bg-purple-500/5 blur-[100px] opacity-30 transform -translate-y-1/2 rounded-full transition-opacity duration-700 group-hover/header:opacity-60">
+            class="absolute top-0 right-1/4 w-[400px] h-full bg-purple-500/5 blur-[100px] opacity-20 transform -translate-y-1/2 rounded-full transition-opacity duration-700 group-hover/header:opacity-40">
         </div>
     </div>
 
     <!-- Left Side: Nav & Branding -->
     <div class="flex items-center gap-6">
         <button
-            class="group flex items-center justify-center rounded-2xl p-2.5 text-muted-foreground hover:bg-white/10 dark:hover:bg-white/5 hover:text-foreground hover:shadow-inner transition-all duration-300 active:scale-90 focus-visible:outline-none focus:ring-2 focus:ring-primary/20 backdrop-blur-md border border-transparent hover:border-white/20"
+            class="group flex items-center justify-center rounded-2xl p-2.5 text-muted-foreground hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-foreground hover:shadow-inner transition-all duration-300 active:scale-95 focus-visible:outline-none focus:ring-2 focus:ring-primary/20 backdrop-blur-md border border-transparent hover:border-zinc-200 dark:hover:border-white/20"
             @click="toggleSidebar()">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                class="size-5 transition-transform duration-300 group-hover:rotate-180">
+                class="size-5 transition-transform duration-500 group-hover:rotate-180">
                 <path d="M4 6h16M4 12h16M14 18h6" />
             </svg>
             <span class="sr-only">Toggle Sidebar</span>
@@ -427,7 +427,7 @@
                         class="absolute top-2 right-2 size-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        class="size-5 relative z-10 transition-all group-hover:rotate-[15deg] group-active:scale-110">
+                        class="size-5 relative z-10 transition-all group-hover:rotate-[15deg] group-hover:scale-110 active:scale-95">
                         <path d="M6 8a6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
                         <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
                     </svg>

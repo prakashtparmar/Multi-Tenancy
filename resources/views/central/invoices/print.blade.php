@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Delivery Challan - {{ $invoice->invoice_number }}</title>
-
+    
     <style>
         @page { size: A4; margin: 25px; }
 

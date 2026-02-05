@@ -18,7 +18,7 @@ class TenantDatabaseSeeder extends Seeder
     {
         // 1. Define Permissions
         $permissions = [
-            // Dashboard
+            // Dashboard & Analytics
             'dashboard view',
             'analytics view',
 
@@ -27,41 +27,87 @@ class TenantDatabaseSeeder extends Seeder
             'users create',
             'users edit',
             'users delete',
+            'users export',
 
-            // Role Management
+            // Role & Permission Management
             'roles view',
             'roles create',
             'roles edit',
             'roles delete',
+            'permissions view',
 
-            // Catalog
+            // Catalog (Products, Categories, Collections)
             'products view',
             'products create',
             'products edit',
             'products delete',
-            'inventory manage',
-            'purchase-orders view',
-            'suppliers view',
-            'warehouses view',
+            'products export',
+            'products import',
+            'categories view',
+            'categories create',
+            'categories edit',
+            'categories delete',
+            'collections view',
+            'collections create',
+            'collections edit',
+            'collections delete',
 
-            // Sales
+            // Sales (Orders, Invoices, Shipments, Returns)
             'orders view',
+            'orders create',
+            'orders edit',
+            'orders delete',
             'orders manage',
+            'orders export',
+            'invoices view',
+            'invoices create',
+            'invoices edit',
+            'invoices delete',
+            'invoices manage',
+            'shipments view',
+            'shipments create',
+            'shipments edit',
+            'shipments delete',
+            'returns view',
+            'returns create',
+            'returns edit',
+            'returns delete',
+
+            // CRM (Customers)
             'customers view',
+            'customers create',
+            'customers edit',
+            'customers delete',
+            'customers export',
             'customers manage',
+
+            // Operations (Inventory, Warehouses, Suppliers, POs)
+            'inventory view',
+            'inventory manage',
+            'warehouses view',
+            'warehouses create',
+            'warehouses edit',
+            'warehouses delete',
+            'suppliers view',
+            'suppliers create',
+            'suppliers edit',
+            'suppliers delete',
+            'purchase-orders view',
+            'purchase-orders create',
+            'purchase-orders edit',
+            'purchase-orders delete',
+            'purchase-orders manage',
 
             // Marketing
             'marketing view',
             'marketing manage',
 
-            // Reports
-            'reports view',
-            'reports export',
-
-            // System
+            // System & Logs
             'settings view',
             'settings manage',
             'activity-logs view',
+            'reports view',
+            'reports export',
         ];
 
         foreach ($permissions as $permission) {
@@ -74,7 +120,7 @@ class TenantDatabaseSeeder extends Seeder
         $superAdmin = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
         $superAdmin->syncPermissions(Permission::all());
 
-        // Manager (Most Permissions, except destructive system actions)
+        // Manager (Most Permissions, except destructive user/system actions)
         $manager = Role::firstOrCreate(['name' => 'Manager', 'guard_name' => 'web']);
         $manager->givePermissionTo([
             'dashboard view',
@@ -86,18 +132,29 @@ class TenantDatabaseSeeder extends Seeder
             'products create',
             'products edit',
             'products delete',
+            'products export',
+            'categories view',
+            'categories create',
+            'categories edit',
+            'inventory view',
             'inventory manage',
-            'purchase-orders view',
-            'suppliers view',
-            'warehouses view',
             'orders view',
+            'orders create',
+            'orders edit',
             'orders manage',
             'customers view',
+            'customers create',
+            'customers edit',
             'customers manage',
-            'marketing view',
-            'marketing manage',
+            'purchase-orders view',
+            'purchase-orders create',
+            'purchase-orders edit',
+            'purchase-orders manage',
+            'suppliers view',
+            'suppliers create',
+            'warehouses view',
             'reports view',
-            'settings view',
+            'reports export',
         ]);
 
         // Editor (Content & Catalog focus)
@@ -107,6 +164,14 @@ class TenantDatabaseSeeder extends Seeder
             'products view',
             'products create',
             'products edit',
+            'products export',
+            'products import',
+            'categories view',
+            'categories create',
+            'categories edit',
+            'collections view',
+            'collections create',
+            'collections edit',
             'inventory manage',
             'marketing view',
         ]);
@@ -117,8 +182,11 @@ class TenantDatabaseSeeder extends Seeder
             'dashboard view',
             'orders view',
             'orders manage',
+            'orders export',
             'customers view',
             'products view',
+            'shipments view',
+            'returns view',
         ]);
 
         // 3. Create Default Admin User

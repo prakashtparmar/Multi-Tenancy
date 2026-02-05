@@ -16,7 +16,7 @@
         <a href="{{ url('/dashboard') }}" class="flex items-center gap-3.5 relative z-10 w-full"
             :class="sidebarCollapsed ? 'justify-center' : ''">
             <div
-                class="h-10 w-10 min-w-10 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-lg shadow-primary/25 shrink-0 transition-all duration-500 group-hover/logo:scale-105 group-hover/logo:rotate-3 ring-1 ring-white/10">
+                class="h-10 w-10 min-w-10 rounded-xl bg-gradient-to-br from-primary via-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-primary/25 shrink-0 transition-all duration-500 group-hover/logo:scale-110 group-hover/logo:rotate-3 ring-1 ring-white/10">
                 <!-- Premium Logo Icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
@@ -392,7 +392,7 @@
         x-data="{ userMenuOpen: false }" @click.away="userMenuOpen = false">
         <div class="relative">
             <button @click="userMenuOpen = !userMenuOpen"
-                class="flex w-full items-center gap-3.5 rounded-xl p-2.5 transition-all duration-300 hover:bg-sidebar-accent/50 group/user border border-transparent hover:border-sidebar-border/50"
+                class="flex w-full items-center gap-3.5 rounded-xl p-2.5 transition-all duration-300 hover:bg-white dark:hover:bg-white/5 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] group/user border border-transparent hover:border-zinc-200 dark:hover:border-white/10"
                 :class="sidebarCollapsed ? 'justify-center' : ''">
                 <div class="relative h-9 w-9 shrink-0">
                     <div

@@ -1,0 +1,10 @@
+{
+    "outfit": {
+        "300": "D:\\Multi-Tenancy\\storage\\fonts\/outfit_300_47ba8fe0bbab47a21920dc0296d5eb2a",
+        "normal": "D:\\Multi-Tenancy\\storage\\fonts\/outfit_normal_b427b5567815855f2c1aedcbca5c426a",
+        "500": "D:\\Multi-Tenancy\\storage\\fonts\/outfit_500_3f90519d2f87fc22d57704517ab896a0",
+        "600": "D:\\Multi-Tenancy\\storage\\fonts\/outfit_600_94b9c4eadc31b24bcee5f116f62bfe31",
+        "bold": "D:\\Multi-Tenancy\\storage\\fonts\/outfit_bold_bacd5e3d0f06fee90429a0a4c0bbcab7",
+        "800": "outfit_800_13a585c853aea7196b028a175e94509b"
+    }
+}
