@@ -21,16 +21,16 @@ Route::post('/find-workspace', function (Illuminate\Http\Request $request) {
     $request->validate([
         'workspace' => 'required|alpha_dash|max:64',
     ]);
-    
+
     $workspace = strtolower($request->workspace);
-    
+
     $scheme = $request->getScheme();
     $host = $request->getHost();
     $port = $request->getPort() ? ':' . $request->getPort() : '';
-    
+
     // Handle local dev vs production dynamic domains
     $baseDomain = ($host === '127.0.0.1') ? 'localhost' : $host;
-    
+
     return redirect("{$scheme}://{$workspace}.{$baseDomain}{$port}/login");
 })->name('central.find-workspace.post');
 
@@ -128,7 +128,7 @@ Route::middleware('auth')->group(function () {
     | Does NOT affect any existing logic
     */
 
-    
+
 
 
     /*
@@ -162,9 +162,10 @@ Route::middleware('auth')->group(function () {
         ->name('central.invoices.add-payment');
 
 
-    Route::get('invoices/{invoice}/pdf',
-    [\App\Http\Controllers\Central\InvoiceController::class, 'pdf']
-)->name('central.invoices.pdf');
+    Route::get(
+        'invoices/{invoice}/pdf',
+        [\App\Http\Controllers\Central\InvoiceController::class, 'pdf']
+    )->name('central.invoices.pdf');
 
 
 
@@ -192,6 +193,10 @@ Route::middleware('auth')->group(function () {
         ->name('central.api.addresses.store');
     Route::get('api/search/products', [\App\Http\Controllers\Central\SearchController::class, 'products'])
         ->name('central.api.search.products');
+    Route::get('api/search/customer-orders', [\App\Http\Controllers\Central\SearchController::class, 'customerOrders'])
+        ->name('central.api.search.customer-orders');
+    Route::get('api/search/customer-activity', [\App\Http\Controllers\Central\SearchController::class, 'customerActivity'])
+        ->name('central.api.search.customer-activity');
 
     /*
     |--------------------------------------------------------------------------

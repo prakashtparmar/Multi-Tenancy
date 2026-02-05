@@ -363,6 +363,29 @@
                         <template x-if="selectedCustomer">
                             <div class="w-full max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 space-y-6">
 
+                                <!-- Top Navigation & Actions -->
+                                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <button @click="requestCloseSession()"
+                                        class="group flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-destructive transition-colors px-4 py-2 rounded-xl hover:bg-destructive/10">
+                                        <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                        </svg>
+                                        Change Customer
+                                    </button>
+
+                                    <button @click="step = 2"
+                                        class="w-full md:w-auto px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-base shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 group">
+                                        Proceed to Products
+                                        <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
+                                    </button>
+                                </div>
+
                                 <!-- Header Profile Card -->
                                 <div
                                     class="group relative overflow-hidden rounded-[32px] bg-card border border-white/10 shadow-2xl transition-all hover:shadow-[0_0_40px_rgba(0,0,0,0.1)]">
@@ -613,21 +636,292 @@
                                     </div>
                                 </div>
 
-                                <!-- Bottom Actions -->
-                                <div class="flex items-center gap-4 pt-6 border-t border-border">
-                                    <button @click="requestCloseSession()"
-                                        class="flex-1 h-14 rounded-2xl border border-destructive/20 text-destructive font-bold uppercase tracking-widest hover:bg-destructive/5 transition-all text-sm">
-                                        Change Customer
-                                    </button>
-                                    <button @click="step = 2"
-                                        class="flex-[3] h-14 rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-widest shadow-xl shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-1 active:translate-y-0 transition-all text-sm flex items-center justify-center gap-3">
-                                        Proceed to Product Selection
-                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                                        </svg>
-                                    </button>
+                                <!-- Customer Insights (Timeline & Full Profile) -->
+                                <div
+                                    class="bg-card border border-border rounded-[24px] shadow-sm overflow-hidden min-h-[500px] flex flex-col mt-6">
+                                    <div
+                                        class="flex items-center border-b border-border bg-muted/20 px-6 backdrop-blur-sm sticky top-0 z-20">
+                                        <button @click="activeTab = 'timeline'"
+                                            class="px-6 py-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
+                                            :class="activeTab === 'timeline' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Activity Timeline
+                                        </button>
+                                        <button @click="activeTab = 'profile'"
+                                            class="px-6 py-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
+                                            :class="activeTab === 'profile' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                            Full Profile
+                                        </button>
+                                        <button @click="activeTab = 'orders'"
+                                            class="px-6 py-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
+                                            :class="activeTab === 'orders' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                            </svg>
+                                            Past Orders
+                                        </button>
+                                    </div>
+
+                                    <div class="p-0 flex-1 bg-muted/5 relative">
+                                        <!-- TIMELINE TAB -->
+                                        <div x-show="activeTab === 'timeline'"
+                                            class="p-6 md:p-8 animate-in fade-in slide-in-from-bottom-2">
+                                            <div
+                                                class="max-w-3xl mx-auto relative pl-8 border-l border-border/50 space-y-8">
+                                                <template x-if="activityLoading">
+                                                    <div class="py-12 text-center text-muted-foreground">
+                                                        <svg class="w-8 h-8 animate-spin mx-auto mb-2 text-primary"
+                                                            fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                                stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                            </path>
+                                                        </svg>
+                                                        Loading timeline...
+                                                    </div>
+                                                </template>
+
+                                                <template x-for="event in activityEvents" :key="event.id + event.kind">
+                                                    <div class="relative group">
+                                                        <div class="absolute -left-[41px] top-0 w-5 h-5 rounded-full border-2 border-background shadow-sm"
+                                                            :class="event.kind === 'order' ? 'bg-indigo-500' : 'bg-emerald-500'">
+                                                        </div>
+
+                                                        <template x-if="event.kind === 'order'">
+                                                            <div
+                                                                class="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                                                                <div class="flex justify-between items-start mb-4">
+                                                                    <div>
+                                                                        <div class="flex items-center gap-2 mb-1">
+                                                                            <span
+                                                                                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-600">Order
+                                                                                Placed</span>
+                                                                            <span class="text-xs text-muted-foreground"
+                                                                                x-text="event.placed_at"></span>
+                                                                        </div>
+                                                                        <h4
+                                                                            class="font-bold text-lg text-foreground flex items-center gap-2">
+                                                                            <span x-text="event.order_number"></span>
+                                                                            <span
+                                                                                class="px-2 py-0.5 rounded-full bg-muted text-[10px] uppercase font-bold text-muted-foreground"
+                                                                                x-text="event.status"></span>
+                                                                        </h4>
+                                                                    </div>
+                                                                    <p class="font-mono font-bold text-lg">Rs <span
+                                                                            x-text="event.grand_total"></span></p>
+                                                                </div>
+                                                                <div
+                                                                    class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                                                                    <template x-for="item in event.items || []"
+                                                                        :key="item.id">
+                                                                        <img :src="item.product?.image_url || 'https://placehold.co/50x50'"
+                                                                            class="w-10 h-10 rounded border border-border bg-white object-cover"
+                                                                            :title="item.product?.name">
+                                                                    </template>
+                                                                    <span
+                                                                        class="text-xs text-muted-foreground font-medium pl-2"
+                                                                        x-text="'+' + (event.item_count - (event.items?.length || 0)) + ' more'"
+                                                                        x-show="event.item_count > (event.items?.length || 0)"></span>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+
+                                                        <template x-if="event.kind === 'interaction'">
+                                                            <div
+                                                                class="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                                                                <div class="flex justify-between items-start mb-3">
+                                                                    <div>
+                                                                        <div class="flex items-center gap-2 mb-1">
+                                                                            <span
+                                                                                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600"
+                                                                                x-text="event.interaction_type"></span>
+                                                                            <span class="text-xs text-muted-foreground"
+                                                                                x-text="event.created_at"></span>
+                                                                        </div>
+                                                                        <h4 class="font-bold text-foreground"
+                                                                            x-text="event.user_name || 'System'"></h4>
+                                                                    </div>
+                                                                </div>
+                                                                <p class="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border/50"
+                                                                    x-text="event.notes"></p>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+
+                                                <template x-if="!activityLoading && activityEvents.length === 0">
+                                                    <div class="text-center py-12">
+                                                        <h3 class="font-bold text-foreground">No recent activity</h3>
+                                                        <p class="text-sm text-muted-foreground">Orders and interactions
+                                                            will appear here.</p>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+
+                                        <!-- FULL PROFILE TAB -->
+                                        <div x-show="activeTab === 'profile'"
+                                            class="p-6 md:p-8 animate-in fade-in zoom-in-95">
+                                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                <div
+                                                    class="bg-background rounded-xl border border-border p-5 space-y-4">
+                                                    <h4
+                                                        class="text-xs font-black uppercase tracking-widest text-muted-foreground pb-2 border-b border-border">
+                                                        Personal Info</h4>
+                                                    <div class="space-y-3">
+                                                        <div>
+                                                            <p class="text-[10px] text-muted-foreground uppercase">Full
+                                                                Name</p>
+                                                            <p class="font-medium"
+                                                                x-text="selectedCustomer.first_name + ' ' + (selectedCustomer.last_name || '')">
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-[10px] text-muted-foreground uppercase">Email
+                                                            </p>
+                                                            <p class="font-medium"
+                                                                x-text="selectedCustomer.email || '-'"></p>
+                                                        </div>
+                                                        <div class="grid grid-cols-2 gap-2">
+                                                            <div>
+                                                                <p class="text-[10px] text-muted-foreground uppercase">
+                                                                    Category</p>
+                                                                <p class="font-medium"
+                                                                    x-text="selectedCustomer.category || '-'"></p>
+                                                            </div>
+                                                            <div>
+                                                                <p class="text-[10px] text-muted-foreground uppercase">
+                                                                    Aadhaar Last 4</p>
+                                                                <p class="font-medium font-mono"
+                                                                    x-text="selectedCustomer.aadhaar_last4 || '-'"></p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div
+                                                    class="bg-background rounded-xl border border-border p-5 space-y-4">
+                                                    <h4
+                                                        class="text-xs font-black uppercase tracking-widest text-muted-foreground pb-2 border-b border-border">
+                                                        Business Info</h4>
+                                                    <div class="space-y-3">
+                                                        <div>
+                                                            <p class="text-[10px] text-muted-foreground uppercase">
+                                                                Company Name</p>
+                                                            <p class="font-medium"
+                                                                x-text="selectedCustomer.company_name || '-'"></p>
+                                                        </div>
+                                                        <div class="grid grid-cols-2 gap-2">
+                                                            <div>
+                                                                <p class="text-[10px] text-muted-foreground uppercase">
+                                                                    GST Number</p>
+                                                                <p class="font-medium font-mono text-xs"
+                                                                    x-text="selectedCustomer.gst_number || '-'"></p>
+                                                            </div>
+                                                            <div>
+                                                                <p class="text-[10px] text-muted-foreground uppercase">
+                                                                    PAN Number</p>
+                                                                <p class="font-medium font-mono text-xs"
+                                                                    x-text="selectedCustomer.pan_number || '-'"></p>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-[10px] text-muted-foreground uppercase">
+                                                                Credit Validity</p>
+                                                            <p class="font-medium"
+                                                                x-text="selectedCustomer.credit_valid_till || '-'"></p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div
+                                                    class="bg-background rounded-xl border border-border p-5 space-y-4">
+                                                    <h4
+                                                        class="text-xs font-black uppercase tracking-widest text-muted-foreground pb-2 border-b border-border">
+                                                        Agri Profile</h4>
+                                                    <div class="space-y-3">
+                                                        <div class="grid grid-cols-2 gap-2">
+                                                            <div>
+                                                                <p class="text-[10px] text-muted-foreground uppercase">
+                                                                    Land Area</p>
+                                                                <p class="font-medium"
+                                                                    x-text="(selectedCustomer.land_area || '-') + ' ' + (selectedCustomer.land_unit || '')">
+                                                                </p>
+                                                            </div>
+                                                            <div>
+                                                                <p class="text-[10px] text-muted-foreground uppercase">
+                                                                    Irrigation</p>
+                                                                <p class="font-medium"
+                                                                    x-text="selectedCustomer.irrigation_type || '-'">
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-[10px] text-muted-foreground uppercase">Crops
+                                                            </p>
+                                                            <div class="flex flex-wrap gap-1 mt-1">
+                                                                <template
+                                                                    x-for="crop in (selectedCustomer.crops || [])">
+                                                                    <span
+                                                                        class="px-1.5 py-0.5 bg-green-500/10 text-green-700 rounded text-[10px] font-bold"
+                                                                        x-text="crop"></span>
+                                                                </template>
+                                                                <span
+                                                                    x-show="!selectedCustomer.crops || selectedCustomer.crops.length === 0"
+                                                                    class="text-muted-foreground text-xs">-</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- ORDERS TAB -->
+                                        <div x-show="activeTab === 'orders'"
+                                            class="p-6 md:p-8 animate-in fade-in slide-in-from-right-2">
+                                            <div class="space-y-4">
+                                                <template x-for="order in activity.orders" :key="order.id">
+                                                    <div
+                                                        class="flex items-center justify-between p-4 bg-background border border-border rounded-xl">
+                                                        <div class="flex items-center gap-4">
+                                                            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs"
+                                                                x-text="'#' + order.id"></div>
+                                                            <div>
+                                                                <p class="font-bold text-foreground"
+                                                                    x-text="order.order_number"></p>
+                                                                <p class="text-xs text-muted-foreground"
+                                                                    x-text="order.placed_at"></p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-right">
+                                                            <p class="font-bold font-mono">Rs <span
+                                                                    x-text="order.grand_total"></span></p>
+                                                            <span
+                                                                class="px-2 py-0.5 rounded-full bg-muted text-[10px] uppercase font-bold text-muted-foreground"
+                                                                x-text="order.status"></span>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                                <template x-if="activity.orders.length === 0">
+                                                    <div class="text-center py-12 text-muted-foreground">
+                                                        No past orders found.
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+
+
 
                             </div>
                         </template>
@@ -854,7 +1148,7 @@
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-border">
-                                            <template x-for="product in productResults" :key="product.id">
+                                            <template x-for="product in paginatedProducts" :key="product.id">
                                                 <tr class="group hover:bg-muted/30 transition-colors">
                                                     <!-- Image -->
                                                     <td class="p-4">
@@ -968,11 +1262,90 @@
                                         </div>
                                     </template>
                                 </div>
+                                <!-- Pagination Controls -->
+                                <div class="p-4 border-t border-border bg-muted/50 flex items-center justify-between"
+                                    x-show="productResults.length > 0">
+                                    <span class="text-xs text-muted-foreground">
+                                        Showing <span x-text="(currentPage - 1) * itemsPerPage + 1"></span> - <span
+                                            x-text="Math.min(currentPage * itemsPerPage, productResults.length)"></span>
+                                        of <span x-text="productResults.length"></span>
+                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <button @click="prevPage" :disabled="currentPage === 1"
+                                            class="p-1 px-3 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium">Prev</button>
+                                        <span class="text-xs font-medium text-foreground">Page <span
+                                                x-text="currentPage"></span> of <span x-text="totalPages"></span></span>
+                                        <button @click="nextPage" :disabled="currentPage === totalPages"
+                                            class="p-1 px-3 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium">Next</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Right: Cart Sidebar (Glassmorphism) -->
                         <div class="w-96 flex-none hidden lg:block h-full pb-6">
+                            <!-- Customer Intelligence Panel -->
+                            <div class="mb-4 bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl overflow-hidden ring-1 ring-black/5"
+                                x-data="{ showHistory: false }" x-show="selectedCustomer"
+                                x-transition:enter="transition ease-out duration-300"
+                                x-transition:enter-start="opacity-0 -translate-y-2"
+                                x-transition:enter-end="opacity-100 translate-y-0">
+                                <button @click="showHistory = !showHistory"
+                                    class="w-full flex justify-between items-center p-4 bg-gradient-to-r from-blue-500/5 to-transparent hover:bg-blue-500/10 transition-colors">
+                                    <span class="font-bold text-sm text-primary flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Last 5 Orders
+                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono"
+                                            x-text="orderHistory.length"></span>
+                                        <svg class="w-4 h-4 text-muted-foreground transition-transform duration-200"
+                                            :class="showHistory ? 'rotate-180' : ''" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </div>
+                                </button>
+                                <div x-show="showHistory"
+                                    class="p-0 border-t border-border/50 max-h-60 overflow-y-auto custom-scrollbar">
+                                    <!-- Loader -->
+                                    <div x-show="orderHistoryLoading" class="text-center py-6 text-muted-foreground">
+                                        <span class="animate-spin inline-block mr-2">⏳</span> Loading history...
+                                    </div>
+
+                                    <!-- List -->
+                                    <template x-for="hist in orderHistory" :key="hist.id">
+                                        <div
+                                            class="flex justify-between items-center p-3 border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors">
+                                            <div>
+                                                <div class="font-bold text-xs text-foreground"
+                                                    x-text="hist.order_number"></div>
+                                                <div class="text-[10px] text-muted-foreground" x-text="hist.placed_at">
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-bold text-xs">Rs <span
+                                                        x-text="hist.grand_total.toFixed(2)"></span></div>
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium" :class="{
+                                                        'bg-green-100 text-green-700': hist.status === 'Completed' || hist.status === 'Delivered',
+                                                        'bg-blue-100 text-blue-700': hist.status === 'Confirmed' || hist.status === 'Processing',
+                                                        'bg-yellow-100 text-yellow-700': hist.status === 'Pending' || hist.status === 'Scheduled',
+                                                        'bg-red-100 text-red-700': hist.status === 'Cancelled'
+                                                    }" x-text="hist.status"></span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div x-show="!orderHistoryLoading && orderHistory.length === 0"
+                                        class="text-center py-4 text-xs text-muted-foreground">No order history found.
+                                    </div>
+                                </div>
+                            </div>
+
                             <div
                                 class="sticky top-0 bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl flex flex-col h-full max-h-[calc(100vh-140px)] ring-1 ring-black/5">
                                 <!-- Cart Header -->
@@ -1764,6 +2137,81 @@
                         tagOutcome: '',
                         tagNotes: '',
 
+                        // Activity State
+                        activity: { orders: [], interactions: [] },
+                        activityLoading: false,
+                        activeTab: 'timeline',
+
+                        // Order History State (Legacy + Activity)
+                        orderHistory: [],
+                        orderHistoryLoading: false,
+
+                        // Product Pagination State
+                        currentPage: 1,
+                        itemsPerPage: 6,
+
+                        get paginatedProducts() {
+                            const start = (this.currentPage - 1) * this.itemsPerPage;
+                            const end = start + this.itemsPerPage;
+                            return this.productResults.slice(start, end);
+                        },
+
+                        get activityEvents() {
+                            const orders = (this.activity?.orders || []).map(o => ({ ...o, kind: 'order', sortDate: new Date(o.date) }));
+                            const interactions = (this.activity?.interactions || []).map(i => ({ ...i, kind: 'interaction', sortDate: new Date(i.date) }));
+                            return [...orders, ...interactions].sort((a, b) => b.sortDate - a.sortDate);
+                        },
+
+                        get totalPages() {
+                            return Math.ceil(this.productResults.length / this.itemsPerPage);
+                        },
+
+                        nextPage() {
+                            if (this.currentPage < this.totalPages) this.currentPage++;
+                        },
+
+                        prevPage() {
+                            if (this.currentPage > 1) this.currentPage--;
+                        },
+
+                        goToPage(page) {
+                            this.currentPage = page;
+                        },
+
+                        fetchCustomerActivity(customerId) {
+                            if (!customerId) {
+                                this.orderHistory = [];
+                                this.activity = { orders: [], interactions: [] };
+                                return;
+                            }
+                            this.activityLoading = true;
+                            // Also set legacy loading
+                            this.orderHistoryLoading = true;
+
+                            fetch(`{{ route('central.api.search.customer-activity') }}?customer_id=${customerId}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    this.activity = {
+                                        orders: data.orders || [],
+                                        interactions: data.interactions || []
+                                    };
+                                    // Maintain legacy orderHistory for Step 2 panel
+                                    this.orderHistory = data.orders || [];
+                                    this.activityLoading = false;
+                                    this.orderHistoryLoading = false;
+                                })
+                                .catch(err => {
+                                    console.error('Failed to fetch activity', err);
+                                    this.activityLoading = false;
+                                    this.orderHistoryLoading = false;
+                                });
+                        },
+
+                        // Legacy alias if needed, or just replace calls
+                        fetchOrderHistory(customerId) {
+                            this.fetchCustomerActivity(customerId);
+                        },
+
                         init() {
                             // 1. Check for Reset Parameter
                             const urlParams = new URLSearchParams(window.location.search);
@@ -1775,6 +2223,16 @@
                                     this.cart = [];
                                     return;
                                 }
+                            }
+
+                            // 1b. Check for Customer Query (Code/Mobile) via URL
+                            if (urlParams.has('customer_query') && !preSelectedCustomer) {
+                                this.customerQuery = urlParams.get('customer_query');
+                                this.searchCustomers().then(() => {
+                                    if (this.customerResults.length > 0) {
+                                        this.selectCustomer(this.customerResults[0]);
+                                    }
+                                });
                             }
 
                             // 2. If we have a pre-selected customer, prioritize it
@@ -1893,6 +2351,7 @@
 
                         selectCustomer(cust, shouldNextStep = false) {
                             this.selectedCustomer = cust;
+                            this.fetchOrderHistory(cust.id);
                             // Auto-select Default Addresses
                             if (cust.addresses && cust.addresses.length > 0) {
                                 let def = cust.addresses.find(a => a.is_default) || cust.addresses[0];

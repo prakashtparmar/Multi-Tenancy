@@ -39,16 +39,30 @@ class SearchController extends Controller
             'first_name' => $customer->first_name,
             'last_name' => $customer->last_name,
             'mobile' => $customer->mobile,
+            'phone_number_2' => $customer->phone_number_2,
             'email' => $customer->email,
             'customer_code' => $customer->customer_code,
             'outstanding_balance' => (float) ($customer->outstanding_balance ?? 0.00),
+            'credit_limit' => (float) ($customer->credit_limit ?? 0.00),
             'addresses' => $customer->addresses,
             'company_name' => $customer->company_name,
             'gst_number' => $customer->gst_number,
             'pan_number' => $customer->pan_number,
             'type' => $customer->type,
+            'category' => $customer->category,
+            'aadhaar_last4' => $customer->aadhaar_last4,
+            'kyc_completed' => (bool) $customer->kyc_completed,
+            'kyc_verified_at' => $customer->kyc_verified_at ? $customer->kyc_verified_at->format('d M Y') : null,
+            'credit_valid_till' => $customer->credit_valid_till,
+            'internal_notes' => $customer->internal_notes,
+            'tags' => $customer->tags,
+            'crops' => $customer->crops,
             'land_area' => $customer->land_area,
             'land_unit' => $customer->land_unit,
+            'irrigation_type' => $customer->irrigation_type,
+            'created_at' => $customer->created_at->format('M Y'),
+            'is_active' => (bool) $customer->is_active,
+            'is_blacklisted' => (bool) $customer->is_blacklisted,
         ]);
 
         return response()->json($data);
@@ -67,17 +81,17 @@ class SearchController extends Controller
             $products = $query->limit(20)->get();
         } else {
             $products = $query->where(function ($q) use ($term) {
-                    $q->where('name', 'like', "%{$term}%")
-                      ->orWhere('sku', 'like', "%{$term}%")
-                      ->orWhere('slug', 'like', "%{$term}%");
-                })
-                ->orWhereHas('category', function($q) use ($term){
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('sku', 'like', "%{$term}%")
+                    ->orWhere('slug', 'like', "%{$term}%");
+            })
+                ->orWhereHas('category', function ($q) use ($term) {
                     $q->where('name', 'like', "%{$term}%");
                 })
                 ->limit(20)
                 ->get();
         }
-        
+
         $data = $products->map(function ($product) {
             return [
                 'id' => $product->id,
@@ -127,11 +141,11 @@ class SearchController extends Controller
                     $customer->update($validated);
                 } else {
                     $customer = Customer::create($validated + [
-                        'customer_code' => 'CUST-' . strtoupper(Str::random(6)), 
+                        'customer_code' => 'CUST-' . strtoupper(Str::random(6)),
                         'is_active' => true,
                     ]);
                 }
-                
+
                 $customer->load('addresses');
 
                 return response()->json([
@@ -178,8 +192,8 @@ class SearchController extends Controller
 
                 if (!empty($validated['id'])) {
                     $address = CustomerAddress::where('customer_id', $validated['customer_id'])
-                                ->where('id', $validated['id'])
-                                ->firstOrFail();
+                        ->where('id', $validated['id'])
+                        ->firstOrFail();
                     $address->update($validated);
                 } else {
                     $address = CustomerAddress::create($validated);
@@ -194,5 +208,84 @@ class SearchController extends Controller
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
+    }
+    /**
+     * Search for customer orders via AJAX.
+     */
+    public function customerOrders(Request $request): JsonResponse
+    {
+        $customerId = $request->input('customer_id');
+        if (!$customerId) {
+            return response()->json([]);
+        }
+
+        $orders = \App\Models\Order::where('customer_id', $customerId)
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number ?? 'ORD-' . $order->id,
+                    'placed_at' => $order->placed_at ? $order->placed_at->format('d M Y') : '-',
+                    'grand_total' => (float) $order->grand_total,
+                    'status' => ucfirst($order->status),
+                    'payment_status' => ucfirst($order->payment_status ?? 'unpaid'),
+                    'item_count' => $order->items->count(),
+                ];
+            });
+
+        return response()->json($orders);
+    }
+    public function customerActivity(Request $request): JsonResponse
+    {
+        $customerId = $request->input('customer_id');
+        if (!$customerId) {
+            return response()->json(['orders' => [], 'interactions' => []]);
+        }
+
+        $orders = \App\Models\Order::where('customer_id', $customerId)
+            ->with('items.product.images')
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'type' => 'order',
+                    'order_number' => $order->order_number ?? 'ORD-' . $order->id,
+                    'placed_at' => $order->placed_at ? $order->placed_at->format('d M Y, h:i A') : '-',
+                    'date' => $order->created_at->toIso8601String(), // For sorting
+                    'grand_total' => (float) $order->grand_total,
+                    'status' => ucfirst($order->status),
+                    'payment_status' => ucfirst($order->payment_status ?? 'unpaid'),
+                    'item_count' => $order->items->count(),
+                    'items' => $order->items, // Return items for display
+                ];
+            });
+
+        // Fetch Interactions
+        $interactions = \App\Models\CustomerInteraction::where('customer_id', $customerId)
+            ->with('user')
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(function ($interaction) {
+                return [
+                    'id' => $interaction->id,
+                    'type' => 'interaction',
+                    'interaction_type' => $interaction->type, // 'type' column
+                    'outcome' => $interaction->outcome,
+                    'notes' => $interaction->notes,
+                    'created_at' => $interaction->created_at->format('d M Y, h:i A'),
+                    'date' => $interaction->created_at->toIso8601String(),
+                    'user_name' => $interaction->user->name ?? 'System',
+                ];
+            });
+
+        return response()->json([
+            'orders' => $orders,
+            'interactions' => $interactions
+        ]);
     }
 }
