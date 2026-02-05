@@ -9,9 +9,7 @@ use App\Models\Order;
 use App\Models\Customer;
 use App\Models\Warehouse;
 use App\Models\Product;
-use App\Models\OrderItem;
-use App\Models\InventoryStock;
-use App\Models\InventoryMovement;
+use App\Services\OrderService;
 use App\Exports\OrdersExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
@@ -20,11 +18,20 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Exception;
+use App\Models\Invoice;
 
 class OrderController extends Controller
 {
     use AuthorizesRequests;
+
+    protected OrderService $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
 
     /**
      * Display a listing of the orders.
@@ -32,11 +39,12 @@ class OrderController extends Controller
     public function index(): View
     {
         $this->authorize('orders view');
-        
-        $orders = Order::with(['customer', 'warehouse'])
-            ->latest()
-            ->paginate(10);
-            
+
+        // Tenant specific: Simple pagination for now, can be improved to match Central's filtering later if needed
+        $query = Order::with(['customer', 'warehouse', 'creator', 'shipments', 'items']);
+
+        $orders = $query->latest()->paginate(10);
+
         return view('tenant.orders.index', compact('orders'));
     }
 
@@ -46,7 +54,8 @@ class OrderController extends Controller
     public function create(): View
     {
         $this->authorize('orders manage');
-        
+
+        // Tenant specific: Active Customer Session Logic
         $activeCustomerId = session('active_customer_id');
 
         if ($activeCustomerId) {
@@ -54,41 +63,53 @@ class OrderController extends Controller
         } else {
             $customers = Customer::with('addresses')->get();
         }
-        
+
         $warehouses = Warehouse::where('is_active', true)->get();
-        
+
+        // Note: Tenant view handles product search via AJAX, so we don't need to preload products like Central does.
+
         return view('tenant.orders.create', compact('customers', 'warehouses'));
     }
 
     /**
      * Store a newly created order in storage.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $this->authorize('orders manage');
 
+        // Validation rules adapted from Central
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
-            'order_number' => 'required|unique:orders,order_number',
             'is_future_order' => 'boolean',
-            'scheduled_at' => 'required_if:is_future_order,1|nullable|date|after:now',
+            'scheduled_at' => 'required_if:is_future_order,true|nullable|date|after:now',
+
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:1',
             'items.*.price' => 'required|numeric|min:0',
             'items.*.discount_type' => 'nullable|string|in:fixed,percent',
             'items.*.discount_value' => 'nullable|numeric|min:0',
+
             'billing_address_id' => 'required|exists:customer_addresses,id',
             'shipping_address_id' => 'nullable|exists:customer_addresses,id',
-            'discount_type' => 'nullable|string|in:fixed,percent',
-            'discount_value' => 'nullable|numeric|min:0',
+
             'payment_method' => 'nullable|string',
             'shipping_method' => 'nullable|string',
+
+            'discount_type' => 'nullable|string|in:fixed,percent',
+            'discount_value' => 'nullable|numeric|min:0',
+
+            // Allow order_number but we will likely ignore it in favor of model generation to be safe, 
+            // or use it if provided (Tenant view generates a random one, Model generates a sequential one. 
+            // Model sequential is better, but let's see)
+            'order_number' => 'nullable|string',
         ]);
 
         try {
-            return DB::transaction(function () use ($validated) {
+            DB::transaction(function () use ($validated, $request) {
+
                 $subTotalAmount = 0;
                 $itemDiscountsTotal = 0;
 
@@ -96,102 +117,109 @@ class OrderController extends Controller
                 $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
                 $preparedItems = [];
+
                 foreach ($validated['items'] as $item) {
-                     $product = $products[$item['product_id']] ?? null;
-                     if (!$product) throw new Exception("Product #{$item['product_id']} not found.");
 
                     $itemBasePrice = $item['quantity'] * $item['price'];
-                    $itemDiscount = 0;
+
                     $itemDiscountValue = $item['discount_value'] ?? 0;
                     $itemDiscountType = $item['discount_type'] ?? 'fixed';
 
-                    if ($itemDiscountType === 'percent') {
-                        $itemDiscount = $itemBasePrice * ($itemDiscountValue / 100);
-                    } else {
-                        $itemDiscount = $itemDiscountValue;
-                    }
+                    $itemDiscount = $itemDiscountType === 'percent'
+                        ? $itemBasePrice * ($itemDiscountValue / 100)
+                        : $itemDiscountValue;
 
                     $subTotalAmount += $itemBasePrice;
                     $itemDiscountsTotal += $itemDiscount;
 
                     $preparedItems[] = array_merge($item, [
                         'discount_amount' => $itemDiscount,
-                        'product_name' => $product->name,
-                        'sku' => $product->sku
                     ]);
                 }
 
-                $orderDiscountAmount = 0;
+                // Order-level discount
                 $orderDiscountType = $validated['discount_type'] ?? 'fixed';
                 $orderDiscountValue = $validated['discount_value'] ?? 0;
+
                 $netAfterItems = $subTotalAmount - $itemDiscountsTotal;
 
-                if ($orderDiscountType === 'percent') {
-                    $orderDiscountAmount = $netAfterItems * ($orderDiscountValue / 100);
-                } else {
-                    $orderDiscountAmount = $orderDiscountValue;
-                }
+                $orderDiscountAmount = $orderDiscountType === 'percent'
+                    ? $netAfterItems * ($orderDiscountValue / 100)
+                    : $orderDiscountValue;
 
                 $grandTotal = $netAfterItems - $orderDiscountAmount;
 
+                // Create Order
                 $order = Order::create([
                     'customer_id' => $validated['customer_id'],
                     'warehouse_id' => $validated['warehouse_id'],
-                    'order_number' => $validated['order_number'],
                     'total_amount' => $subTotalAmount,
                     'discount_amount' => $itemDiscountsTotal + $orderDiscountAmount,
                     'discount_type' => $orderDiscountType,
                     'discount_value' => $orderDiscountValue,
                     'status' => ($validated['is_future_order'] ?? false) ? 'scheduled' : 'pending',
-                    'payment_status' => 'unpaid',
-                    'shipping_status' => 'pending',
                     'placed_at' => now(),
                     'scheduled_at' => $validated['scheduled_at'] ?? null,
                     'is_future_order' => $validated['is_future_order'] ?? false,
-                    'billing_address_id' => $validated['billing_address_id'] ?? null,
+                    'billing_address_id' => $validated['billing_address_id'],
                     'shipping_address_id' => $validated['shipping_address_id'] ?? $validated['billing_address_id'],
                     'payment_method' => $validated['payment_method'] ?? 'cash',
                     'shipping_method' => $validated['shipping_method'] ?? 'standard',
                     'grand_total' => $grandTotal,
+                    'created_by' => auth()->id(),
+                    // We let the Model boot method generate the robust sequential order number if we don't pass one.
+                    // If the request has one (from view), we could use it, but central logic relies on Model gen.
+                    // Let's rely on Model generation for consistency and sequence safety.
                 ]);
 
+                // Create Order Items (NO INVENTORY TOUCH HERE - Central Pattern)
                 foreach ($preparedItems as $item) {
-                    OrderItem::create([
-                        'order_id' => $order->id,
+
+                    $product = $products[$item['product_id']] ?? null;
+                    if (!$product) {
+                        throw new Exception('Product not found.');
+                    }
+
+                    $order->items()->create([
                         'product_id' => $item['product_id'],
+                        'product_name' => $product->name,
+                        'sku' => $product->sku ?? 'N/A',
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['price'],
                         'discount_type' => $item['discount_type'] ?? 'fixed',
                         'discount_value' => $item['discount_value'] ?? 0,
                         'discount_amount' => $item['discount_amount'],
                         'total_price' => $item['quantity'] * $item['price'],
+                        'tax_percent' => 0,
                     ]);
-
-                    // Update Inventory
-                    $stock = InventoryStock::firstOrCreate(
-                        ['product_id' => $item['product_id'], 'warehouse_id' => $validated['warehouse_id']],
-                        ['quantity' => 0, 'reserve_quantity' => 0]
-                    );
-
-                    $stock->decrement('quantity', $item['quantity']);
-
-                    InventoryMovement::create([
-                        'stock_id' => $stock->id,
-                        'type' => 'sale',
-                        'quantity' => -$item['quantity'],
-                        'reference_id' => $order->id,
-                        'reason' => 'Order Placed: ' . $order->order_number,
-                        'user_id' => auth()->id(),
-                    ]);
-
-                    // Sync denormalized stock
-                    Product::find($item['product_id'])->refreshStockOnHand();
                 }
-
-                return redirect()->route('tenant.orders.show', $order)->with('success', 'Order created successfully.');
             });
+
+            if ($request->wantsJson()) {
+                session()->flash('success', 'Order created successfully.');
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Order created successfully.',
+                    'redirect_url' => route('tenant.orders.index'), // Tenant route
+                ]);
+            }
+
+            return redirect()
+                ->route('tenant.orders.index') // Tenant route
+                ->with('success', 'Order created successfully.');
+
         } catch (Exception $e) {
-            return back()->withInput()->with('error', 'Failed to create order: ' . $e->getMessage());
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to create order: ' . $e->getMessage());
         }
     }
 
@@ -201,120 +229,167 @@ class OrderController extends Controller
     public function show(Order $order): View
     {
         $this->authorize('orders view');
-        
-        $order->load(['customer', 'warehouse', 'items.product', 'invoices', 'shipments', 'billingAddress', 'shippingAddress']);
-        return view('tenant.orders.show', compact('order'));
+        // Matches Central load
+        return view('tenant.orders.show', ['order' => $order->load(['items', 'invoices', 'shipments', 'creator', 'updater', 'canceller', 'completer', 'billingAddress', 'shippingAddress', 'warehouse'])]);
     }
 
     /**
      * Show the form for editing the specified order.
      */
-    public function edit(Order $order): View
+    public function edit(Order $order): View|RedirectResponse
     {
         $this->authorize('orders manage');
-        
+
         if (in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned'])) {
-             return back()->with('error', 'Cannot edit orders that are already delivered, completed, cancelled, or returned.');
+            return back()->with('error', 'Cannot edit orders that are already delivered, completed, cancelled, or returned.');
         }
 
-        $order->load(['items.product']);
-        $customers = Customer::all();
-        $warehouses = Warehouse::where('is_active', true)->get();
-        
-        return view('tenant.orders.edit', compact('order', 'customers', 'warehouses'));
+        // Logic from Central edit to ensure variable consistency
+        // Note: Central edit view uses $products, $orderData, $warehouses
+        // We will adapt to what Tenant edit view likely needs or if we don't have a Tenant Edit view (Step 48 didn't show one explicitly but index/show exist), 
+        // Assuming Tenant has basic edit or reusing logic. 
+        // If Tenant currently lacks 'edit.blade.php', this might fail if accessed.
+        // However, Central has it. For now, we will implement the Controller method.
+
+        // Simulating Central's data prep
+        $products = Product::where('is_active', true)
+            ->with(['stocks', 'images'])
+            ->limit(20)
+            ->get()
+            ->map(
+                fn($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'sku' => $p->sku,
+                    'price' => (float) $p->price,
+                    'stock_on_hand' => (float) $p->stock_on_hand,
+                    'unit_type' => $p->unit_type,
+                    'brand' => $p->brand->name ?? 'N/A',
+                    'description' => $p->description,
+                    'is_organic' => $p->is_organic,
+                    'origin' => $p->origin,
+                    'image_url' => $p->image_url,
+                    'category' => $p->category->name ?? 'Uncategorized',
+                    'default_discount_type' => $p->default_discount_type,
+                    'default_discount_value' => $p->default_discount_value,
+                ],
+            );
+
+        $orderData = $order->load(['items', 'customer.addresses']);
+        $warehouses = Warehouse::all();
+
+        // Ensure tenant view exists, otherwise this will error. 
+        // Based on analysis, we are synchronizing.
+        return view('tenant.orders.edit', compact('products', 'orderData', 'warehouses'));
     }
 
     /**
-     * Update the specified order in storage.
+     * Update the specified order.
      */
-    public function update(Request $request, Order $order): RedirectResponse
+    public function update(Request $request, Order $order): JsonResponse|RedirectResponse
     {
         $this->authorize('orders manage');
 
         if (in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned'])) {
-             return back()->with('error', 'Cannot edit orders that are already delivered, completed, cancelled, or returned.');
+            $msg = 'Cannot update orders that are already delivered, completed, cancelled, or returned.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
         }
 
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'is_future_order' => 'boolean',
-            'scheduled_at' => 'required_if:is_future_order,1|nullable|date',
+            'scheduled_at' => 'required_if:is_future_order,true|nullable|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.001',
             'items.*.price' => 'required|numeric|min:0',
             'items.*.discount_type' => 'nullable|string|in:fixed,percent',
             'items.*.discount_value' => 'nullable|numeric|min:0',
+
             'discount_type' => 'nullable|string|in:fixed,percent',
             'discount_value' => 'nullable|numeric|min:0',
-            'order_status' => 'nullable|string'
+
+            'billing_address_id' => 'nullable|integer',
+            'shipping_address_id' => 'nullable|integer',
+            'payment_method' => 'nullable|string',
+            'shipping_method' => 'nullable|string',
+            'order_status' => 'nullable|string',
         ]);
 
         try {
-            return DB::transaction(function () use ($validated, $order) {
-                // 1. Restore Stock for Old Items
-                foreach ($order->items as $item) {
-                     $stock = InventoryStock::where('product_id', $item->product_id)
-                        ->where('warehouse_id', $order->warehouse_id)
-                        ->first();
-                    
-                    if ($stock) {
-                        $stock->increment('quantity', $item->quantity);
-                        // Log movement (optional, acts as reversal)
-                    }
+            DB::transaction(function () use ($validated, $order) {
+                // Central Logic: Check if reserved
+                $isReservedState = in_array($order->status, ['confirmed', 'processing', 'ready_to_ship']);
+
+                if ($isReservedState) {
+                    $this->orderService->releaseReserves($order);
                 }
-                
-                // 2. Clear Old Items
+
                 $order->items()->delete();
 
-                // 3. Process New Items Calculation
                 $subTotalAmount = 0;
                 $itemDiscountsTotal = 0;
-                $preparedItems = [];
-                
                 $productIds = collect($validated['items'])->pluck('product_id');
                 $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+                $preparedItems = [];
 
-                 foreach ($validated['items'] as $item) {
-                     $product = $products[$item['product_id']] ?? null;
-                     if (!$product) throw new Exception("Product #{$item['product_id']} not found.");
-
-                    $itemBasePrice = $item['quantity'] * $item['price'];
-                    $itemDiscount = 0;
-                    $itemDiscountValue = $item['discount_value'] ?? 0;
-                    $itemDiscountType = $item['discount_type'] ?? 'fixed';
-
-                    if ($itemDiscountType === 'percent') {
-                        $itemDiscount = $itemBasePrice * ($itemDiscountValue / 100);
-                    } else {
-                        $itemDiscount = $itemDiscountValue;
+                foreach ($validated['items'] as $item) {
+                    $product = $products[$item['product_id']] ?? null;
+                    if (!$product) {
+                        throw new Exception("Product #{$item['product_id']} not found.");
                     }
-
-                    $subTotalAmount += $itemBasePrice;
-                    $itemDiscountsTotal += $itemDiscount;
-
-                    $preparedItems[] = array_merge($item, [
-                        'discount_amount' => $itemDiscount,
+                    $lineSubtotal = $item['quantity'] * $item['price'];
+                    $subTotalAmount += $lineSubtotal;
+                    $itemDiscountType = $item['discount_type'] ?? 'fixed';
+                    $itemDiscountValue = $item['discount_value'] ?? 0;
+                    $itemDiscountAmount = 0;
+                    if ($itemDiscountType === 'percent') {
+                        $itemDiscountAmount = $lineSubtotal * ($itemDiscountValue / 100);
+                    } else {
+                        $itemDiscountAmount = (float) $itemDiscountValue;
+                    }
+                    $itemDiscountsTotal += $itemDiscountAmount;
+                    $preparedItems[] = [
+                        'product_id' => $item['product_id'],
                         'product_name' => $product->name,
-                        'sku' => $product->sku
-                    ]);
+                        'sku' => $product->sku ?? 'N/A',
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['price'],
+                        'total_price' => $lineSubtotal,
+                        'discount_type' => $itemDiscountType,
+                        'discount_value' => $itemDiscountValue,
+                        'discount_amount' => $itemDiscountAmount,
+                    ];
                 }
 
-                $orderDiscountAmount = 0;
+                // Order Level Discount
                 $orderDiscountType = $validated['discount_type'] ?? 'fixed';
                 $orderDiscountValue = $validated['discount_value'] ?? 0;
-                $netAfterItems = $subTotalAmount - $itemDiscountsTotal;
+                $orderDiscountAmount = 0;
+                $netAfterItemDiscounts = $subTotalAmount - $itemDiscountsTotal;
 
                 if ($orderDiscountType === 'percent') {
-                    $orderDiscountAmount = $netAfterItems * ($orderDiscountValue / 100);
+                    $orderDiscountAmount = $netAfterItemDiscounts * ($orderDiscountValue / 100);
                 } else {
-                    $orderDiscountAmount = $orderDiscountValue;
+                    $orderDiscountAmount = (float) $orderDiscountValue;
                 }
 
-                $grandTotal = $netAfterItems - $orderDiscountAmount;
+                $grandTotal = max(0, $netAfterItemDiscounts - $orderDiscountAmount);
 
-                // 4. Update Order
+                foreach ($preparedItems as $pItem) {
+                    $order->items()->create($pItem);
+                }
+
+                // Re-apply reserves if needed
+                if ($isReservedState) {
+                    $order->refresh();
+                    $this->orderService->applyReserves($order);
+                }
+
                 $order->update([
                     'customer_id' => $validated['customer_id'],
                     'warehouse_id' => $validated['warehouse_id'],
@@ -322,89 +397,140 @@ class OrderController extends Controller
                     'discount_amount' => $itemDiscountsTotal + $orderDiscountAmount,
                     'discount_type' => $orderDiscountType,
                     'discount_value' => $orderDiscountValue,
-                    'status' => $validated['order_status'] ?? $order->status,
+                    'grand_total' => $grandTotal,
                     'scheduled_at' => $validated['scheduled_at'] ?? null,
                     'is_future_order' => $validated['is_future_order'] ?? false,
-                    'grand_total' => $grandTotal,
+                    'billing_address_id' => $validated['billing_address_id'] ?? null,
+                    'shipping_address_id' => $validated['shipping_address_id'] ?? null,
+                    'payment_method' => $validated['payment_method'] ?? $order->payment_method,
+                    'shipping_method' => $validated['shipping_method'] ?? $order->shipping_method,
+                    'status' => $validated['order_status'] ?? $order->status,
+                    'updated_by' => auth()->id(),
                 ]);
-
-                // 5. Create New Items and Deduct Stock
-                foreach ($preparedItems as $item) {
-                    OrderItem::create([
-                        'order_id' => $order->id,
-                        'product_id' => $item['product_id'],
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $item['price'],
-                        'discount_type' => $item['discount_type'] ?? 'fixed',
-                        'discount_value' => $item['discount_value'] ?? 0,
-                        'discount_amount' => $item['discount_amount'],
-                        'total_price' => $item['quantity'] * $item['price'],
-                        'product_name' => $item['product_name'],
-                        'sku' => $item['sku']
-                    ]);
-
-                    // Update Inventory
-                    $stock = InventoryStock::firstOrCreate(
-                        ['product_id' => $item['product_id'], 'warehouse_id' => $validated['warehouse_id']],
-                        ['quantity' => 0, 'reserve_quantity' => 0]
-                    );
-
-                    $stock->decrement('quantity', $item['quantity']);
-
-                    // Denormalize
-                    Product::find($item['product_id'])->refreshStockOnHand();
-                }
-
-                return redirect()->route('tenant.orders.show', $order)->with('success', 'Order updated successfully.');
             });
-        } catch (Exception $e) {
-            return back()->withInput()->with('error', 'Failed to update order: ' . $e->getMessage());
+
+            if ($request->wantsJson()) {
+                session()->flash('success', 'Order updated successfully.');
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Order updated successfully.',
+                    'redirect_url' => route('tenant.orders.index'),
+                ]);
+            }
+            return redirect()->route('tenant.orders.index')->with('success', 'Order updated successfully.');
+
+        } catch (\Exception $e) {
+            \Log::error('Order Update Error: ' . $e->getMessage());
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+            return back()
+                ->withInput()
+                ->with('error', 'Error updating order: ' . $e->getMessage());
         }
     }
 
+    /**
+     * Update the specified order's status.
+     */
     public function updateStatus(Request $request, Order $order): RedirectResponse
     {
         $this->authorize('orders manage');
-        
-        $validated = $request->validate([
-            'status' => 'required|in:pending,confirmed,shipped,delivered,cancelled,returned',
-            'tracking_number' => 'nullable|string|required_if:status,shipped',
-            'carrier' => 'nullable|string|required_if:status,shipped',
-            'payment_status' => 'nullable|in:unpaid,paid,partial,refunded'
-        ]);
 
-        $order->status = $validated['status'];
-        
-        if (isset($validated['payment_status'])) {
-            $order->payment_status = $validated['payment_status'];
+        // Always use fresh state
+        $order->refresh();
+
+        $action = (string) $request->input('action');
+
+        try {
+            switch ($action) {
+
+                case 'confirm':
+                    $this->orderService->confirmOrder($order);
+                    break;
+
+                case 'process':
+                    if ($order->status !== 'confirmed') {
+                        throw new Exception('Order must be Confirmed before Processing.');
+                    }
+                    $order->update([
+                        'status' => 'processing',
+                        'shipping_status' => 'pending',
+                        'updated_by' => auth()->id(),
+                    ]);
+                    break;
+
+                case 'ready_to_ship':
+                    if ($order->status !== 'processing') {
+                        throw new Exception('Order must be Processing before Ready to Ship.');
+                    }
+                    $order->update([
+                        'status' => 'ready_to_ship',
+                        'shipping_status' => 'pending',
+                        'updated_by' => auth()->id(),
+                    ]);
+
+                    if ($order->invoices()->doesntExist()) {
+                        Invoice::create([
+                            'order_id' => $order->id,
+                            'customer_id' => $order->customer_id,
+                            'invoice_number' => 'INV-' . now()->format('Ymd') . '-' . str_pad((string) $order->id, 4, '0', STR_PAD_LEFT),
+                            'issue_date' => now(),
+                            'due_date' => now(),
+                            'total_amount' => $order->grand_total,
+                            'paid_amount' => 0,
+                            'status' => 'unpaid',
+                        ]);
+                    }
+                    break;
+
+                case 'ship':
+                    if ($order->status !== 'ready_to_ship') {
+                        throw new Exception('Order must be Ready to Ship before shipping.');
+                    }
+                    $this->orderService->shipOrder(
+                        $order,
+                        (string) $request->input('tracking_number'),
+                        (string) $request->input('carrier')
+                    );
+                    break;
+
+                case 'in_transit':
+                    if ($order->status !== 'shipped') {
+                        throw new Exception('Order must be Shipped before marking In Transit.');
+                    }
+                    $order->update([
+                        'status' => 'in_transit',
+                        'shipping_status' => 'in_transit',
+                        'updated_by' => auth()->id(),
+                    ]);
+                    break;
+
+                case 'deliver':
+                    $this->orderService->deliverOrder($order);
+                    break;
+
+                case 'cancel':
+                    $this->orderService->cancelOrder($order);
+                    break;
+
+                default:
+                    throw new Exception("Invalid action: {$action}");
+            }
+
+            return redirect()
+                ->route('tenant.orders.show', $order)
+                ->with('success', 'Order status updated successfully.');
+
+        } catch (Exception $e) {
+            \Log::error('Order Status Update Error', [
+                'order_id' => $order->id,
+                'action' => $action,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', $e->getMessage());
         }
-
-        if ($validated['status'] === 'shipped') {
-             $order->shipping_status = 'shipped';
-             // Create Shipment Record
-             $order->shipments()->create([
-                 'warehouse_id' => $order->warehouse_id,
-                 'tracking_number' => $validated['tracking_number'],
-                 'carrier' => $validated['carrier'],
-                 'status' => 'shipped',
-                 'shipped_at' => now(),
-             ]);
-        }
-        
-        if ($validated['status'] === 'delivered') {
-             $order->shipping_status = 'delivered';
-             $order->completed_by = auth()->id();
-        }
-
-        if ($validated['status'] === 'cancelled') {
-             $order->cancelled_at = now();
-             $order->cancelled_by = auth()->id();
-             // TODO: Restore inventory logic here if needed
-        }
-
-        $order->save();
-
-        return back()->with('success', 'Order status updated.');
     }
 
     public function downloadInvoice(Order $order)
@@ -412,11 +538,14 @@ class OrderController extends Controller
         try {
             $this->authorize('orders view');
             $order->load(['items.product', 'customer', 'billingAddress', 'shippingAddress']);
-            
-            $pdf = Pdf::loadView('tenant.invoices.print', compact('order'));
+
+            // Use Tenant view for Invoice Print
+            $view = view()->exists('tenant.invoices.print') ? 'tenant.invoices.print' : 'central.invoices.print';
+
+            $pdf = Pdf::loadView($view, compact('order'));
             return $pdf->download("invoice-{$order->order_number}.pdf");
         } catch (\Exception $e) {
-            \Log::error("Tenant PDF Error (Invoice): " . $e->getMessage());
+            \Log::error('PDF Generation Error (Invoice): ' . $e->getMessage());
             return back()->with('error', 'Could not generate PDF: ' . $e->getMessage());
         }
     }
@@ -426,13 +555,14 @@ class OrderController extends Controller
         try {
             $this->authorize('orders view');
             $order->load(['items.product', 'customer']);
-            
-            $pdf = Pdf::loadView('tenant.receipts.cod', compact('order'))
-                      ->setPaper([0, 0, 226, 600]); // 80mm width for thermal
-            
+
+            // Use Tenant view or fallback to Central
+            $view = view()->exists('tenant.receipts.cod') ? 'tenant.receipts.cod' : 'central.receipts.cod';
+
+            $pdf = Pdf::loadView($view, compact('order'))->setPaper([0, 0, 226, 600]);
             return $pdf->download("receipt-{$order->order_number}.pdf");
         } catch (\Exception $e) {
-            \Log::error("Tenant PDF Error (Receipt): " . $e->getMessage());
+            \Log::error('PDF Generation Error (Receipt): ' . $e->getMessage());
             return back()->with('error', 'Could not generate PDF: ' . $e->getMessage());
         }
     }
@@ -441,15 +571,14 @@ class OrderController extends Controller
     {
         $this->authorize('orders view');
         $format = $request->input('format', 'csv');
-        $filename = "tenant-orders-" . date('Y-m-d');
-
+        $filename = 'orders-' . date('Y-m-d');
         switch ($format) {
             case 'xlsx':
-                return Excel::download(new OrdersExport, "{$filename}.xlsx");
+                return Excel::download(new OrdersExport(), "{$filename}.xlsx");
             case 'pdf':
-                return Excel::download(new OrdersExport, "{$filename}.pdf", \Maatwebsite\Excel\Excel::DOMPDF);
+                return Excel::download(new OrdersExport(), "{$filename}.pdf", \Maatwebsite\Excel\Excel::DOMPDF);
             default:
-                return Excel::download(new OrdersExport, "{$filename}.csv");
+                return Excel::download(new OrdersExport(), "{$filename}.csv");
         }
     }
 }

@@ -25,14 +25,21 @@ class InventoryController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
+        }
+
+        // Special filters (Synced from Central)
+        if ($request->input('status') === 'low_stock') {
+            $query->where('stock_on_hand', '<=', 10)->where('stock_on_hand', '>', 0);
+        } elseif ($request->input('status') === 'out_of_stock') {
+            $query->where('stock_on_hand', '<=', 0);
         }
 
         $products = $query->paginate(15)->withQueryString();
