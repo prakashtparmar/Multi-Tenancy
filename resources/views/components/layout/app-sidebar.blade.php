@@ -133,7 +133,7 @@
 
                 <!-- 1. CATALOG -->
                 @if(count($catalogItems) > 0)
-                    <x-layout.nav-collapsible title="Catalog" :active="request()->is('products*') || request()->is('central/products*') || request()->is('categories*') || request()->is('collections*')"
+                    <x-layout.nav-collapsible title="Catalog" :active="request()->is('products*') || request()->is('central/products*') || request()->is('categories*') || request()->is('brands*')"
                         :items="$catalogItems">
                         <x-slot name="icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"

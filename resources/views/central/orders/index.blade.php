@@ -1,106 +1,98 @@
 @extends('layouts.app')
+
 @section('content')
-<div id="orders-page-wrapper" class="flex flex-1 flex-col space-y-8 p-8 animate-in fade-in duration-500">
+<div id="orders-page-wrapper" class="flex flex-1 flex-col space-y-6 p-4 md:p-8 animate-in fade-in duration-500 bg-background/50">
+   
+   <!-- Header Area -->
    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-      <div class="space-y-1">
-         <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Orders</h1>
-         <p class="text-muted-foreground text-sm">Manage customer orders and fulfillment status.</p>
+      <div class="space-y-1.5">
+         <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">Orders</h1>
+         <p class="text-muted-foreground text-sm font-medium">Manage customer orders and fulfillment status.</p>
       </div>
-      <div class="flex items-center p-1 bg-muted/50 rounded-xl border border-border/50 backdrop-blur-sm">
-         <a href="{{ route('central.orders.index') }}" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === null ? 'bg-background text-foreground shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-foreground hover:bg-background/50' }}">
-         All Orders
+
+      <!-- Status Tabs (Segmented Control) -->
+      <div class="flex items-center p-1 bg-muted/60 rounded-xl border border-border/40 backdrop-blur-sm self-start sm:self-auto overflow-x-auto max-w-full no-scrollbar">
+         <a href="{{ route('central.orders.index') }}" 
+            class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 {{ request('status') === null ? 'bg-background text-foreground shadow-sm ring-1 ring-border/5' : 'text-muted-foreground/80 hover:text-foreground hover:bg-background/40' }}">
+            All
          </a>
-         <div class="w-px h-4 bg-border/40 mx-1"></div>
-         <a href="{{ route('central.orders.index', ['status' => 'pending']) }}" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'pending' ? 'bg-background text-amber-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-amber-600 hover:bg-background/50' }}">
-         Pending
+         <div class="w-px h-4 bg-border/40 mx-1 shrink-0"></div>
+         
+         <a href="{{ route('central.orders.index', ['status' => 'pending']) }}" 
+            class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap {{ request('status') === 'pending' ? 'bg-background text-amber-600 shadow-sm ring-1 ring-amber-500/10' : 'text-muted-foreground/80 hover:text-amber-600 hover:bg-background/40' }}">
+            Pending
          </a>
-         <div class="w-px h-4 bg-border/40 mx-1"></div>
-         <a href="{{ route('central.orders.index', ['status' => 'processing']) }}" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'processing' ? 'bg-background text-blue-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-blue-600 hover:bg-background/50' }}">
-         Processing
+         <div class="w-px h-4 bg-border/40 mx-1 shrink-0"></div>
+
+         <a href="{{ route('central.orders.index', ['status' => 'ready_to_ship']) }}" 
+            class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap {{ request('status') === 'ready_to_ship' ? 'bg-background text-sky-600 shadow-sm ring-1 ring-sky-500/10' : 'text-muted-foreground/80 hover:text-sky-600 hover:bg-background/40' }}">
+            Ready to Ship
          </a>
-         <div class="w-px h-4 bg-border/40 mx-1"></div>
-         <a href="{{ route('central.orders.index', ['status' => 'completed']) }}" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'completed' ? 'bg-background text-emerald-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-emerald-600 hover:bg-background/50' }}">
-         Completed
-         </a>
-         <div class="w-px h-4 bg-border/40 mx-1"></div>
-         <a href="{{ route('central.orders.index', ['status' => 'scheduled']) }}" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'scheduled' ? 'bg-background text-indigo-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-indigo-600 hover:bg-background/50' }}">
-         Scheduled
+         <div class="w-px h-4 bg-border/40 mx-1 shrink-0"></div>
+
+         <a href="{{ route('central.orders.index', ['status' => 'completed']) }}" 
+            class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap {{ request('status') === 'completed' ? 'bg-background text-emerald-600 shadow-sm ring-1 ring-emerald-500/10' : 'text-muted-foreground/80 hover:text-emerald-600 hover:bg-background/40' }}">
+            Completed
          </a>
       </div>
    </div>
+
    <div id="orders-table-container" x-data="{ selected: [] }">
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-1.5 rounded-2xl">
-         <div class="flex items-center gap-3 min-h-[44px]">
-            <div x-cloak x-show="selected.length > 0" x-transition.opacity.duration.300ms class="flex items-center gap-3 animate-in fade-in slide-in-from-left-4">
-               <div class="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold shadow-sm">
-                  <span x-text="selected.length"></span> selected
+      
+      <!-- Control Bar (Glassmorphism) -->
+      <!-- Control Bar (Glassmorphism) -->
+      <div class="flex flex-wrap items-center justify-between gap-4 p-2 pl-3 bg-white/40 dark:bg-black/20 border border-white/20 dark:border-white/5 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] mb-6 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+         
+         <div class="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+            <!-- Filters Form -->
+            <form id="search-form" method="GET" action="{{ url()->current() }}" class="flex flex-wrap items-center gap-2 w-full sm:w-auto relative z-10">
+               @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
+               @if(request('per_page')) <input type="hidden" name="per_page" value="{{ request('per_page') }}"> @endif
+
+               <!-- Date Range (Joined) -->
+               <div class="flex items-center rounded-lg border border-border/50 bg-background/50 overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                   <input type="date" name="start_date" value="{{ request('start_date') }}" class="h-9 border-none bg-transparent text-xs px-2 focus:ring-0 outline-none w-28 text-muted-foreground uppercase tracking-wide font-medium" placeholder="Start">
+                   <div class="w-px h-4 bg-border/50"></div>
+                   <input type="date" name="end_date" value="{{ request('end_date') }}" class="h-9 border-none bg-transparent text-xs px-2 focus:ring-0 outline-none w-28 text-muted-foreground uppercase tracking-wide font-medium" placeholder="End">
                </div>
-            </div>
-            <form id="search-form" method="GET" action="{{ url()->current() }}" class="flex items-center gap-2 group">
 
-               <!-- Extended Filters -->
-               <select name="status" class="h-9 rounded-lg border-border bg-background text-xs cursor-pointer">
-                   <option value="">Status: All</option>
-                   <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                   <option value="confirmed" {{ request('status') === 'confirmed' ? 'selected' : '' }}>Confirmed</option>
-                   <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Processing</option>
-                   <option value="ready_to_ship" {{ request('status') === 'ready_to_ship' ? 'selected' : '' }}>Ready to Ship</option>
-                   <option value="shipped" {{ request('status') === 'shipped' ? 'selected' : '' }}>Shipped</option>
-                   <option value="in_transit" {{ request('status') === 'in_transit' ? 'selected' : '' }}>In Transit</option>
-                   <option value="delivered" {{ request('status') === 'delivered' ? 'selected' : '' }}>Delivered</option>
-                   <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                   <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
-                   <option value="scheduled" {{ request('status') === 'scheduled' ? 'selected' : '' }}>Scheduled</option>
-               </select>
+               <!-- Status Dropdowns -->
+               <div class="flex items-center gap-2">
+                   <select name="status" class="h-9 rounded-lg border-border/50 bg-background/50 text-xs font-medium cursor-pointer shadow-sm hover:bg-background transition-colors focus:ring-2 focus:ring-primary/20 outline-none w-32">
+                       <option value="">Status: All</option>
+                       <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                       <option value="confirmed" {{ request('status') === 'confirmed' ? 'selected' : '' }}>Confirmed</option>
+                       <option value="ready_to_ship" {{ request('status') === 'ready_to_ship' ? 'selected' : '' }}>Ready to Ship</option>
+                       <option value="shipped" {{ request('status') === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                       <option value="delivered" {{ request('status') === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                       <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
+                       <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                   </select>
 
-               <select name="payment_status" class="h-9 rounded-lg border-border bg-background text-xs cursor-pointer">
-                   <option value="">Payment: All</option>
-                   <option value="paid" {{ request('payment_status') === 'paid' ? 'selected' : '' }}>Paid</option>
-                   <option value="unpaid" {{ request('payment_status') === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
-                   <option value="partial" {{ request('payment_status') === 'partial' ? 'selected' : '' }}>Partial</option>
-               </select>
+                   <select name="payment_status" class="h-9 rounded-lg border-border/50 bg-background/50 text-xs font-medium cursor-pointer shadow-sm hover:bg-background transition-colors focus:ring-2 focus:ring-primary/20 outline-none w-28">
+                       <option value="">Payment</option>
+                       <option value="paid" {{ request('payment_status') === 'paid' ? 'selected' : '' }}>Paid</option>
+                       <option value="unpaid" {{ request('payment_status') === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
+                       <option value="partial" {{ request('payment_status') === 'partial' ? 'selected' : '' }}>Partial</option>
+                   </select>
+               </div>
 
-               <select name="shipping_status" class="h-9 rounded-lg border-border bg-background text-xs cursor-pointer">
-                   <option value="">Shipping: All</option>
-                   <option value="pending" {{ request('shipping_status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                   <option value="shipped" {{ request('shipping_status') === 'shipped' ? 'selected' : '' }}>Shipped</option>
-                   <option value="in_transit" {{ request('shipping_status') === 'in_transit' ? 'selected' : '' }}>In Transit</option>
-                   <option value="delivered" {{ request('shipping_status') === 'delivered' ? 'selected' : '' }}>Delivered</option>
-               </select>
-
-               <div class="relative transition-all duration-300 group-focus-within:w-72" :class="selected.length > 0 ? 'w-48' : 'w-64'">
+               <!-- Search -->
+               <div class="relative transition-all duration-300 group-focus-within:w-64 w-56">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground group-focus-within:text-primary transition-colors">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground group-focus-within:text-primary transition-colors">
                         <circle cx="11" cy="11" r="8"/>
                         <path d="m21 21-4.3-4.3"/>
                      </svg>
                   </div>
-                  <input type="text" name="search" value="{{ request('search') }}" placeholder="Search orders..." 
-                     class="block w-full rounded-xl border-0 py-2.5 pl-10 pr-3 text-foreground bg-muted/40 ring-1 ring-inset ring-transparent placeholder:text-muted-foreground focus:bg-background focus:ring-2 focus:ring-primary/20 sm:text-sm sm:leading-6 transition-all shadow-sm">
+                  <input type="text" name="search" value="{{ request('search') }}" placeholder="Search..." 
+                     class="block w-full rounded-xl border-border/50 py-2 pl-9 pr-3 text-foreground bg-background/50 placeholder:text-muted-foreground/70 focus:bg-background focus:ring-2 focus:ring-primary/20 text-sm leading-6 transition-all shadow-sm outline-none">
                </div>
             </form>
          </div>
-         <div class="flex items-center gap-2">
-            <!-- Bulk Actions -->
-            <div x-cloak x-show="selected.length > 0" x-transition class="flex items-center gap-2 mr-2">
-                <form id="bulk-print-form" action="{{ route('central.orders.bulk-print') }}" method="POST" target="_blank" class="flex gap-2">
-                    @csrf
-                    <template x-for="id in selected" :key="id">
-                        <input type="hidden" name="ids[]" :value="id">
-                    </template>
-                    
-                    <button type="submit" name="type" value="invoice" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
-                        Print Invoices
-                    </button>
-                    
-                    <button type="submit" name="type" value="cod" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-                        Print COD
-                    </button>
-                </form>
-                <div class="w-px h-4 bg-border/40"></div>
-            </div>
+
+         <!-- Right Actions -->
+         <div class="flex items-center gap-3 relative z-20 shrink-0 ml-auto">
             <div x-data="{ open: false }" class="relative">
                <x-ui.button variant="outline" @click="open = !open" class="gap-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,29 +120,76 @@
             </a>
          </div>
       </div>
-      <div class="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-xl shadow-sm overflow-hidden relative">
+
+    <!-- Floating Bulk Action Bar -->
+    <div x-cloak 
+         x-show="selected.length > 0" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-10 scale-95"
+         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+         x-transition:leave-end="opacity-0 translate-y-10 scale-95"
+         class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4 pointer-events-none">
+        
+        <div class="pointer-events-auto flex items-center justify-between gap-4 p-2 pl-4 bg-foreground/90 text-background backdrop-blur-xl rounded-full shadow-2xl border border-white/10 ring-1 ring-black/5">
+            
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                    <span x-text="selected.length"></span>
+                </div>
+                <span class="text-sm font-medium">Selected</span>
+                
+                <div class="h-4 w-px bg-background/20"></div>
+                
+                <button @click="selected = []" class="text-xs text-background/70 hover:text-background transition-colors font-medium">
+                    Clear
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <form id="bulk-print-form" action="{{ route('central.orders.bulk-print') }}" method="POST" target="_blank" class="flex gap-2">
+                    @csrf
+                    <template x-for="id in selected" :key="id">
+                        <input type="hidden" name="ids[]" :value="id">
+                    </template>
+                    
+                    <button type="submit" name="type" value="invoice" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-background/10 hover:bg-background/20 text-background transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+                        Invoices
+                    </button>
+                    
+                    <button type="submit" name="type" value="cod" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-background/10 hover:bg-background/20 text-background transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                        COD
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+      <div class="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl shadow-[0_2px_20px_rgb(0,0,0,0.02)] overflow-hidden relative">
          <div id="table-loading" class="absolute inset-0 z-50 bg-background/50 backdrop-blur-[2px] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent shadow-lg"></div>
          </div>
-         <div class="border-b border-border/40 p-4 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-2 text-xs text-muted-foreground">
-               <span class="flex h-6 w-6 items-center justify-center rounded-md bg-background border border-border font-medium text-foreground shadow-sm">
+         <div class="border-b border-border/40 p-4 bg-muted/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+               <span class="flex h-6 w-8 items-center justify-center rounded-md bg-background border border-border/50 font-bold text-foreground shadow-sm">
                {{ $orders->total() }}
                </span>
-               <span>orders found</span>
+               <span class="tracking-wide uppercase text-[10px]">orders found</span>
             </div>
             <div class="flex items-center gap-3">
                <form id="per-page-form" method="GET" action="{{ url()->current() }}" class="flex items-center gap-2">
                   @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
                   @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
-                  <label for="per_page" class="text-xs font-medium text-muted-foreground whitespace-nowrap">View</label>
+                  <label for="per_page" class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">Show</label>
                   <div class="relative">
-                     <select name="per_page" id="per_page" class="appearance-none h-8 pl-3 pr-8 rounded-lg border border-border bg-background text-xs font-medium focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors cursor-pointer hover:bg-accent/50">
+                     <select name="per_page" id="per_page" class="appearance-none h-7 pl-2.5 pr-7 rounded-lg border border-border/50 bg-background text-xs font-semibold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors cursor-pointer hover:bg-accent/50 hover:border-border">
                      <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
                      <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
                      <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
                      </select>
-                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
+                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-muted-foreground">
                         <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -162,213 +201,226 @@
          <div class="relative w-full overflow-auto">
             <table class="w-full caption-bottom text-sm">
                <thead class="[&_tr]:border-b">
-                  <tr class="border-b border-border/40 transition-colors hover:bg-muted/30 data-[state=selected]:bg-muted bg-muted/20">
-                     <th class="h-12 w-[50px] px-6 text-left align-middle">
+                  <tr class="border-b border-border/40 transition-colors hover:bg-muted/10 data-[state=selected]:bg-muted bg-muted/5">
+                     <th class="h-10 w-[50px] px-6 text-left align-middle">
                         <div class="flex items-center">
-                           <input type="checkbox" class="h-4 w-4 rounded border-input text-primary focus:ring-primary/20 bg-background cursor-pointer transition-all checked:bg-primary checked:border-primary" @click="selected = $event.target.checked ? [{{ $orders->pluck('id')->join(',') }}] : []">
+                           <input type="checkbox" class="h-4 w-4 rounded border-input text-primary focus:ring-primary/20 bg-background cursor-pointer transition-all checked:bg-primary checked:border-primary shadow-sm" @click="selected = $event.target.checked ? [{{ $orders->pluck('id')->join(',') }}] : []">
                         </div>
                      </th>
-                     <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Order</th>
-                     <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Customer</th>
-                     <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Created By</th>
-                     <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Date</th>
-                     <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Grand Total</th>
-                     <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Status</th>
-                     <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Payment</th>
-                     <th class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Shipping</th>
-                     <th class="h-12 px-6 text-right align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">Actions</th>
+                     <th class="h-10 px-6 text-left align-middle font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">Order</th>
+                     <th class="h-10 px-6 text-left align-middle font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">Customer</th>
+                     <th class="h-10 px-6 text-left align-middle font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">Created By</th>
+                     <th class="h-10 px-6 text-left align-middle font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">Date</th>
+                     <th class="h-10 px-6 text-left align-middle font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">Total</th>
+                     <th class="h-10 px-6 text-left align-middle font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">Status</th>
+                     <th class="h-10 px-6 text-left align-middle font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">Payment</th>
+                     <th class="h-10 px-6 text-left align-middle font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">Shipping</th>
+                     <th class="h-10 px-6 text-right align-middle font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]"></th>
                   </tr>
                </thead>
                <tbody class="[&_tr:last-child]:border-0 text-sm">
-@forelse($orders as $order)
-<tr class="group border-b border-border/40 transition-all duration-200 hover:bg-muted/40 data-[state=selected]:bg-muted/60">
+                            @forelse($orders as $order)
+                           <tr class="group border-b border-border/40 transition-all duration-300 hover:bg-muted/30 data-[state=selected]:bg-muted/60">
 
-    <!-- Checkbox -->
-    <td class="p-6 align-middle">
-        <input type="checkbox"
-               value="{{ $order->id }}"
-               x-model="selected"
-               class="h-4 w-4 rounded border-input text-primary focus:ring-primary/20 bg-background cursor-pointer transition-all checked:bg-primary checked:border-primary">
-    </td>
+                               <!-- Checkbox -->
+                               <td class="p-4 px-6 align-middle">
+                                   <input type="checkbox"
+                                          value="{{ $order->id }}"
+                                          x-model="selected"
+                                          class="h-4 w-4 rounded border-input text-primary focus:ring-primary/20 bg-background cursor-pointer transition-all checked:bg-primary checked:border-primary shadow-sm">
+                               </td>
 
-    <!-- Order Number + Tracking -->
-    <td class="p-6 align-middle">
-        <div class="flex flex-col space-y-0.5">
-            <a href="{{ route('central.orders.show', $order) }}"
-               class="font-semibold text-primary hover:underline text-sm tracking-tight">
-                {{ $order->order_number }}
-            </a>
+                               <!-- Order Number + Tracking -->
+                               <td class="p-4 px-6 align-middle">
+                                   <div class="flex flex-col space-y-1">
+                                       <a href="{{ route('central.orders.show', $order) }}"
+                                          class="font-bold text-primary hover:underline text-sm tracking-tight transition-colors">
+                                           {{ $order->order_number }}
+                                       </a>
 
-            @if(
-                in_array($order->shipping_status, ['shipped','in_transit','delivered']) &&
-                $order->shipments->isNotEmpty()
-            )
-                <span class="text-[10px] font-mono text-muted-foreground/80 tracking-tighter">
-                    {{ $order->shipments->first()->tracking_number }}
-                </span>
-            @endif
-        </div>
-    </td>
+                                       @if(
+                                           in_array($order->shipping_status, ['shipped','in_transit','delivered']) &&
+                                           $order->shipments->isNotEmpty()
+                                       )
+                                           <div class="flex items-center gap-1.5 text-muted-foreground/80">
+                                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/></svg>
+                                              <span class="text-[10px] font-mono tracking-tighter">
+                                                  {{ $order->shipments->first()->tracking_number }}
+                                              </span>
+                                           </div>
+                                       @endif
+                                   </div>
+                               </td>
 
-    <!-- Customer -->
-    <td class="p-6 align-middle">
-        <a href="{{ $order->customer_id ? route('central.customers.show', $order->customer_id) : '#' }}"
-           class="text-sm font-medium hover:text-primary hover:underline">
-            {{ $order->customer->name ?? 'Guest' }}
-        </a>
-    </td>
+                               <!-- Customer -->
+                               <td class="p-4 px-6 align-middle">
+                                   <div class="flex items-center gap-2">
+                                       <div class="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[9px] font-bold text-white shadow-sm ring-1 ring-white/20">
+                                           {{ substr($order->customer->name ?? 'G', 0, 1) }}
+                                       </div>
+                                       <a href="{{ $order->customer_id ? route('central.customers.show', $order->customer_id) : '#' }}"
+                                          class="text-xs font-semibold hover:text-primary hover:underline truncate max-w-[120px]">
+                                           {{ $order->customer->name ?? 'Guest' }}
+                                       </a>
+                                   </div>
+                               </td>
 
-    <!-- Created By -->
-    <td class="p-6 align-middle">
-        <span class="text-xs text-muted-foreground font-medium">
-            {{ $order->creator->name ?? 'System' }}
-        </span>
-    </td>
+                               <!-- Created By -->
+                               <td class="p-4 px-6 align-middle">
+                                   <span class="text-xs text-muted-foreground font-medium">
+                                       {{ $order->creator->name ?? 'System' }}
+                                   </span>
+                               </td>
 
-    <!-- Date / Scheduled -->
-    <td class="p-6 align-middle text-muted-foreground font-mono text-xs">
-        @if($order->is_future_order && $order->scheduled_at)
-            <div class="flex flex-col">
-                <span class="text-indigo-600 font-bold">Scheduled</span>
-                <span>{{ $order->scheduled_at->format('M d, Y H:i') }}</span>
-            </div>
-        @else
-            {{ $order->created_at->format('M d, Y') }}
-        @endif
-    </td>
+                               <!-- Date / Scheduled -->
+                               <td class="p-4 px-6 align-middle">
+                                   @if($order->is_future_order && $order->scheduled_at)
+                                       <div class="flex flex-col">
+                                           <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wide">Scheduled</span>
+                                           <span class="text-xs font-mono text-muted-foreground">{{ $order->scheduled_at->format('M d, H:i') }}</span>
+                                       </div>
+                                   @else
+                                       <span class="text-xs font-mono text-muted-foreground">{{ $order->created_at->format('M d, Y') }}</span>
+                                   @endif
+                               </td>
 
-    <!-- Total -->
-    <td class="px-6 py-4 text-sm text-foreground">
-        Rs {{ number_format($order->grand_total, 2) }}
-    </td>
+                               <!-- Total -->
+                               <td class="p-4 px-6 align-middle">
+                                   <span class="font-semibold text-sm text-foreground">Rs {{ number_format($order->grand_total, 2) }}</span>
+                               </td>
 
-    <!-- STATUS (FIXED & COMPLETE) -->
-    <td class="p-6 align-middle">
-        @switch($order->status)
+                               <!-- STATUS (Badges) -->
+                               <td class="p-4 px-6 align-middle">
+                                   @switch($order->status)
 
-            @case('completed')
-                <span class="inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full
-                    bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                    Completed
-                </span>
-                @break
+                                       @case('completed')
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                               <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                               Completed
+                                           </span>
+                                           @break
 
-            @case('shipped')
-                <span class="inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full
-                    bg-green-500/10 text-green-600 border border-green-500/20">
-                    Shipped
-                </span>
-                @break
+                                       @case('shipped')
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-green-500/10 text-green-600 border border-green-500/20">
+                                               <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                               Shipped
+                                           </span>
+                                           @break
 
-            @case('confirmed')
-                <span class="inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full
-                    bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                    Confirmed
-                </span>
-                @break
+                                       @case('confirmed')
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                                               <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                                               Confirmed
+                                           </span>
+                                           @break
 
-            @case('ready_to_ship')
-                <span class="inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full
-                    bg-sky-500/10 text-sky-600 border border-sky-500/20">
-                    Ready to Ship
-                </span>
-                @break
+                                       @case('ready_to_ship')
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-sky-500/10 text-sky-600 border border-sky-500/20">
+                                               <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+                                               Ready to Ship
+                                           </span>
+                                           @break
 
-            @case('processing')
-                <span class="inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full
-                    bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                    Processing
-                </span>
-                @break
+                                       @case('processing')
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
+                                               <span class="animate-pulse h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
+                                               Processing
+                                           </span>
+                                           @break
 
-            @case('scheduled')
-                <span class="inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full
-                    bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
-                    Scheduled
-                </span>
-                @break
+                                       @case('scheduled')
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-violet-500/10 text-violet-600 border border-violet-500/20">
+                                               <span class="h-1.5 w-1.5 rounded-full bg-violet-500"></span>
+                                               Scheduled
+                                           </span>
+                                           @break
 
-            @case('cancelled')
-                <span class="inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full
-                    bg-destructive/10 text-destructive border border-destructive/20">
-                    Cancelled
-                </span>
-                @break
+                                       @case('cancelled')
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                                               <span class="h-1.5 w-1.5 rounded-full bg-destructive"></span>
+                                               Cancelled
+                                           </span>
+                                           @break
 
-            @default
-                <span class="inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full
-                    bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                    Pending
-                </span>
-        @endswitch
-    </td>
+                                       @default
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                                               <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                               Pending
+                                           </span>
+                                   @endswitch
+                               </td>
 
-    <!-- Payment -->
-    <td class="p-6 align-middle">
-        <span class="capitalize text-xs font-medium text-muted-foreground">
-            {{ $order->payment_status }}
-        </span>
-    </td>
+                               <!-- Payment -->
+                               <td class="p-4 px-6 align-middle">
+                                   <span class="capitalize text-[11px] font-semibold text-muted-foreground/80 px-2 py-0.5 rounded border border-border/50 bg-background/50">
+                                       {{ $order->payment_status }}
+                                   </span>
+                               </td>
 
-    <!-- Shipping Status (Human Readable) -->
-    <td class="p-6 align-middle">
-        <span class="text-xs font-medium text-muted-foreground">
-            {{ ucwords(str_replace('_',' ', $order->shipping_status)) }}
-        </span>
-    </td>
+                               <!-- Shipping Status -->
+                               <td class="p-4 px-6 align-middle">
+                                   <span class="text-[11px] font-medium text-muted-foreground/90">
+                                       {{ ucwords(str_replace('_',' ', $order->shipping_status)) }}
+                                   </span>
+                               </td>
 
-    <!-- Actions -->
-    <td class="p-6 align-middle text-right">
-        <div class="relative flex justify-end" x-data="{ open: false }" @click.away="open = false">
+                               <!-- Actions -->
+                               <td class="p-4 px-6 align-middle text-right">
+                                   <div class="relative flex justify-end" x-data="{ open: false }" @click.away="open = false">
 
-            <button @click="open = !open"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent">
-                ⋮
-            </button>
+                                       <button @click="open = !open"
+                                           class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+                                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                                       </button>
 
-            <div x-show="open" x-transition
-                 class="absolute right-0 top-9 z-50 min-w-[180px] rounded-xl border border-border bg-popover p-1 shadow-xl">
+                                       <div x-show="open" x-transition.opacity.scale.95
+                                            class="absolute right-0 top-8 z-50 min-w-[160px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-xl p-1 shadow-lg ring-1 ring-black/5">
 
-                <a href="{{ route('central.orders.show', $order) }}"
-                   class="block px-2 py-2 text-sm hover:bg-accent rounded-lg">
-                    View Details
-                </a>
+                                           <a href="{{ route('central.orders.show', $order) }}"
+                                              class="flex items-center gap-2 px-2 py-1.5 text-xs font-medium hover:bg-accent rounded-lg transition-colors">
+                                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                               View Details
+                                           </a>
 
-                @if(!in_array($order->status, ['completed','cancelled']))
-                    <a href="{{ route('central.orders.edit', $order) }}"
-                       class="block px-2 py-2 text-sm hover:bg-accent rounded-lg">
-                        Edit Order
-                    </a>
-                @endif
+                                           @if(!in_array($order->status, ['completed','cancelled']))
+                                               <a href="{{ route('central.orders.edit', $order) }}"
+                                                  class="flex items-center gap-2 px-2 py-1.5 text-xs font-medium hover:bg-accent rounded-lg transition-colors">
+                                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                                   Edit Order
+                                               </a>
+                                           @endif
 
-                @if(in_array($order->status, ['completed','delivered']))
-                    <a href="{{ route('central.returns.create', ['order_id'=>$order->id]) }}"
-                       class="block px-2 py-2 text-sm hover:bg-orange-500/10 text-orange-600 rounded-lg">
-                        Request Return
-                    </a>
-                @endif
+                                           @if(in_array($order->status, ['completed','delivered']))
+                                               <a href="{{ route('central.returns.create', ['order_id'=>$order->id]) }}"
+                                                  class="flex items-center gap-2 px-2 py-1.5 text-xs font-medium hover:bg-orange-500/10 text-orange-600 rounded-lg transition-colors">
+                                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                                                   Request Return
+                                               </a>
+                                           @endif
 
-                <div class="h-px bg-border my-1"></div>
+                                           <div class="h-px bg-border/50 my-1"></div>
 
-                @if($order->invoices->isNotEmpty())
-                    <a href="{{ route('central.invoices.pdf', $order->invoices->first()) }}"
-                       target="_blank"
-                       class="block px-2 py-2 text-sm hover:bg-accent rounded-lg">
-                        Print Invoice
-                    </a>
-                @endif
+                                           @if($order->invoices->isNotEmpty())
+                                               <a href="{{ route('central.invoices.pdf', $order->invoices->first()) }}"
+                                                  target="_blank"
+                                                  class="flex items-center gap-2 px-2 py-1.5 text-xs font-medium hover:bg-accent rounded-lg transition-colors">
+                                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                                   Print Invoice
+                                               </a>
+                                           @endif
 
-                <a href="{{ route('central.orders.receipt', $order) }}"
-                   target="_blank"
-                   class="block px-2 py-2 text-sm hover:bg-accent rounded-lg">
-                    Print Receipt
-                </a>
-            </div>
-        </div>
-    </td>
+                                           <a href="{{ route('central.orders.receipt', $order) }}"
+                                              target="_blank"
+                                              class="flex items-center gap-2 px-2 py-1.5 text-xs font-medium hover:bg-accent rounded-lg transition-colors">
+                                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17V7"/></svg>
+                                               Print Receipt
+                                           </a>
+                                       </div>
+                                   </div>
+                               </td>
 
-</tr>
-@empty
+                           </tr>
+                           @empty
 <tr>
     <td colspan="10" class="p-16 text-center text-muted-foreground">
         No orders found

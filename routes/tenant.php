@@ -79,6 +79,7 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     Route::get('products/search', [\App\Http\Controllers\Tenant\ProductController::class, 'search'])->name('tenant.products.search');
     Route::resource('products', \App\Http\Controllers\Tenant\ProductController::class)->names('tenant.products');
     Route::resource('categories', \App\Http\Controllers\Tenant\CategoryController::class)->names('tenant.categories');
+    Route::resource('brands', \App\Http\Controllers\Tenant\BrandController::class)->names('tenant.brands');
     Route::resource('collections', \App\Http\Controllers\Tenant\CollectionController::class)->names('tenant.collections');
     Route::resource('warehouses', \App\Http\Controllers\Tenant\WarehouseController::class)->names('tenant.warehouses');
     Route::resource('suppliers', \App\Http\Controllers\Tenant\SupplierController::class)->names('tenant.suppliers');

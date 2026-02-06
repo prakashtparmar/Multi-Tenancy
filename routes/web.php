@@ -153,6 +153,8 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('categories', \App\Http\Controllers\Central\CategoryController::class)
         ->names('central.categories');
+    Route::resource('brands', \App\Http\Controllers\Central\BrandController::class)
+        ->names('central.brands');
     Route::resource('collections', \App\Http\Controllers\Central\CollectionController::class)
         ->names('central.collections');
     Route::resource('products', \App\Http\Controllers\Central\ProductController::class)
