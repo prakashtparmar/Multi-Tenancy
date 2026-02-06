@@ -131,6 +131,15 @@ Route::middleware('auth')->group(function () {
 
 
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reporting Module
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/reports', [\App\Http\Controllers\Central\ReportController::class, 'index'])->name('central.reports.index');
+    Route::post('/reports/export', [\App\Http\Controllers\Central\ReportController::class, 'export'])->name('central.reports.export');
+
     /*
     |--------------------------------------------------------------------------
     | Enterprise Modules (Central)
