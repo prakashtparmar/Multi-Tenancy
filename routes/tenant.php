@@ -41,6 +41,10 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
         return view('settings');
     })->name('tenant.settings');
 
+    // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('tenant.notifications.index');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('tenant.notifications.read-all');
+
     // Identity Management
     Route::post('users/bulk', [\App\Http\Controllers\Platform\UserController::class, 'bulkAction'])->name('tenant.users.bulk');
     Route::post('users/{id}/restore', [\App\Http\Controllers\Platform\UserController::class, 'restore'])->name('tenant.users.restore');

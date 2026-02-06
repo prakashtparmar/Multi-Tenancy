@@ -157,6 +157,9 @@ class SearchController extends Controller
                 'is_blacklisted' => 'boolean',
             ]);
 
+            // Fix for DB Constraints where columns are NOT NULL but have defaults
+            $validated['credit_limit'] = $validated['credit_limit'] ?? 0;
+
             return DB::transaction(function () use ($id, $validated) {
                 if ($id) {
                     $customer = Customer::findOrFail($id);

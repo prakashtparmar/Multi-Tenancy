@@ -68,6 +68,11 @@ Route::middleware('auth')->group(function () {
         return view('settings');
     })->name('settings');
 
+    // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('central.notifications.index');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('central.notifications.read-all');
+
+
     /*
     |--------------------------------------------------------------------------
     | Identity Management (Central)

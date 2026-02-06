@@ -112,7 +112,7 @@
                                 <div class="space-y-2 sm:col-span-2">
                                     <label class="text-sm font-medium leading-none text-foreground/80">Display Name</label>
                                     <input type="text" name="display_name" id="display_name"
-                                        value="{{ old('display_name', $customer->display_name) }}"
+                                        value="{{ old('display_name', $customer->display_name ?? $customer->first_name . ' ' . $customer->last_name) }}"
                                         class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
                                 </div>
                                 <div class="space-y-2">
@@ -665,9 +665,9 @@
                 const f = first.value.trim();
                 const l = last.value.trim();
                 if (f || l) {
-                    // For edit, maybe only update if it is empty? Or just let user edit it.
-                    // The Create form script updates it on input.
-                    // display.value = [f, l].filter(Boolean).join(' '); 
+                    // Auto-update display name if it's empty or matches previous simple concatenation
+                    // For now, we'll just update it to keep it in sync, which is usually desired behavior.
+                    display.value = [f, l].filter(Boolean).join(' '); 
                 }
             }
 

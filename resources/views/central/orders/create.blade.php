@@ -2424,6 +2424,9 @@
                     },
                     newCustomerError: '',
 
+                    // State Management
+                    isRestoring: false,
+
                     // Address State
                     showAddressModal: false,
                     addressForm: {
@@ -2535,14 +2538,21 @@
                     },
 
                     init() {
+                        this.isRestoring = true;
+
                         // 1. Check for Reset Parameter
                         const urlParams = new URLSearchParams(window.location.search);
                         if (urlParams.has('reset')) {
                             localStorage.removeItem('order_wizard_state');
+                            // CLEANUP: Remove reset param from URL so refresh doesn't trigger it again
+                            const newUrl = window.location.pathname;
+                            window.history.replaceState({}, document.title, newUrl);
+
                             if (!preSelectedCustomer) {
                                 this.step = 1;
                                 this.selectedCustomer = null;
                                 this.cart = [];
+                                this.isRestoring = false;
                                 return;
                             }
                         }
@@ -2568,12 +2578,26 @@
                             try {
                                 const parsed = JSON.parse(saved);
 
-                                // Only restore if not already set by preSelectedCustomer
-                                if (!this.selectedCustomer) {
-                                    this.selectedCustomer = parsed.selectedCustomer || null;
+                                // Restore customer if not forced by backend
+                                if (!preSelectedCustomer) {
+                                    // SAFELY restore selected customer if available in storage
+                                    if (parsed.selectedCustomer && parsed.selectedCustomer.id) {
+                                        this.selectedCustomer = parsed.selectedCustomer;
+                                        
+                                        // Defer history fetch to next tick to avoid init race conditions
+                                        this.$nextTick(() => {
+                                            if (typeof this.fetchOrderHistory === 'function') {
+                                                this.fetchOrderHistory(this.selectedCustomer.id);
+                                            }
+                                        });
+                                    }
                                 }
 
-                                this.step = parsed.step || 1;
+                                // Restore Step (prioritize saved step over defaults)
+                                if (parsed.step) {
+                                    this.step = parseInt(parsed.step);
+                                }
+
                                 this.cart = parsed.cart || [];
 
                                 // Merge order object
@@ -2581,38 +2605,47 @@
                                     billing_address_id: null,
                                     shipping_address_id: null,
                                     same_as_billing: true,
-                                    ...this.order, // current (including address set by selectCustomer)
+                                    ...this.order,
                                     ...parsed.order
                                 };
 
-                                this.showTaggingModal = false;
-                                this.taggingLoading = false;
-                                this.tagOutcome = '';
-                                this.tagNotes = '';
-
+                                // Restore other UI states
                                 this.customerQuery = parsed.customerQuery || '';
                                 this.productQuery = parsed.productQuery || '';
 
-                                if (this.productQuery && this.productQuery.length > 0) {
-                                    this.searchProducts();
+                                // Validate Consistency: If on Step 2/3 but no customer, fallback to 1
+                                if (this.step > 1 && !this.selectedCustomer) {
+                                    this.step = 1;
                                 }
+                                // If on Step 3 but empty cart, fallback to 1 (or 2)
+                                if (this.step === 3 && this.cart.length === 0) {
+                                    this.step = this.selectedCustomer ? 2 : 1;
+                                }
+
                             } catch (e) {
                                 console.error('Failed to restore state', e);
                                 localStorage.removeItem('order_wizard_state');
                             }
                         }
 
+                        // Allow UI to settle before enabling saveState
+                        this.$nextTick(() => {
+                            this.isRestoring = false;
+                        });
+
                         // 2. Setup Watchers for Persistence
-                        this.$watch('step', () => this.saveState());
-                        this.$watch('selectedCustomer', () => this.saveState());
-                        this.$watch('cart', () => this.saveState());
-                        this.$watch('order', () => this.saveState());
+                        const save = () => { if (!this.isRestoring) this.saveState(); };
+
+                        this.$watch('step', save);
+                        this.$watch('selectedCustomer', save);
+                        this.$watch('cart', save);
+                        this.$watch('order', save);
 
                         // Deep watchers for nested object changes
-                        this.$watch('cart', () => this.saveState(), { deep: true });
-                        this.$watch('order', () => this.saveState(), { deep: true });
-                        this.$watch('customerQuery', () => this.saveState());
-                        this.$watch('productQuery', () => this.saveState());
+                        this.$watch('cart', save, { deep: true });
+                        this.$watch('order', save, { deep: true });
+                        this.$watch('customerQuery', save);
+                        this.$watch('productQuery', save);
                     },
 
                     saveState() {

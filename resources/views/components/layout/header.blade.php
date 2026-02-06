@@ -406,12 +406,42 @@
             <!-- Theme Toggle -->
             <x-layout.theme-toggle />
 
-            <!-- Premeum Notifications -->
-            <div class="relative" x-data="{ open: false }" @click.away="open = false"
-                @keydown.escape.window="open = false">
+            <!-- Premium Notifications -->
+            <div class="relative" x-data="{
+                open: false,
+                notifications: [],
+                unreadCount: 0,
+                loading: false,
+                async fetchNotifications() {
+                    this.loading = true;
+                    try {
+                        const url = `{{ tenant() ? route('tenant.notifications.index') : route('central.notifications.index') }}`;
+                        let res = await fetch(url);
+                        if (res.ok) {
+                            this.notifications = await res.json();
+                            this.unreadCount = this.notifications.filter(n => !n.read_at).length;
+                        }
+                    } catch (e) { console.error(e); }
+                    finally { this.loading = false; }
+                },
+                async markAllRead() {
+                    try {
+                        const url = `{{ tenant() ? route('tenant.notifications.read-all') : route('central.notifications.read-all') }}`;
+                        await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').getAttribute('content')
+                            }
+                        });
+                        this.notifications.forEach(n => n.read_at = new Date().toISOString());
+                        this.unreadCount = 0;
+                    } catch (e) { console.error(e); }
+                }
+            }" x-init="fetchNotifications()" @click.away="open = false" @keydown.escape.window="open = false">
+
                 <button @click="open = !open"
                     class="group relative inline-flex items-center justify-center rounded-xl size-10 text-muted-foreground hover:bg-white/50 dark:hover:bg-white/10 hover:text-primary transition-all duration-300 active:scale-90">
-                    <span
+                    <span x-show="unreadCount > 0" x-transition
                         class="absolute top-2 right-2 size-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
@@ -426,30 +456,58 @@
                     x-transition:enter-start="opacity-0 translate-y-4 scale-[0.98]"
                     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
                     class="absolute right-0 mt-3 w-80 sm:w-96 rounded-3xl border border-white/20 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 overflow-hidden ring-1 ring-black/5">
+
                     <div
                         class="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-white/5 dark:bg-white/2">
                         <h3 class="text-xs font-black uppercase tracking-widest">Feed</h3>
-                        <button
-                            class="text-[10px] font-bold text-primary hover:text-primary/70 underline underline-offset-4 decoration-primary/30 transition-all">Clear
-                            All</button>
+                        <button @click="markAllRead()" x-show="unreadCount > 0"
+                            class="text-[10px] font-bold text-primary hover:text-primary/70 underline underline-offset-4 decoration-primary/30 transition-all">
+                            Mark All Read
+                        </button>
                     </div>
 
-                    <div class="max-h-[70vh] overflow-y-auto p-4 space-y-2 no-scrollbar">
-                        <div
-                            class="flex flex-col items-center justify-center py-10 text-center space-y-4 opacity-50 italic">
-                            <div class="size-16 rounded-full bg-muted/50 flex items-center justify-center shadow-inner">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"
-                                    stroke-linejoin="round" class="size-8 text-muted-foreground/50">
-                                    <path d="M6 8a6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                                </svg>
+                    <div class="max-h-[70vh] overflow-y-auto p-2 space-y-1 no-scrollbar">
+                        <template x-if="notifications.length === 0">
+                            <div
+                                class="flex flex-col items-center justify-center py-10 text-center space-y-4 opacity-50 italic">
+                                <div
+                                    class="size-16 rounded-full bg-muted/50 flex items-center justify-center shadow-inner">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"
+                                        stroke-linejoin="round" class="size-8 text-muted-foreground/50">
+                                        <path d="M6 8a6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                                    </svg>
+                                </div>
+                                <div class="space-y-1">
+                                    <p class="text-xs font-bold uppercase tracking-widest">Digital Silence</p>
+                                    <p class="text-[10px] opacity-70">The system ledger is currently quiet.</p>
+                                </div>
                             </div>
-                            <div class="space-y-1">
-                                <p class="text-xs font-bold uppercase tracking-widest">Digital Silence</p>
-                                <p class="text-[10px] opacity-70">The system ledger is currently quiet.</p>
+                        </template>
+
+                        <template x-for="note in notifications" :key="note.id">
+                            <div class="group relative flex gap-4 p-4 rounded-2xl hover:bg-secondary/20 dark:hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-black/5 dark:hover:border-white/5"
+                                :class="{ 'bg-primary/5': !note.read_at }">
+
+                                <div class="shrink-0 pt-1"
+                                    x-html="note.data.icon || '<svg class=\'size-5 text-primary\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\' /></svg>'">
+                                </div>
+
+                                <div class="flex-1 space-y-1">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="text-xs font-bold text-foreground" x-text="note.data.title"></h4>
+                                        <span class="text-[10px] font-medium text-muted-foreground"
+                                            x-text="note.created_at"></span>
+                                    </div>
+                                    <p class="text-xs text-muted-foreground leading-relaxed" x-text="note.data.message">
+                                    </p>
+                                </div>
+
+                                <div x-show="!note.read_at"
+                                    class="absolute top-4 right-4 size-1.5 rounded-full bg-primary/50"></div>
                             </div>
-                        </div>
+                        </template>
                     </div>
                 </div>
             </div>

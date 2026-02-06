@@ -117,7 +117,7 @@ class OrderController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($validated) {
+            $order = DB::transaction(function () use ($validated) {
 
                 $subTotalAmount = 0;
                 $itemDiscountsTotal = 0;
@@ -199,9 +199,20 @@ class OrderController extends Controller
                         'tax_percent' => 0,
                     ]);
                 }
+
+                return $order;
             });
 
             if ($request->wantsJson()) {
+                // Send Notification
+                $bgUser = auth()->user();
+                $bgUser->notify(new \App\Notifications\SystemAlert(
+                    'Order Created',
+                    "Order #{$order->id} for {$order->customer->first_name} has been successfully placed.",
+                    route('central.orders.show', $order),
+                    'success'
+                ));
+
                 session()->flash('success', 'Order created successfully.');
                 return response()->json([
                     'success' => true,
