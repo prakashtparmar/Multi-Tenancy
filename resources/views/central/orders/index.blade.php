@@ -37,8 +37,37 @@
                </div>
             </div>
             <form id="search-form" method="GET" action="{{ url()->current() }}" class="flex items-center gap-2 group">
-               @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
-               @if(request('per_page')) <input type="hidden" name="per_page" value="{{ request('per_page') }}"> @endif
+
+               <!-- Extended Filters -->
+               <select name="status" class="h-9 rounded-lg border-border bg-background text-xs cursor-pointer">
+                   <option value="">Status: All</option>
+                   <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                   <option value="confirmed" {{ request('status') === 'confirmed' ? 'selected' : '' }}>Confirmed</option>
+                   <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Processing</option>
+                   <option value="ready_to_ship" {{ request('status') === 'ready_to_ship' ? 'selected' : '' }}>Ready to Ship</option>
+                   <option value="shipped" {{ request('status') === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                   <option value="in_transit" {{ request('status') === 'in_transit' ? 'selected' : '' }}>In Transit</option>
+                   <option value="delivered" {{ request('status') === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                   <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                   <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
+                   <option value="scheduled" {{ request('status') === 'scheduled' ? 'selected' : '' }}>Scheduled</option>
+               </select>
+
+               <select name="payment_status" class="h-9 rounded-lg border-border bg-background text-xs cursor-pointer">
+                   <option value="">Payment: All</option>
+                   <option value="paid" {{ request('payment_status') === 'paid' ? 'selected' : '' }}>Paid</option>
+                   <option value="unpaid" {{ request('payment_status') === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
+                   <option value="partial" {{ request('payment_status') === 'partial' ? 'selected' : '' }}>Partial</option>
+               </select>
+
+               <select name="shipping_status" class="h-9 rounded-lg border-border bg-background text-xs cursor-pointer">
+                   <option value="">Shipping: All</option>
+                   <option value="pending" {{ request('shipping_status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                   <option value="shipped" {{ request('shipping_status') === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                   <option value="in_transit" {{ request('shipping_status') === 'in_transit' ? 'selected' : '' }}>In Transit</option>
+                   <option value="delivered" {{ request('shipping_status') === 'delivered' ? 'selected' : '' }}>Delivered</option>
+               </select>
+
                <div class="relative transition-all duration-300 group-focus-within:w-72" :class="selected.length > 0 ? 'w-48' : 'w-64'">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground group-focus-within:text-primary transition-colors">
@@ -52,6 +81,26 @@
             </form>
          </div>
          <div class="flex items-center gap-2">
+            <!-- Bulk Actions -->
+            <div x-cloak x-show="selected.length > 0" x-transition class="flex items-center gap-2 mr-2">
+                <form id="bulk-print-form" action="{{ route('central.orders.bulk-print') }}" method="POST" target="_blank" class="flex gap-2">
+                    @csrf
+                    <template x-for="id in selected" :key="id">
+                        <input type="hidden" name="ids[]" :value="id">
+                    </template>
+                    
+                    <button type="submit" name="type" value="invoice" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+                        Print Invoices
+                    </button>
+                    
+                    <button type="submit" name="type" value="cod" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                        Print COD
+                    </button>
+                </form>
+                <div class="w-px h-4 bg-border/40"></div>
+            </div>
             <div x-data="{ open: false }" class="relative">
                <x-ui.button variant="outline" @click="open = !open" class="gap-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -389,12 +438,17 @@
                }, 400);
            }
        });
-   
+       
        container.addEventListener('change', (e) => {
-           if (e.target.id === 'per_page') {
-               const form = e.target.closest('form');
-               const url = new URL(form.action);
-               const params = new URLSearchParams(new FormData(form));
+            if (e.target.id === 'per_page' || 
+                e.target.name === 'start_date' || 
+                e.target.name === 'end_date' ||
+                e.target.name === 'status' || 
+                e.target.name === 'payment_status' ||
+                e.target.name === 'shipping_status') {
+                const form = e.target.closest('form');
+                const url = new URL(form.action);
+                const params = new URLSearchParams(new FormData(form));
                loadContent(`${url.origin}${url.pathname}?${params.toString()}`);
            }
        });

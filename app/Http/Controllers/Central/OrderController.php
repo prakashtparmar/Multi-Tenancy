@@ -44,6 +44,22 @@ class OrderController extends Controller
         if ($request->filled('status')) {
             $query->where('status', (string) $request->input('status'));
         }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->input('start_date'));
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->input('end_date'));
+        }
+
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', (string) $request->input('payment_status'));
+        }
+
+        if ($request->filled('shipping_status')) {
+            $query->where('shipping_status', (string) $request->input('shipping_status'));
+        }
         $perPage = (int) $request->input('per_page', 10);
         $orders = $query->latest()->paginate($perPage)->withQueryString();
         return view('central.orders.index', compact('orders'));
@@ -603,5 +619,50 @@ class OrderController extends Controller
             default:
                 return Excel::download(new OrdersExport(), "{$filename}.csv");
         }
+    }
+
+    public function bulkPrint(Request $request)
+    {
+        $this->authorize('orders view');
+
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:orders,id',
+            'type' => 'required|in:invoice,cod',
+        ]);
+
+        $orders = Order::whereIn('id', $validated['ids'])
+            ->with(['items.product', 'customer', 'billingAddress', 'shippingAddress', 'invoices'])
+            ->get();
+
+        if ($orders->isEmpty()) {
+            return back()->with('error', 'No orders selected.');
+        }
+
+        if ($validated['type'] === 'invoice') {
+            // Filter orders that have invoices
+            $ordersWithInvoices = $orders->filter(function ($order) {
+                return $order->invoices->isNotEmpty();
+            });
+
+            // Flatten to get all invoices
+            $invoices = new \Illuminate\Database\Eloquent\Collection($orders->pluck('invoices')->flatten());
+
+            if ($invoices->isEmpty()) {
+                return back()->with('error', 'No invoices found for selected orders.');
+            }
+
+            // Load relations for invoices
+            $invoices->load(['order.customer', 'order.billingAddress', 'order.shippingAddress', 'order.items']);
+
+            $pdf = Pdf::loadView('central.invoices.bulk_invoice', compact('invoices'));
+            return $pdf->download('bulk-invoices-' . now()->format('YmdHis') . '.pdf');
+        } elseif ($validated['type'] === 'cod') {
+            $pdf = Pdf::loadView('central.receipts.bulk_cod', compact('orders'))
+                ->setPaper([0, 0, 226, 600]); // Consistent with single COD receipt size
+            return $pdf->download('bulk-cod-' . now()->format('YmdHis') . '.pdf');
+        }
+
+        return back()->with('error', 'Invalid print type.');
     }
 }

@@ -226,6 +226,8 @@ Route::middleware('auth')->group(function () {
         ->name('central.orders.receipt');
     Route::post('orders/export', [\App\Http\Controllers\Central\OrderController::class, 'export'])
         ->name('central.orders.export');
+    Route::post('orders/bulk-print', [\App\Http\Controllers\Central\OrderController::class, 'bulkPrint'])
+        ->name('central.orders.bulk-print');
     Route::resource('orders', \App\Http\Controllers\Central\OrderController::class)
         ->names('central.orders');
 
