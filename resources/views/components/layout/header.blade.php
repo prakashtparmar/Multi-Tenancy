@@ -67,167 +67,149 @@
 
         <!-- Premium Customer Search "Command Center" style -->
         @can('customers view')
-            <div class="hidden lg:block lg:flex-1 lg:max-w-3xl relative" x-data="headerCustomerSearch()">
-                <div class="relative group/search">
-                    <div
-                        class="absolute -inset-1 bg-gradient-to-r from-primary/30 via-purple-500/30 to-primary/30 rounded-[24px] blur-md opacity-0 group-focus-within/search:opacity-100 transition-all duration-700">
-                    </div>
-                    <div class="relative flex flex-col">
-                        <div class="relative flex items-center">
-                            <div
-                                class="absolute left-5 pointer-events-none text-muted-foreground group-focus-within/search:text-primary transition-colors duration-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" class="size-5">
-                                    <circle cx="11" cy="11" r="8" />
-                                    <path d="m21 21-4.3-4.3" />
-                                </svg>
-                            </div>
-                            <input type="text" x-model="customerQuery" @input.debounce.300ms="searchCustomers()"
-                                @focus="open = true" placeholder="Scan Registry: Enter name, mobile, or code..."
-                                class="flex h-14 w-full rounded-[20px] border border-white/20 dark:border-white/10 bg-white/40 dark:bg-zinc-900/40 pl-14 pr-20 text-base font-medium shadow-sm ring-1 ring-black/5 backdrop-blur-3xl transition-all placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-white dark:focus:bg-zinc-900 focus:shadow-2xl" />
-                            <div class="absolute right-4 flex items-center gap-2">
-                                <div
-                                    class="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-white/50 dark:bg-white/5 border border-white/20 rounded-xl text-[10px] font-black text-muted-foreground backdrop-blur-md">
-                                    <span class="text-xs opacity-50">⌘</span>
-                                    <span>K</span>
-                                </div>
-                            </div>
-                        </div>
+            <div x-data="headerCustomerSearch()">
+                <!-- Search Trigger Button -->
+                <button @click="openSearchModal()"
+                    class="group flex items-center justify-center rounded-2xl p-2.5 text-muted-foreground hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-foreground hover:shadow-inner transition-all duration-300 active:scale-95 focus-visible:outline-none focus:ring-2 focus:ring-primary/20 backdrop-blur-md border border-transparent hover:border-zinc-200 dark:hover:border-white/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="size-5">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.3-4.3" />
+                    </svg>
+                    <span class="sr-only">Search</span>
+                </button>
 
-                        <!-- Search Results Dropdown -->
-                        <div x-show="open && (customerQuery.length >= 2 || customerResults.length > 0)"
-                            @click.away="open = false" x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0 translate-y-4 scale-[0.98]"
-                            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                            class="absolute top-[calc(100%+16px)] left-0 right-0 bg-white/95 dark:bg-zinc-950/95 border border-white/20 dark:border-white/10 rounded-[32px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl z-50 overflow-hidden max-h-[600px] flex flex-col"
-                            style="display: none;">
+                <!-- Search Modal (Teleported) -->
+                <template x-teleport="body">
+                    <div x-show="searchOpen" x-transition.opacity.duration.300ms @keydown.escape.window="searchOpen = false"
+                        class="fixed inset-0 z-[9999] flex items-start justify-center pt-20 bg-zinc-950/80 backdrop-blur-sm p-4"
+                        style="display: none;">
 
-                            <div
-                                class="px-6 py-5 border-b border-white/5 flex items-center justify-between bg-white/5 dark:bg-white/2">
-                                <div class="flex items-center gap-3">
-                                    <span
-                                        class="flex size-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"></span>
-                                    <h4 class="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/80">
-                                        Active Results</h4>
-                                </div>
-                                <div
-                                    class="flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/50 dark:bg-white/5 border border-white/10">
-                                    <span class="text-[10px] text-muted-foreground font-bold"
-                                        x-text="customerResults.length + ' Matches'"></span>
+                        <div class="bg-white dark:bg-zinc-900 w-full max-w-2xl rounded-[32px] shadow-2xl border border-white/10 overflow-hidden flex flex-col max-h-[80vh] animate-in slide-in-from-top-4 fade-in duration-300"
+                            @click.away="searchOpen = false">
+
+                            <!-- Search Input Header -->
+                            <div class="p-4 border-b border-border/50 relative">
+                                <div class="relative flex items-center">
+                                    <div class="absolute left-4 text-muted-foreground">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" class="size-5">
+                                            <circle cx="11" cy="11" r="8" />
+                                            <path d="m21 21-4.3-4.3" />
+                                        </svg>
+                                    </div>
+                                    <input type="text" x-model="customerQuery" @input.debounce.300ms="searchCustomers()"
+                                        x-ref="searchInput" placeholder="Scan Registry: Enter name, mobile, or code..."
+                                        class="flex h-12 w-full rounded-2xl bg-secondary/50 dark:bg-zinc-800/50 pl-12 pr-12 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50" />
+                                    <button @click="searchOpen = false"
+                                        class="absolute right-3 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" class="size-5">
+                                            <path d="M18 6 6 18" />
+                                            <path d="m6 6 12 12" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar">
+                            <!-- Results Area -->
+                            <div class="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar min-h-[200px]">
+                                <!-- Active Results Header -->
+                                <div x-show="customerResults.length > 0"
+                                    class="px-4 py-2 flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                    <span>Results</span>
+                                    <span x-text="customerResults.length + ' Matches'"></span>
+                                </div>
+
+                                <!-- Loading State -->
                                 <template x-if="loading">
-                                    <div class="flex flex-col items-center justify-center py-20 space-y-5">
-                                        <div class="relative size-12">
-                                            <div class="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
-                                            <div
-                                                class="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin">
-                                            </div>
+                                    <div class="flex flex-col items-center justify-center py-12 space-y-4">
+                                        <div
+                                            class="size-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin">
                                         </div>
                                         <span
-                                            class="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground animate-pulse">Filtering
-                                            Ledger</span>
+                                            class="text-xs font-bold text-muted-foreground animate-pulse">Searching...</span>
                                     </div>
                                 </template>
 
+                                <!-- Results List -->
                                 <template x-for="cust in customerResults" :key="cust.id">
                                     <div @click="selectCustomer(cust)"
-                                        class="group relative flex items-center justify-between p-5 rounded-[24px] hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-300 cursor-pointer overflow-hidden border border-transparent hover:border-white/20 hover:shadow-xl group-hover:scale-[1.01]">
+                                        class="group flex items-center gap-4 p-3 rounded-2xl hover:bg-secondary/50 dark:hover:bg-white/5 cursor-pointer transition-all duration-200 border border-transparent hover:border-black/5 dark:hover:border-white/10">
                                         <div
-                                            class="flex items-center gap-5 relative z-10 transition-transform group-hover:translate-x-1">
-                                            <div
-                                                class="size-14 rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-purple-600 text-white flex items-center justify-center font-black text-xl shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 ring-2 ring-white/10">
-                                                <span x-text="cust.first_name.charAt(0)"></span><span
-                                                    x-text="(cust.last_name || '').charAt(0)"></span>
+                                            class="size-12 rounded-xl bg-gradient-to-br from-primary to-purple-600 text-white flex items-center justify-center font-bold text-lg shadow-lg">
+                                            <span x-text="cust.first_name.charAt(0)"></span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <h4 class="font-bold text-foreground group-hover:text-primary transition-colors"
+                                                    x-text="cust.first_name + ' ' + (cust.last_name || '')"></h4>
+                                                <span
+                                                    class="text-xs font-mono font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded"
+                                                    x-text="cust.customer_code"></span>
                                             </div>
-                                            <div>
-                                                <div class="flex items-center gap-3">
-                                                    <p class="font-black text-base text-foreground group-hover:text-primary transition-colors"
-                                                        x-text="cust.first_name + ' ' + (cust.last_name || '')"></p>
-                                                    <span
-                                                        class="px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/10"
-                                                        x-text="cust.customer_code"></span>
-                                                </div>
-                                                <div class="flex items-center gap-4 mt-1.5 opacity-70">
-                                                    <p
-                                                        class="text-xs text-muted-foreground font-bold flex items-center gap-2">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                            viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                            stroke-width="2.5" stroke-linecap="round"
-                                                            stroke-linejoin="round" class="size-3">
-                                                            <path
-                                                                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                                                        </svg>
-                                                        <span x-text="cust.mobile"></span>
-                                                    </p>
-                                                    <div class="size-1 rounded-full bg-muted-foreground/30"></div>
-                                                    <p class="text-xs text-muted-foreground font-bold uppercase tracking-tighter"
-                                                        x-text="cust.type"></p>
-                                                </div>
+                                            <div
+                                                class="flex items-center gap-3 mt-1 text-xs text-muted-foreground font-medium">
+                                                <span class="flex items-center gap-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path
+                                                            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                                                    </svg>
+                                                    <span x-text="cust.mobile"></span>
+                                                </span>
+                                                <span class="w-1 h-1 rounded-full bg-border"></span>
+                                                <span class="uppercase" x-text="cust.type"></span>
                                             </div>
                                         </div>
-                                        <div class="flex items-center gap-8 relative z-10 transition-all">
-                                            <div class="text-right flex flex-col items-end">
-                                                <p
-                                                    class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1.5">
-                                                    Outstanding</p>
-                                                <p class="font-mono text-sm font-black px-3 py-1 rounded-xl border border-white/10 group-hover:border-primary/20 group-hover:bg-primary/5 transition-all shadow-inner"
-                                                    :class="cust.outstanding_balance > 0 ? 'text-rose-500 bg-rose-500/5' : 'text-emerald-500 bg-emerald-500/5'">
-                                                    Rs <span
-                                                        x-text="parseFloat(cust.outstanding_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span>
-                                                </p>
-                                            </div>
-                                            <div
-                                                class="size-10 rounded-full bg-primary text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-x-8 group-hover:translate-x-0 shadow-lg shadow-primary/30">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                                    stroke-linecap="round" stroke-linejoin="round" class="size-5">
-                                                    <path d="M5 12h14" />
-                                                    <path d="m12 5 7 7-7 7" />
-                                                </svg>
-                                            </div>
+                                        <div class="text-right">
+                                            <p class="text-[10px] font-bold uppercase text-muted-foreground/70">Balance</p>
+                                            <p class="font-mono font-bold text-sm"
+                                                :class="cust.outstanding_balance > 0 ? 'text-rose-500' : 'text-emerald-500'"
+                                                x-text="'₹' + parseFloat(cust.outstanding_balance || 0).toLocaleString()">
+                                            </p>
                                         </div>
                                     </div>
                                 </template>
 
+                                <!-- No Results / Register Prompt -->
                                 <template x-if="!loading && customerResults.length === 0 && customerQuery.length >= 2">
-                                    <div class="text-center py-16 px-6">
+                                    <div class="text-center py-10 px-4">
                                         <div
-                                            class="size-20 bg-muted/30 rounded-[32px] flex items-center justify-center mx-auto mb-6 shadow-inner ring-1 ring-white/10">
+                                            class="size-16 rounded-3xl bg-secondary/50 flex items-center justify-center mx-auto mb-4">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
                                                 stroke-linecap="round" stroke-linejoin="round"
-                                                class="size-10 text-muted-foreground/40">
-                                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                                <circle cx="9" cy="7" r="4" />
-                                                <circle cx="19" cy="11" r="3" />
-                                                <path d="M19 8v6" />
-                                                <path d="M22 11h-6" />
+                                                class="size-8 text-muted-foreground">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <line x1="12" y1="8" x2="12" y2="12" />
+                                                <line x1="12" y1="16" x2="12.01" y2="16" />
                                             </svg>
                                         </div>
-                                        <h3 class="text-lg font-bold text-foreground italic">Anonymous Customer?</h3>
-                                        <p
-                                            class="text-sm text-muted-foreground mt-2 mb-8 leading-relaxed max-w-[240px] mx-auto">
-                                            This phantom digit doesn't haunt our halls yet. Shall we add them?</p>
+                                        <h3 class="font-bold text-foreground">No Customer Found</h3>
+                                        <p class="text-xs text-muted-foreground mt-1 mb-6">Search term didn't match any
+                                            records.</p>
                                         <button @click="openCreateCustomerModal()"
-                                            class="w-full inline-flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-primary to-purple-600 px-6 py-4 text-xs font-black uppercase tracking-[0.1em] text-white shadow-[0_10px_30px_-5px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_15px_40px_-5px_rgba(var(--primary-rgb),0.5)] hover:-translate-y-1 active:scale-[0.98] transition-all duration-500">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                                                stroke-linecap="round" stroke-linejoin="round" class="size-4">
-                                                <path d="M5 12h14" />
-                                                <path d="M12 5v14" />
-                                            </svg>
-                                            Register Record
+                                            class="w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                                            Register New Customer
                                         </button>
                                     </div>
                                 </template>
+
+                                <!-- Initial Prompt -->
+                                <div x-show="!loading && customerResults.length === 0 && customerQuery.length < 2"
+                                    class="text-center py-12 text-muted-foreground">
+                                    <p class="text-sm font-medium">Type to search customers...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </template>
+
                 <!-- Premeum Registration Modal (Teleported to Body to avoid Header Clipping) -->
                 <template x-teleport="body">
                     <div x-show="showModal" x-transition.opacity.duration.400ms
@@ -335,12 +317,19 @@
                         return {
                             customerQuery: '',
                             customerResults: [],
-                            open: false,
+                            searchOpen: false, // New state for search modal
                             loading: false,
                             showModal: false,
                             saving: false,
                             error: '',
                             newCustomer: { first_name: '', last_name: '', mobile: '', email: '', type: 'farmer' },
+
+                            openSearchModal() {
+                                this.searchOpen = true;
+                                this.$nextTick(() => {
+                                    this.$refs.searchInput.focus();
+                                });
+                            },
 
                             async searchCustomers() {
                                 if (this.customerQuery.length < 2) {
@@ -353,7 +342,6 @@
                                     let res = await fetch(url);
                                     if (!res.ok) throw new Error('Search failed');
                                     this.customerResults = await res.json();
-                                    this.open = true;
                                 } catch (e) { console.error(e); }
                                 finally { this.loading = false; }
                             },
@@ -364,7 +352,7 @@
                             },
 
                             openCreateCustomerModal() {
-                                this.open = false;
+                                this.searchOpen = false; // Close search modal
                                 this.showModal = true;
                                 this.error = '';
                                 this.newCustomer = { first_name: '', last_name: '', mobile: '', email: '', type: 'farmer' };

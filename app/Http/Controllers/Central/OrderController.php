@@ -56,7 +56,7 @@ class OrderController extends Controller
         $this->authorize('orders manage');
         $warehouses = Warehouse::where('is_active', true)->get();
         $customerId = $request->query('customer_id');
-        $preSelectedCustomer = $customerId ? Customer::with('addresses')->find($customerId) : null;
+        $preSelectedCustomer = $customerId ? Customer::with('addresses')->withCount('orders')->find($customerId) : null;
         $products = Product::where('is_active', true)
             ->with(['stocks', 'images'])
             ->limit(20)

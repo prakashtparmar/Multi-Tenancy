@@ -23,6 +23,8 @@ class Product extends Model
         'default_discount_value' => 'decimal:2',
         'harvest_date' => 'datetime',
         'expiry_date' => 'datetime',
+        'target_crops' => 'array',
+        'target_pests' => 'array',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -75,7 +77,7 @@ class Product extends Model
     public function getImageUrlAttribute()
     {
         $image = $this->images()->where('is_primary', true)->first() ?? $this->images()->first();
-        
+
         if ($image) {
             return asset('storage/' . $image->image_path);
         }

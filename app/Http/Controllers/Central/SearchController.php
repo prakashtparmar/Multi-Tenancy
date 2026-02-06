@@ -32,6 +32,7 @@ class SearchController extends Controller
             ->orWhere('customer_code', 'like', "%{$term}%")
             ->limit(10)
             ->with('addresses')
+            ->withCount('orders')
             ->get();
 
         $data = $customers->map(fn($customer) => [
@@ -44,6 +45,7 @@ class SearchController extends Controller
             'customer_code' => $customer->customer_code,
             'outstanding_balance' => (float) ($customer->outstanding_balance ?? 0.00),
             'credit_limit' => (float) ($customer->credit_limit ?? 0.00),
+            'orders_count' => (int) ($customer->orders_count ?? 0),
             'addresses' => $customer->addresses,
             'company_name' => $customer->company_name,
             'gst_number' => $customer->gst_number,
@@ -119,22 +121,42 @@ class SearchController extends Controller
      */
     public function storeCustomer(Request $request): JsonResponse
     {
-        $id = $request->input('id');
-
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'nullable|string|max:255',
-            'mobile' => 'required|string|max:20|unique:customers,mobile' . ($id ? ",$id" : ''),
-            'email' => 'nullable|email|unique:customers,email' . ($id ? ",$id" : ''),
-            'company_name' => 'nullable|string|max:255',
-            'gst_number' => 'nullable|string|max:50',
-            'pan_number' => 'nullable|string|max:50',
-            'type' => 'nullable|in:farmer,buyer,vendor,dealer',
-            'land_area' => 'nullable|numeric|min:0',
-            'land_unit' => 'nullable|string|in:acre,hectare,guntha',
-        ]);
-
         try {
+            \Illuminate\Support\Facades\Log::info('Store Customer Request:', $request->all());
+
+            $id = $request->input('id');
+
+            $validated = $request->validate([
+                'first_name' => 'required|string|max:255',
+                'last_name' => 'nullable|string|max:255',
+                'display_name' => 'nullable|string|max:255',
+                'mobile' => 'required|string|max:20|unique:customers,mobile' . ($id ? ",$id" : ''),
+                'phone_number_2' => 'nullable|string|max:20',
+                'relative_phone' => 'nullable|string|max:20',
+                'email' => 'nullable|email|unique:customers,email' . ($id ? ",$id" : ''),
+                'source' => 'nullable|string|max:50', // Fixed max length to match schema
+                'category' => 'nullable|string|in:individual,business',
+                'type' => 'nullable|in:farmer,buyer,vendor,dealer',
+                // Business
+                'company_name' => 'nullable|string|max:255',
+                'gst_number' => 'nullable|string|max:50',
+                'pan_number' => 'nullable|string|max:50',
+                // Agriculture
+                'land_area' => 'nullable|numeric|min:0',
+                'land_unit' => 'nullable|string|in:acre,hectare,guntha',
+                'irrigation_type' => 'nullable|string|max:50',
+                'crops' => 'nullable|array',
+                'crops.*' => 'string|max:50',
+                // Financial & KYC
+                'credit_limit' => 'nullable|numeric|min:0',
+                'credit_valid_till' => 'nullable|date',
+                'aadhaar_last4' => 'nullable|digits:4',
+                'kyc_completed' => 'boolean',
+                'internal_notes' => 'nullable|string',
+                'is_active' => 'boolean',
+                'is_blacklisted' => 'boolean',
+            ]);
+
             return DB::transaction(function () use ($id, $validated) {
                 if ($id) {
                     $customer = Customer::findOrFail($id);
@@ -153,8 +175,12 @@ class SearchController extends Controller
                     'customer' => $customer
                 ]);
             });
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e; // Let Laravel handle validation errors (returns 422 automatically)
         } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            \Illuminate\Support\Facades\Log::error('Store Customer Error: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error($e->getTraceAsString());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422); // Return 422 with message to be visible in frontend
         }
     }
 
