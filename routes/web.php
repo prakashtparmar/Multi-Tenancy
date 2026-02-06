@@ -63,6 +63,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [\App\Http\Controllers\Central\DashboardController::class, 'index'])
         ->name('dashboard');
+    Route::get('/dashboard/export-team-activity', [\App\Http\Controllers\Central\DashboardController::class, 'exportTeamActivity'])
+        ->name('central.team.export');
 
     Route::get('/settings', function () {
         return view('settings');

@@ -42,6 +42,9 @@ class User extends Authenticatable
         'bio',
         'password',
         'status',
+        'last_seen_at',
+        'last_login_at',
+        'last_login_ip',
     ];
 
     /**
@@ -64,6 +67,32 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_seen_at' => 'datetime',
+            'last_login_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Check if user is online (active in last 5 minutes)
+     */
+    public function isOnline(): bool
+    {
+        return $this->last_seen_at && $this->last_seen_at->gt(now()->subMinutes(5));
+    }
+
+    /**
+     * Relationship: Orders created by this user
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'created_by');
+    }
+
+    /**
+     * Relationship: Customers created by this user
+     */
+    public function customers()
+    {
+        return $this->hasMany(Customer::class, 'created_by');
     }
 }

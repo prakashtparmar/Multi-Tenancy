@@ -28,13 +28,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->appendToGroup('web', [
             PreventBackHistory::class,
+            \App\Http\Middleware\TrackUserActivity::class,
         ]);
 
         $middleware->redirectGuestsTo(function (Request $request) {
             if (tenant()) {
                 return route('tenant.login.view');
             }
-            
+
             return route('login');
         });
     })

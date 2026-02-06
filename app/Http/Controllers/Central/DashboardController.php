@@ -142,7 +142,7 @@ class DashboardController extends Controller
             ],
         ];
 
-        $recentOrders = (clone $filteredOrderQuery)->with('customer')->latest()->take(5)->get();
+        $recentOrders = (clone $filteredOrderQuery)->with(['customer', 'creator'])->latest()->take(5)->get();
 
         // Prepare chart data (based on duration)
         $chartDataDuration = $startDate->diffInDays($endDate ?? now()) + 1;
@@ -163,6 +163,74 @@ class DashboardController extends Controller
 
         $orderHistory = (clone $filteredOrderQuery)->with(['customer', 'creator'])->latest()->take(20)->get();
 
-        return view('dashboard', compact('stats', 'recentOrders', 'chartData', 'orderHistory', 'period'));
+        // Admin/User Activity Tracking
+        $onlineUsersQuery = \App\Models\User::query()
+            ->withCount(['orders', 'customers'])
+            ->withSum('orders as total_revenue', 'grand_total');
+
+        // RESTRICTION: Non-Super Admins can ONLY see themselves in "Team Activity"
+        if (!$isSuperAdmin) {
+            $onlineUsersQuery->where('id', $user->id);
+        }
+
+        $onlineUsers = $onlineUsersQuery
+            ->orderByRaw('CASE WHEN last_seen_at > ? THEN 1 ELSE 0 END DESC', [now()->subMinutes(5)])
+            ->orderBy('last_seen_at', 'desc')
+            ->take(10)
+            ->get();
+
+        return view('dashboard', compact('stats', 'recentOrders', 'chartData', 'orderHistory', 'period', 'onlineUsers'));
+    }
+
+    public function exportTeamActivity()
+    {
+        $user = auth()->user();
+        $isSuperAdmin = $user->hasRole('Super Admin');
+
+        $query = \App\Models\User::query()
+            ->withCount(['orders', 'customers'])
+            ->withSum('orders as total_revenue', 'grand_total');
+
+        if (!$isSuperAdmin) {
+            $query->where('id', $user->id);
+        }
+
+        $users = $query->get();
+
+        $csvFileName = 'team_activity_' . date('Y-m-d_H-i') . '.csv';
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=$csvFileName",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $callback = function () use ($users) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['User Name', 'Location', 'Status', 'Last Seen', 'Session Duration', 'Total Orders', 'Total Customers', 'Total Revenue']);
+
+            foreach ($users as $u) {
+                // Calculate approximate session duration
+                $duration = 'N/A';
+                if ($u->last_login_at && $u->last_seen_at) {
+                    $duration = $u->last_login_at->diff($u->last_seen_at)->format('%Hh %Im');
+                }
+
+                fputcsv($file, [
+                    $u->name,
+                    $u->location ?? 'Unknown',
+                    $u->isOnline() ? 'Online' : 'Offline',
+                    $u->last_seen_at ? $u->last_seen_at->format('Y-m-d H:i:s') : 'Never',
+                    $duration,
+                    $u->orders_count,
+                    $u->customers_count,
+                    number_format($u->total_revenue ?? 0, 2)
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }
