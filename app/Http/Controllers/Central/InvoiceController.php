@@ -34,9 +34,11 @@ class InvoiceController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('invoice_number', 'like', "%{$search}%")
-                  ->orWhereHas('order', fn ($oq) =>
-                      $oq->where('order_number', 'like', "%{$search}%")
-                  );
+                    ->orWhereHas(
+                        'order',
+                        fn($oq) =>
+                        $oq->where('order_number', 'like', "%{$search}%")
+                    );
             });
         }
 
@@ -161,15 +163,15 @@ class InvoiceController extends Controller
                     'order_id' => $invoice->order_id,
                     'amount' => $validated['amount'],
                     'method' => $validated['method'],
-                    'transaction_id' => $validated['transaction_id'],
-                    'notes' => $validated['notes'],
+                    'transaction_id' => $validated['transaction_id'] ?? null,
+                    'notes' => $validated['notes'] ?? null,
                     'paid_at' => now(),
                 ]);
 
                 $invoice->increment('paid_amount', (float) $validated['amount']);
                 $invoice->refresh();
 
-                $status = round($invoice->paid_amount, 2) >= round($invoice->total_amount, 2)
+                $status = round((float) $invoice->paid_amount, 2) >= round((float) $invoice->total_amount, 2)
                     ? 'paid'
                     : 'partial';
 
@@ -183,5 +185,5 @@ class InvoiceController extends Controller
         }
     }
 
-    
+
 }

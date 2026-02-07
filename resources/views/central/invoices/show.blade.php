@@ -7,13 +7,12 @@
 
             <div class="flex gap-2">
                 <a href="{{ route('central.invoices.pdf', $invoice) }}"
-                   class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-semibold">
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-semibold">
                     ⬇ Download PDF
                 </a>
 
-                <a href="{{ route('central.invoices.pdf', [$invoice, 'action' => 'print']) }}"
-                   target="_blank"
-                   class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-semibold">
+                <a href="{{ route('central.invoices.pdf', [$invoice, 'action' => 'print']) }}" target="_blank"
+                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-semibold">
                     🖨 Print
                 </a>
             </div>
@@ -52,10 +51,10 @@
 
                                 <span class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold
                                     {{ $invoice->status === 'paid'
-                                        ? 'bg-green-100 text-green-800'
-                                        : ($invoice->status === 'partial'
-                                            ? 'bg-blue-100 text-blue-800'
-                                            : 'bg-red-100 text-red-800') }}">
+    ? 'bg-green-100 text-green-800'
+    : ($invoice->status === 'partial'
+        ? 'bg-blue-100 text-blue-800'
+        : 'bg-red-100 text-red-800') }}">
                                     {{ strtoupper($invoice->status) }}
                                 </span>
                             </div>
@@ -164,7 +163,7 @@
                         </div>
 
                         <a href="{{ route('central.invoices.index') }}"
-                           class="inline-block mt-6 text-gray-500 hover:underline print:hidden">
+                            class="inline-block mt-6 text-gray-500 hover:underline print:hidden">
                             ← Back to Invoices
                         </a>
                     </div>
@@ -182,14 +181,10 @@
 
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium">Amount</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        name="amount"
+                                    <input type="number" step="0.01" name="amount"
                                         value="{{ $invoice->total_amount - $invoice->paid_amount }}"
                                         max="{{ $invoice->total_amount - $invoice->paid_amount }}"
-                                        class="mt-1 w-full rounded border-gray-300"
-                                        required>
+                                        class="mt-1 w-full rounded border-gray-300" required>
                                 </div>
 
                                 <div class="mb-4">
@@ -203,12 +198,17 @@
                                 </div>
 
                                 <div class="mb-4">
+                                    <label class="block text-sm font-medium">Transaction ID / Reference</label>
+                                    <input type="text" name="transaction_id" class="mt-1 w-full rounded border-gray-300"
+                                        placeholder="Optional">
+                                </div>
+
+                                <div class="mb-4">
                                     <label class="block text-sm font-medium">Notes</label>
                                     <input type="text" name="notes" class="mt-1 w-full rounded border-gray-300">
                                 </div>
 
-                                <button
-                                    type="submit"
+                                <button type="submit"
                                     class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-bold">
                                     Record Payment
                                 </button>
