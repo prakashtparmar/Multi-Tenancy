@@ -172,6 +172,19 @@ Route::middleware('auth')->group(function () {
 
     Route::patch('returns/{orderReturn}/status', [\App\Http\Controllers\Central\OrderReturnController::class, 'updateStatus'])
         ->name('central.returns.update-status');
+
+    // Inspection Routes
+    Route::get('returns/{return}/inspect', [\App\Http\Controllers\Central\OrderReturnController::class, 'inspect'])
+        ->name('central.returns.inspect');
+    Route::post('returns/{return}/inspect', [\App\Http\Controllers\Central\OrderReturnController::class, 'storeInspection'])
+        ->name('central.returns.inspect.store');
+
+    // Refund Routes
+    Route::get('returns/{return}/refund', [\App\Http\Controllers\Central\OrderReturnController::class, 'refund'])
+        ->name('central.returns.refund');
+    Route::post('returns/{return}/refund', [\App\Http\Controllers\Central\OrderReturnController::class, 'storeRefund'])
+        ->name('central.returns.refund.store');
+
     Route::resource('returns', \App\Http\Controllers\Central\OrderReturnController::class)
         ->names('central.returns');
 
@@ -215,6 +228,8 @@ Route::middleware('auth')->group(function () {
         ->name('central.api.search.products');
     Route::get('api/search/customer-orders', [\App\Http\Controllers\Central\SearchController::class, 'customerOrders'])
         ->name('central.api.search.customer-orders');
+    Route::get('api/search/all-orders', [\App\Http\Controllers\Central\SearchController::class, 'allOrders'])
+        ->name('central.api.search.all-orders');
     Route::get('api/search/customer-activity', [\App\Http\Controllers\Central\SearchController::class, 'customerActivity'])
         ->name('central.api.search.customer-activity');
 

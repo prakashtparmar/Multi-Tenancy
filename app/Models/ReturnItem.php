@@ -12,6 +12,7 @@ class ReturnItem extends Model
     protected $guarded = ['id'];
     protected $casts = [
         'quantity' => 'decimal:3',
+        'quantity_received' => 'decimal:3',
     ];
 
     public function returnOrder()

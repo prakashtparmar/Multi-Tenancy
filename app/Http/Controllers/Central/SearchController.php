@@ -239,6 +239,54 @@ class SearchController extends Controller
         }
     }
     /**
+     * Search for ALL orders via AJAX (for returns/create search facility).
+     */
+    public function allOrders(Request $request): JsonResponse
+    {
+        $term = (string) $request->input('q', '');
+
+        $query = \App\Models\Order::query()
+            ->with(['customer', 'items.product']) // Eager load for display
+            ->latest();
+
+        if (!empty($term)) {
+            $query->where(function ($q) use ($term) {
+                $q->where('order_number', 'like', "%{$term}%")
+                    ->orWhereHas('customer', function ($subQ) use ($term) {
+                        $subQ->where('first_name', 'like', "%{$term}%")
+                            ->orWhere('last_name', 'like', "%{$term}%")
+                            ->orWhere('mobile', 'like', "%{$term}%");
+                    });
+            });
+        }
+
+        $orders = $query->limit(20)->get()->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'order_number' => $order->order_number ?? 'ORD-' . $order->id,
+                'customer_name' => $order->customer->first_name . ' ' . $order->customer->last_name,
+                'placed_at' => $order->placed_at ? $order->placed_at->format('d M Y') : $order->created_at->format('d M Y'),
+                'grand_total' => (float) $order->grand_total,
+                'status' => ucfirst($order->status),
+                'items' => $order->items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'product' => $item->product ? [
+                            'name' => $item->product->name,
+                            'sku' => $item->product->sku,
+                            'image_url' => $item->product->image_url,
+                        ] : null,
+                    ];
+                }),
+            ];
+        });
+
+        return response()->json($orders);
+    }
+
+    /**
      * Search for customer orders via AJAX.
      */
     public function customerOrders(Request $request): JsonResponse

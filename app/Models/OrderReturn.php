@@ -19,6 +19,11 @@ class OrderReturn extends Model
         return LogOptions::defaults()->logOnly(['status']);
     }
 
+    protected $casts = [
+        'inspected_at' => 'datetime',
+        'refunded_amount' => 'decimal:2',
+    ];
+
     public function order()
     {
         return $this->belongsTo(Order::class);
