@@ -433,13 +433,18 @@
                                 <!-- Top Navigation & Actions -->
                                 <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                                     <button @click="requestCloseSession()"
-                                        class="group flex items-center gap-3 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-rose-500 transition-colors px-5 py-3 rounded-2xl hover:bg-rose-500/10">
-                                        <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                        </svg>
-                                        Switch Profile
+                                        class="flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm hover:shadow-md hover:border-primary/30 active:scale-95 transition-all group">
+                                        <span
+                                            class="flex items-center justify-center size-8 rounded-xl bg-gradient-to-br from-amber-400/20 to-orange-500/20 text-orange-600 ring-1 ring-orange-500/20 group-hover:scale-110 transition-transform">
+                                            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                            </svg>
+                                        </span>
+                                        <span
+                                            class="text-xs font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300 group-hover:text-orange-600 transition-colors">Tag
+                                            & Close Profile</span>
                                     </button>
 
                                     <button @click="step = 2"
