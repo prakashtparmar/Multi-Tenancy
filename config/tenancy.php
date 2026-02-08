@@ -18,7 +18,7 @@ return [
      */
     'central_domains' => [
         'localhost', // Keep IP only to avoid Duplicate Route Name errors
-        // '65.2.183.247',
+        '65.2.183.247',
     ],
 
     /**
