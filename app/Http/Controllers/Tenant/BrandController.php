@@ -68,8 +68,14 @@ class BrandController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:brands,slug',
-            'logo' => 'nullable|string',
+            'slug' => 'nullable|string|max:255|unique:brands,slug',
+            'logo' => 'nullable|string', // Assuming file upload returns path or is handled elsewhere
+            'banner_image' => 'nullable|string',
+            'website' => 'nullable|url|max:255',
+            'country_origin' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'sort_order' => 'integer|min:0',
+            'is_featured' => 'boolean',
             'is_active' => 'boolean',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
@@ -77,6 +83,7 @@ class BrandController extends Controller
 
         try {
             DB::transaction(function () use ($validated) {
+                // Auto-generate slug if missing handled in Model boot
                 Brand::create($validated);
             });
 
@@ -89,6 +96,7 @@ class BrandController extends Controller
 
     public function edit(Brand $brand): View
     {
+        // View not created yet, but this is the method
         return view('tenant.brands.edit', compact('brand'));
     }
 
@@ -97,12 +105,18 @@ class BrandController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => [
-                'required',
+                'nullable',
                 'string',
                 'max:255',
                 Rule::unique('brands')->ignore($brand->id),
             ],
             'logo' => 'nullable|string',
+            'banner_image' => 'nullable|string',
+            'website' => 'nullable|url|max:255',
+            'country_origin' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'sort_order' => 'integer|min:0',
+            'is_featured' => 'boolean',
             'is_active' => 'boolean',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
@@ -122,7 +136,7 @@ class BrandController extends Controller
 
     public function destroy(Brand $brand): RedirectResponse
     {
-        if (DB::table('products')->where('brand_id', $brand->id)->exists()) {
+        if ($brand->products()->exists()) {
             return back()->with('error', 'Cannot delete brand with associated products.');
         }
 

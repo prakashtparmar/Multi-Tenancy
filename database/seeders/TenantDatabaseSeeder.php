@@ -108,6 +108,12 @@ class TenantDatabaseSeeder extends Seeder
             'activity-logs view',
             'reports view',
             'reports export',
+            'reports view',
+            'reports export',
+
+            // Finance
+            'finance view',
+            'expenses manage',
         ];
 
         foreach ($permissions as $permission) {
@@ -155,6 +161,10 @@ class TenantDatabaseSeeder extends Seeder
             'warehouses view',
             'reports view',
             'reports export',
+            'reports view',
+            'reports export',
+            'finance view',
+            'expenses manage',
         ]);
 
         // Editor (Content & Catalog focus)

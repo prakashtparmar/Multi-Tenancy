@@ -3,62 +3,79 @@
 namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
+use App\Models\Expense;
+use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\OrdersExport;
-use App\Exports\InventoryExport;
-use App\Exports\CustomersExport;
+use Illuminate\Support\Facades\DB;
+
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ReportController extends Controller
 {
+    use AuthorizesRequests;
 
-    public function index()
+    public function profitLoss(Request $request)
     {
-        // $this->authorize('dashboard view'); // Ensure user has permission
-        return view('central.reports.index');
-    }
+        $this->authorize('finance view');
 
-    public function export(Request $request)
-    {
-        $request->validate([
-            'report_type' => 'required',
-            'format' => 'required|in:csv,xlsx,pdf',
-        ]);
+        $range = $request->input('range', 'this_month');
+        $startDate = null;
+        $endDate = null;
 
-        $type = $request->report_type;
-        $format = $request->format;
-        $startDate = $request->start_date;
-        $endDate = $request->end_date;
-
-        $exportClass = null;
-        $fileName = $type . '-' . date('Y-m-d');
-
-        switch ($type) {
-            case 'orders':
-                $exportClass = new OrdersExport($startDate, $endDate);
+        switch ($range) {
+            case 'this_month':
+                $startDate = now()->startOfMonth();
+                $endDate = now()->endOfMonth();
                 break;
-            case 'inventory':
-                $exportClass = new InventoryExport();
+            case 'last_month':
+                $startDate = now()->subMonth()->startOfMonth();
+                $endDate = now()->subMonth()->endOfMonth();
                 break;
-            case 'customers':
-                $exportClass = new CustomersExport($startDate, $endDate);
-                break;
-            case 'interactions':
-                $exportClass = new \App\Exports\InteractionsExport($startDate, $endDate);
+            case 'custom':
+                $startDate = $request->input('start_date') ? \Carbon\Carbon::parse($request->input('start_date')) : now()->startOfMonth();
+                $endDate = $request->input('end_date') ? \Carbon\Carbon::parse($request->input('end_date')) : now()->endOfMonth();
                 break;
             default:
-                return back()->with('error', 'Invalid report type selected.');
+                $startDate = now()->startOfMonth();
+                $endDate = now()->endOfMonth();
         }
 
-        $extension = $format;
-        if ($format == 'pdf') {
-            $writerType = \Maatwebsite\Excel\Excel::DOMPDF;
-        } elseif ($format == 'xlsx') {
-            $writerType = \Maatwebsite\Excel\Excel::XLSX;
-        } else {
-            $writerType = \Maatwebsite\Excel\Excel::CSV;
-        }
+        // 1. Revenue (Paid Orders)
+        $revenue = Order::whereIn('status', ['confirmed', 'processing', 'ready_to_ship', 'shipped', 'delivered', 'completed'])
+            ->where('payment_status', 'paid')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->sum('grand_total');
 
-        return Excel::download($exportClass, "{$fileName}.{$extension}", $writerType);
+        // 2. COGS (Cost of Goods Sold)
+        // We need to join orders to filter by date/status
+        $cogs = OrderItem::whereHas('order', function ($q) use ($startDate, $endDate) {
+            $q->whereIn('status', ['confirmed', 'processing', 'ready_to_ship', 'shipped', 'delivered', 'completed'])
+                ->where('payment_status', 'paid')
+                ->whereBetween('created_at', [$startDate, $endDate]);
+        })->sum(DB::raw('quantity * COALESCE(cost_price, 0)'));
+
+        // 3. Expenses
+        $expenses = Expense::whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])->get();
+        $totalExpenses = $expenses->sum('amount');
+
+        // 4. Calculations
+        $grossProfit = $revenue - $cogs;
+        $netProfit = $grossProfit - $totalExpenses;
+
+        // Breakdown
+        $expenseBreakdown = $expenses->groupBy('category')->map(function ($row) {
+            return $row->sum('amount');
+        });
+
+        return view('central.reports.profit-loss', compact(
+            'revenue',
+            'cogs',
+            'grossProfit',
+            'totalExpenses',
+            'netProfit',
+            'expenseBreakdown',
+            'range'
+        ));
     }
 }

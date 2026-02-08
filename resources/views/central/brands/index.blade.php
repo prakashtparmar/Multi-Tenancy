@@ -148,18 +148,11 @@
                                     </td>
                                     <td class="p-6 align-middle">
                                         <div class="flex items-center gap-3">
-                                            @if($brand->logo)
-                                                <div
-                                                    class="h-8 w-8 rounded-lg bg-muted flex items-center justify-center overflow-hidden border border-border">
-                                                    <img src="{{ $brand->logo }}" alt="{{ $brand->name }}"
-                                                        class="h-full w-full object-cover">
-                                                </div>
-                                            @else
-                                                <div
-                                                    class="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                                                    {{ substr($brand->name, 0, 1) }}
-                                                </div>
-                                            @endif
+                                            <div
+                                                class="h-10 w-10 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-border/50 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                                                <img src="{{ $brand->logo_url }}" alt="{{ $brand->name }}"
+                                                    class="h-full w-full object-contain p-1">
+                                            </div>
                                             <div class="flex flex-col space-y-0.5">
                                                 <span
                                                     class="font-semibold text-foreground text-sm tracking-tight">{{ $brand->name }}</span>

@@ -80,7 +80,10 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     Route::resource('products', \App\Http\Controllers\Tenant\ProductController::class)->names('tenant.products');
     Route::resource('categories', \App\Http\Controllers\Tenant\CategoryController::class)->names('tenant.categories');
     Route::resource('brands', \App\Http\Controllers\Tenant\BrandController::class)->names('tenant.brands');
-    Route::resource('collections', \App\Http\Controllers\Tenant\CollectionController::class)->names('tenant.collections');
+
+    Route::resource('expenses', \App\Http\Controllers\Tenant\ExpenseController::class)->names('tenant.expenses');
+    Route::get('reports/profit-loss', [\App\Http\Controllers\Tenant\ReportController::class, 'profitLoss'])->name('tenant.reports.profit-loss');
+
     Route::resource('warehouses', \App\Http\Controllers\Tenant\WarehouseController::class)->names('tenant.warehouses');
     Route::resource('suppliers', \App\Http\Controllers\Tenant\SupplierController::class)->names('tenant.suppliers');
     Route::post('orders/{order}/status', [\App\Http\Controllers\Tenant\OrderController::class, 'updateStatus'])->name('tenant.orders.status');

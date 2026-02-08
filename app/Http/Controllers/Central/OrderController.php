@@ -208,6 +208,7 @@ class OrderController extends Controller
                         'sku' => $product->sku ?? 'N/A',
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['price'],
+                        'cost_price' => $product->cost_price ?? 0, // Snapshot
                         'discount_type' => $item['discount_type'] ?? 'fixed',
                         'discount_value' => $item['discount_value'] ?? 0,
                         'discount_amount' => $item['discount_amount'],

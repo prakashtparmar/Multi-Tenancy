@@ -4,13 +4,23 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
+        // 0. Expenses (Central)
+        Schema::create('expenses', function (Blueprint $table) {
+            $table->id();
+            $table->string('description');
+            $table->decimal('amount', 12, 2);
+            $table->date('date');
+            $table->string('category')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
+        });
+
         // 1. Finance Basics
         Schema::create('tax_zones', function (Blueprint $table) {
             $table->id();
@@ -53,19 +63,19 @@ return new class extends Migration
             $table->string('status')->default('pending'); // pending, confirmed, processing, shipped, delivered, cancelled
             $table->string('payment_status')->default('unpaid'); // unpaid, partial, paid, refunded
             $table->string('shipping_status')->default('pending'); // pending, shipped, delivered
-            
+
             // Financials
             $table->decimal('total_amount', 12, 2)->default(0);
             $table->decimal('tax_amount', 12, 2)->default(0);
             $table->decimal('discount_amount', 12, 2)->default(0);
             $table->decimal('shipping_amount', 12, 2)->default(0);
             $table->decimal('grand_total', 12, 2)->default(0);
-            
+
             // Methods & Tracking
             $table->string('payment_method')->nullable();
             $table->string('shipping_method')->nullable();
             $table->string('discount_code')->nullable();
-            
+
             // Addresses (Snapshots)
             $table->unsignedBigInteger('billing_address_id')->nullable();
             $table->unsignedBigInteger('shipping_address_id')->nullable();
@@ -74,7 +84,7 @@ return new class extends Migration
             $table->timestamp('placed_at')->useCurrent();
             $table->timestamp('scheduled_at')->nullable();
             $table->boolean('is_future_order')->default(false);
-            
+
             // Lifecycle Audit
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
@@ -97,6 +107,7 @@ return new class extends Migration
             $table->string('product_name'); // Snapshot
             $table->decimal('quantity', 12, 3);
             $table->decimal('unit_price', 12, 2);
+            $table->decimal('cost_price', 12, 2)->nullable(); // Snapshot of cost
             $table->decimal('tax_percent', 5, 2)->default(0);
             $table->decimal('total_price', 12, 2);
             $table->timestamps();
@@ -225,13 +236,14 @@ return new class extends Migration
         Schema::dropIfExists('shipments');
         Schema::dropIfExists('order_addresses');
         Schema::dropIfExists('order_items');
-        Schema::dropIfExists('orders');
         Schema::dropIfExists('coupon_usages');
+        Schema::dropIfExists('orders');
         Schema::dropIfExists('coupons');
         Schema::dropIfExists('product_prices');
         Schema::dropIfExists('price_lists');
         Schema::dropIfExists('tax_rates');
         Schema::dropIfExists('tax_classes');
         Schema::dropIfExists('tax_zones');
+        Schema::dropIfExists('expenses');
     }
 };

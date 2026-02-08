@@ -190,6 +190,7 @@ class OrderController extends Controller
                         'discount_value' => $item['discount_value'] ?? 0,
                         'discount_amount' => $item['discount_amount'],
                         'total_price' => $item['quantity'] * $item['price'],
+                        'cost_price' => $product->cost_price ?? 0, // Snapshot cost
                         'tax_percent' => 0,
                     ]);
                 }
@@ -359,6 +360,7 @@ class OrderController extends Controller
                         'sku' => $product->sku ?? 'N/A',
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['price'],
+                        'cost_price' => $product->cost_price ?? 0, // Snapshot cost
                         'total_price' => $lineSubtotal,
                         'discount_type' => $itemDiscountType,
                         'discount_value' => $itemDiscountValue,

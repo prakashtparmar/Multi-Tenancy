@@ -10,86 +10,98 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        // 1. Catalog
+        // 1. Categories
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
             $table->unsignedBigInteger('parent_id')->nullable();
-            $table->text('description')->nullable();
-            $table->string('banner_image')->nullable();
-            $table->integer('sort_order')->default(0);
-            $table->boolean('is_featured')->default(false);
-            $table->boolean('is_menu')->default(false);
+            $table->string('image')->nullable();
+
+            $table->text('description')->nullable(); // New
+            $table->string('banner_image')->nullable(); // New
+            $table->integer('sort_order')->default(0); // New
+            $table->boolean('is_featured')->default(false); // New
+            $table->boolean('is_menu')->default(false); // New: Show in main menu
+
             $table->boolean('is_active')->default(true);
+
+            // SEO
+            $table->string('meta_title')->nullable();
+            $table->text('meta_description')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
         });
 
+        // 2. Brands (Enterprise Grade)
         Schema::create('brands', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->string('website')->nullable();
-            $table->text('description')->nullable();
             $table->string('logo')->nullable();
-            $table->string('banner_image')->nullable();
-            $table->integer('sort_order')->default(0);
-            $table->boolean('is_featured')->default(false);
+            $table->string('banner_image')->nullable(); // New: For brand pages
+            $table->string('website')->nullable(); // New: External link
+            $table->string('country_origin')->nullable(); // New: "Made in X"
+
+            $table->text('description')->nullable(); // New: Rich text
+
+            $table->integer('sort_order')->default(0); // New: Display order
+            $table->boolean('is_featured')->default(false); // New: For homepage/sliders
             $table->boolean('is_active')->default(true);
-            $table->string('country_of_origin')->nullable();
+
+            // SEO
             $table->string('meta_title')->nullable();
             $table->text('meta_description')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
         });
 
+        // 3. Products (Rich Agri Schema)
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->string('sku')->unique()->nullable(); // Made nullable for flexibility
+            $table->string('sku')->unique()->nullable(); // Nullable for parent variable products
             $table->string('barcode')->nullable();
-            $table->string('type')->default('simple'); // simple, variable, bundle
-
+            $table->string('type')->default('simple'); // simple, variable
             $table->foreignId('category_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('brand_id')->nullable()->constrained()->nullOnDelete();
-
             $table->text('description')->nullable();
-            $table->string('image')->nullable();
-            $table->json('gallery')->nullable();
-
-            $table->decimal('price', 12, 2)->default(0);
-            $table->decimal('cost_price', 12, 2)->nullable();
-
-            // Inventory
-            $table->boolean('manage_stock')->default(true);
-            $table->decimal('stock_on_hand', 12, 3)->default(0);
-            $table->string('unit_type')->default('piece'); // kg, gm, ltr, piece
-
-            // Tax & Status
-            $table->boolean('is_taxable')->default(true);
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_featured')->default(false);
 
             // Agriculture Specifics
             $table->date('harvest_date')->nullable();
             $table->date('expiry_date')->nullable();
 
-            $table->string('technical_name')->nullable(); // For chemicals
-            $table->string('application_method')->nullable(); // Spray, Drip
+            // Agri Fields
+            $table->string('technical_name')->nullable(); // e.g. Imidacloprid 17.8% SL
+            $table->string('application_method')->nullable(); // e.g. Foliar Spray
             $table->text('usage_instructions')->nullable();
-            $table->json('target_crops')->nullable(); // Wheat, Rice
-            $table->json('target_pests')->nullable(); // Aphids, Bollworm
+            $table->json('target_crops')->nullable();
+            $table->json('target_pests')->nullable();
             $table->string('pre_harvest_interval')->nullable();
-            $table->string('shelf_life')->nullable();
-            $table->string('origin')->nullable();
-            $table->boolean('is_organic')->default(false);
-            $table->string('certification_number')->nullable();
+            $table->string('shelf_life')->nullable(); // e.g. 24 Months
+            $table->string('certificate_url')->nullable();
 
-            // WMS attributes
+            $table->string('origin')->nullable(); // Farm Location/Region
+            $table->boolean('is_organic')->default(false);
+            $table->string('certification_number')->nullable(); // Organic/GAP Cert
+            $table->string('unit_type')->default('kg'); // kg, ton, quintal, crate, bundle
+
+            // Pricing & Specs
+            $table->decimal('price', 12, 2)->default(0);
+            $table->string('default_discount_type')->nullable()->default('fixed');
+            $table->decimal('default_discount_value', 15, 2)->nullable()->default(0);
+            $table->decimal('cost_price', 12, 2)->default(0);
             $table->decimal('weight', 8, 3)->nullable(); // kg
-            $table->json('dimensions')->nullable(); // L x W x H
+            $table->json('dimensions')->nullable(); // L,W,H
+
+            // Status
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_taxable')->default(true);
+            $table->boolean('manage_stock')->default(true);
+            $table->decimal('stock_on_hand', 12, 3)->default(0);
 
             // SEO
             $table->string('meta_title')->nullable();

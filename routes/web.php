@@ -157,8 +157,7 @@ Route::middleware('auth')->group(function () {
         ->names('central.categories');
     Route::resource('brands', \App\Http\Controllers\Central\BrandController::class)
         ->names('central.brands');
-    Route::resource('collections', \App\Http\Controllers\Central\CollectionController::class)
-        ->names('central.collections');
+
     Route::resource('products', \App\Http\Controllers\Central\ProductController::class)
         ->names('central.products');
     Route::resource('warehouses', \App\Http\Controllers\Central\WarehouseController::class)
@@ -175,6 +174,9 @@ Route::middleware('auth')->group(function () {
         ->name('central.returns.update-status');
     Route::resource('returns', \App\Http\Controllers\Central\OrderReturnController::class)
         ->names('central.returns');
+
+    Route::resource('expenses', \App\Http\Controllers\Central\ExpenseController::class)->names('central.expenses');
+    Route::get('reports/profit-loss', [\App\Http\Controllers\Central\ReportController::class, 'profitLoss'])->name('central.reports.profit-loss');
 
     Route::post('invoices/{invoice}/payment', [\App\Http\Controllers\Central\InvoiceController::class, 'addPayment'])
         ->name('central.invoices.add-payment');

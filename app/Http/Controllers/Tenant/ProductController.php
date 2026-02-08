@@ -26,7 +26,7 @@ class ProductController extends Controller
     public function index(): View
     {
         $this->authorize('products view');
-        
+
         $products = Product::with(['category', 'brand'])->paginate(10);
         return view('tenant.products.index', compact('products'));
     }
@@ -37,7 +37,7 @@ class ProductController extends Controller
     public function create(): View
     {
         $this->authorize('products create');
-        
+
         $categories = Category::all();
         $brands = Brand::all();
         return view('tenant.products.create', compact('categories', 'brands'));
@@ -49,13 +49,13 @@ class ProductController extends Controller
     public function search(Request $request): JsonResponse
     {
         $this->authorize('products view');
-        
+
         $query = (string) $request->get('query', '');
         $products = Product::where('name', 'LIKE', "%{$query}%")
             ->orWhere('sku', 'LIKE', "%{$query}%")
             ->limit(10)
             ->get(['id', 'name', 'sku', 'price', 'default_discount_type', 'default_discount_value']);
-            
+
         return response()->json($products);
     }
 
@@ -68,17 +68,82 @@ class ProductController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'required|string|unique:products,sku',
+            'sku' => 'nullable|string|max:255|unique:products,sku',
             'price' => 'required|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'default_discount_type' => 'nullable|in:fixed,percent',
             'default_discount_value' => 'nullable|numeric|min:0',
+            // General
+            'barcode' => 'nullable|string|max:255',
+            'type' => 'nullable|string|in:simple,variable',
+            'description' => 'nullable|string',
+            'unit_type' => 'required|string|max:50',
+            // Agri
+            'harvest_date' => 'nullable|date',
+            'expiry_date' => 'nullable|date',
+            'technical_name' => 'nullable|string|max:255',
+            'application_method' => 'nullable|string|max:255',
+            'usage_instructions' => 'nullable|string',
+            'target_crops' => 'nullable|string', // Comma separated
+            'target_pests' => 'nullable|string', // Comma separated
+            'pre_harvest_interval' => 'nullable|string|max:255',
+            'shelf_life' => 'nullable|string|max:255',
+            'origin' => 'nullable|string|max:255',
+            'is_organic' => 'boolean',
+            'certification_number' => 'nullable|string|max:255',
+            // WMS
+            'weight' => 'nullable|numeric|min:0',
+            'dimensions' => 'nullable|array',
+            'manage_stock' => 'boolean',
+            'stock_on_hand' => 'nullable|numeric|min:0',
+            // Status & SEO
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'is_taxable' => 'boolean',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string',
+            // Media
+            'image' => 'nullable|image|max:2048', // 2MB
+            'gallery.*' => 'nullable|image|max:2048',
         ]);
 
         try {
-            DB::transaction(function () use ($validated) {
-                Product::create($validated);
+            DB::transaction(function () use ($request, $validated) {
+                // Process Tags
+                if (isset($validated['target_crops'])) {
+                    $validated['target_crops'] = array_map('trim', explode(',', $validated['target_crops']));
+                }
+                if (isset($validated['target_pests'])) {
+                    $validated['target_pests'] = array_map('trim', explode(',', $validated['target_pests']));
+                }
+
+                $product = Product::create($validated);
+
+                // Handle Main Image
+                if ($request->hasFile('image')) {
+                    $path = $request->file('image')->store('products', 'public');
+                    // Save to product_images table
+                    $product->images()->create([
+                        'image_path' => $path,
+                        'is_primary' => true,
+                        'sort_order' => 0
+                    ]);
+                    // Also update flat column for read performance/compatibility if needed
+                    $product->update(['image' => $path]);
+                }
+
+                // Handle Gallery
+                if ($request->hasFile('gallery')) {
+                    foreach ($request->file('gallery') as $index => $file) {
+                        $path = $file->store('products', 'public');
+                        $product->images()->create([
+                            'image_path' => $path,
+                            'is_primary' => false,
+                            'sort_order' => $index + 1
+                        ]);
+                    }
+                }
             });
 
             return redirect()->route('tenant.products.index')->with('success', 'Product created successfully.');
@@ -93,7 +158,7 @@ class ProductController extends Controller
     public function edit(Product $product): View
     {
         $this->authorize('products edit');
-        
+
         $categories = Category::all();
         $brands = Brand::all();
         return view('tenant.products.edit', compact('product', 'categories', 'brands'));
@@ -108,17 +173,86 @@ class ProductController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'required|string|unique:products,sku,' . $product->id,
+            'sku' => 'nullable|string|max:255|unique:products,sku,' . $product->id,
             'price' => 'required|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'default_discount_type' => 'nullable|in:fixed,percent',
             'default_discount_value' => 'nullable|numeric|min:0',
+            // General
+            'barcode' => 'nullable|string|max:255',
+            'type' => 'nullable|string|in:simple,variable',
+            'description' => 'nullable|string',
+            'unit_type' => 'required|string|max:50',
+            // Agri
+            'harvest_date' => 'nullable|date',
+            'expiry_date' => 'nullable|date',
+            'technical_name' => 'nullable|string|max:255',
+            'application_method' => 'nullable|string|max:255',
+            'usage_instructions' => 'nullable|string',
+            'target_crops' => 'nullable|string', // Comma separated
+            'target_pests' => 'nullable|string', // Comma separated
+            'pre_harvest_interval' => 'nullable|string|max:255',
+            'shelf_life' => 'nullable|string|max:255',
+            'origin' => 'nullable|string|max:255',
+            'is_organic' => 'boolean',
+            'certification_number' => 'nullable|string|max:255',
+            // WMS
+            'weight' => 'nullable|numeric|min:0',
+            'dimensions' => 'nullable|array',
+            'manage_stock' => 'boolean',
+            'stock_on_hand' => 'nullable|numeric|min:0',
+            // Status & SEO
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'is_taxable' => 'boolean',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string',
+            // Media
+            'image' => 'nullable|image|max:2048',
+            'gallery.*' => 'nullable|image|max:2048',
         ]);
 
         try {
-            DB::transaction(function () use ($product, $validated) {
+            DB::transaction(function () use ($request, $product, $validated) {
+                // Process Tags
+                if (isset($validated['target_crops'])) {
+                    $validated['target_crops'] = array_map('trim', explode(',', $validated['target_crops']));
+                }
+                if (isset($validated['target_pests'])) {
+                    $validated['target_pests'] = array_map('trim', explode(',', $validated['target_pests']));
+                }
+
                 $product->update($validated);
+
+                // Handle Main Image Update
+                if ($request->hasFile('image')) {
+                    $path = $request->file('image')->store('products', 'public');
+
+                    // Unset old primary
+                    $product->images()->where('is_primary', true)->update(['is_primary' => false]);
+
+                    // Add new primary
+                    $product->images()->create([
+                        'image_path' => $path,
+                        'is_primary' => true,
+                        'sort_order' => 0
+                    ]);
+                    // Update flat column
+                    $product->update(['image' => $path]);
+                }
+
+                // Handle Gallery Append
+                if ($request->hasFile('gallery')) {
+                    foreach ($request->file('gallery') as $index => $file) {
+                        $path = $file->store('products', 'public');
+                        $product->images()->create([
+                            'image_path' => $path,
+                            'is_primary' => false,
+                            'sort_order' => 10 + $index // arbitrary higher sort order
+                        ]);
+                    }
+                }
             });
 
             return redirect()->route('tenant.products.index')->with('success', 'Product updated successfully.');
@@ -133,7 +267,7 @@ class ProductController extends Controller
     public function destroy(Product $product): RedirectResponse
     {
         $this->authorize('products delete');
-        
+
         $product->delete();
         return redirect()->route('tenant.products.index')->with('success', 'Product deleted successfully.');
     }

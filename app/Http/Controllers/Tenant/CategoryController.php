@@ -24,7 +24,7 @@ class CategoryController extends Controller
     public function index(): View
     {
         $this->authorize('products view');
-        
+
         $categories = Category::withCount('products')
             ->orderBy('name')
             ->paginate(10);
@@ -38,7 +38,7 @@ class CategoryController extends Controller
     public function create(): View
     {
         $this->authorize('products create');
-        
+
         $parents = Category::where('parent_id', null)->orderBy('name')->get();
         return view('tenant.categories.create', compact('parents'));
     }
@@ -55,6 +55,10 @@ class CategoryController extends Controller
             'slug' => 'required|string|max:255|unique:categories,slug',
             'parent_id' => 'nullable|exists:categories,id',
             'description' => 'nullable|string',
+            'banner_image' => 'nullable|string',
+            'sort_order' => 'integer|min:0',
+            'is_featured' => 'boolean',
+            'is_menu' => 'boolean',
             'is_active' => 'boolean',
         ]);
 
@@ -76,12 +80,12 @@ class CategoryController extends Controller
     public function edit(Category $category): View
     {
         $this->authorize('products edit');
-        
+
         $parents = Category::where('parent_id', null)
             ->where('id', '!=', $category->id)
             ->orderBy('name')
             ->get();
-            
+
         return view('tenant.categories.edit', compact('category', 'parents'));
     }
 
@@ -102,6 +106,10 @@ class CategoryController extends Controller
             ],
             'parent_id' => 'nullable|exists:categories,id',
             'description' => 'nullable|string',
+            'banner_image' => 'nullable|string',
+            'sort_order' => 'integer|min:0',
+            'is_featured' => 'boolean',
+            'is_menu' => 'boolean',
             'is_active' => 'boolean',
         ]);
 
@@ -128,7 +136,7 @@ class CategoryController extends Controller
     public function destroy(Category $category): RedirectResponse
     {
         $this->authorize('products delete');
-        
+
         if ($category->products()->exists()) {
             return back()->with('error', 'Cannot delete category with associated products.');
         }

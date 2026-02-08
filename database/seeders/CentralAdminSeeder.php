@@ -113,7 +113,12 @@ class CentralAdminSeeder extends Seeder
             'settings manage', // Edit settings
             'activity-logs view',
             'reports view',
+            'reports view',
             'reports export',
+
+            // Finance
+            'finance view',
+            'expenses manage',
         ];
 
         foreach ($permissions as $permission) {

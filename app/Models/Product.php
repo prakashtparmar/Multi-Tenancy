@@ -25,12 +25,23 @@ class Product extends Model
         'expiry_date' => 'datetime',
         'target_crops' => 'array',
         'target_pests' => 'array',
+        'dimensions' => 'array',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::saving(function ($product) {
+            if (empty($product->slug)) {
+                $product->slug = \Illuminate\Support\Str::slug($product->name);
+            }
+        });
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'sku', 'price', 'stock_on_hand'])
+            ->logOnly(['name', 'sku', 'price', 'stock_on_hand', 'brand_id'])
             ->logOnlyDirty();
     }
 

@@ -110,15 +110,16 @@
                     'url' => tenant() ? route('tenant.categories.index') : route('central.categories.index'),
                     'active' => request()->is('categories*'),
                     'icon' => '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'size-4\'><path d=\'M3 6h18\'/><path d=\'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\'/><rect width=\'18\' height=\'14\' x=\'3\' y=\'6\' rx=\'2\'/></svg>',
-                    'permission' => 'products view' /* Default to products view if specific not set */
+                    'permission' => 'products view'
                 ],
                 [
-                    'title' => 'Collections',
-                    'url' => tenant() ? route('tenant.collections.index') : route('central.collections.index'),
-                    'active' => request()->is('collections*'),
-                    'icon' => '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'size-4\'><path d=\'m16 6 4 14\'/><path d=\'M12 6v14\'/><path d=\'M8 8v12\'/><path d=\'M4 4v16\'/></svg>',
+                    'title' => 'Brands',
+                    'url' => tenant() ? route('tenant.brands.index') : route('central.brands.index'),
+                    'active' => request()->is('brands*'),
+                    'icon' => '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'size-4\'><path d=\'M6 9H4.5a2.5 2.5 0 0 1 0-5H6\'/><path d=\'M18 9h1.5a2.5 2.5 0 0 0 0-5H18\'/><path d=\'M4 22h16\'/><path d=\'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22\'/><path d=\'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22\'/><path d=\'M18 2H6v7a6 6 0 0 0 12 0V2Z\'/></svg>',
                     'permission' => 'products view'
-                ]
+                ],
+
             ], fn($item) => auth()->check() && auth()->user()->can($item['permission']));
         @endphp
 
@@ -197,7 +198,40 @@
                     </x-layout.nav-collapsible>
                 @endif
 
-                <!-- 3. CUSTOMERS -->
+                <!-- 3. FINANCE -->
+                @php
+                    $financeItems = array_filter([
+                        [
+                            'title' => 'Expenses',
+                            'url' => tenant() ? route('tenant.expenses.index') : route('central.expenses.index'),
+                            'active' => request()->routeIs('tenant.expenses.*') || request()->routeIs('central.expenses.*'),
+                            'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+                            'permission' => 'expenses manage'
+                        ],
+                        [
+                            'title' => 'Profit & Loss',
+                            'url' => tenant() ? route('tenant.reports.profit-loss') : route('central.reports.profit-loss'),
+                            'active' => request()->routeIs('tenant.reports.profit-loss') || request()->routeIs('central.reports.profit-loss'),
+                            'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>',
+                            'permission' => 'finance view'
+                        ]
+                    ], fn($item) => auth()->check() && (tenant() || $item['url'] !== '#') && auth()->user()->can($item['permission']));
+                @endphp
+
+                @if(count($financeItems) > 0)
+                    <x-layout.nav-collapsible title="Finance" :active="request()->is('expenses*') || request()->is('reports/profit-loss')" :items="$financeItems">
+                        <x-slot name="icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                                class="size-5">
+                                <rect width="20" height="14" x="2" y="5" rx="2" />
+                                <line x1="2" x2="22" y1="10" y2="10" />
+                            </svg>
+                        </x-slot>
+                    </x-layout.nav-collapsible>
+                @endif
+
+                <!-- 4. CUSTOMERS -->
                 @php
                     $customerItems = array_filter([
                         [

@@ -4,60 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        // 1. Catalog
-        Schema::create('categories', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->unsignedBigInteger('parent_id')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        // 1. Catalog tables removed - moved to 2026_01_31_054000_create_catalog_tables.php
 
-        Schema::create('brands', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->string('logo')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-            $table->softDeletes();
-        });
-
-        Schema::create('products', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->string('sku')->unique();
-            $table->string('barcode')->nullable();
-            $table->foreignId('category_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('brand_id')->nullable()->constrained()->nullOnDelete();
-            $table->text('description')->nullable();
-            $table->decimal('price', 12, 2)->default(0);
-            $table->decimal('cost_price', 12, 2)->default(0);
-            $table->decimal('weight', 8, 3)->nullable(); // kg
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_taxable')->default(true);
-            $table->decimal('stock_on_hand', 12, 3)->default(0);
-            $table->timestamps();
-            $table->softDeletes();
-        });
-
-        Schema::create('product_images', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
-            $table->string('image_path');
-            $table->boolean('is_primary')->default(false);
-            $table->timestamps();
-        });
 
         // 2. WMS (Warehouses & Inventory)
         Schema::create('warehouses', function (Blueprint $table) {
@@ -144,9 +98,6 @@ return new class extends Migration
         Schema::dropIfExists('inventory_movements');
         Schema::dropIfExists('inventory_stocks');
         Schema::dropIfExists('warehouses');
-        Schema::dropIfExists('product_images');
-        Schema::dropIfExists('products');
-        Schema::dropIfExists('brands');
-        Schema::dropIfExists('categories');
+        // Catalog tables dropped in their own migration
     }
 };
