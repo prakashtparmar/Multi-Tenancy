@@ -300,6 +300,7 @@
                                     <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Order ID</th>
                                     <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Customer</th>
                                     <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Date</th>
+                                    <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Items</th>
                                     <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 text-right">Amount</th>
                                     <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 text-center">Status</th>
                                     <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Created By</th>
@@ -320,9 +321,19 @@
                                             </div>
                                         </td>
                                         <td class="px-6 py-5">
-                                            <div class="flex flex-col">
-                                                <span class="text-xs font-black text-foreground">{{ $order->created_at->format('M d, Y') }}</span>
-                                                <span class="text-[10px] font-bold text-muted-foreground tracking-widest">{{ $order->created_at->format('H:i:s') }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-5">
+                                            <div class="flex flex-col gap-1 max-w-[200px]">
+                                                @foreach($order->items->take(3) as $item)
+                                                    <div class="flex items-center gap-1.5 text-[10px] text-muted-foreground truncate" title="{{ $item->product->name ?? 'Unknown' }}">
+                                                        <span class="font-bold text-foreground">{{ $item->quantity }}x</span>
+                                                        <span>{{ Str::limit($item->product->name ?? 'Unknown', 20) }}</span>
+                                                    </div>
+                                                @endforeach
+                                                @if($order->items->count() > 3)
+                                                    <span class="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-wider">+{{ $order->items->count() - 3 }} more</span>
+                                                @endif
                                             </div>
                                         </td>
                                         <td class="px-6 py-5 text-right">
@@ -370,6 +381,17 @@
                                     <div>
                                         <h4 class="text-sm font-black text-foreground">{{ $order->customer->name ?? 'Guest Entity' }}</h4>
                                         <p class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">#{{ $order->order_number }}</p>
+                                        <div class="mt-2 space-y-0.5">
+                                            @foreach($order->items->take(2) as $item)
+                                                 <div class="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                                     <span class="font-bold text-foreground">{{ $item->quantity }}x</span>
+                                                     <span class="truncate max-w-[150px]">{{ $item->product->name ?? 'Unknown' }}</span>
+                                                 </div>
+                                            @endforeach
+                                            @if($order->items->count() > 2)
+                                                <div class="text-[9px] font-bold text-muted-foreground/70">+{{ $order->items->count() - 2 }} more</div>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="text-right">

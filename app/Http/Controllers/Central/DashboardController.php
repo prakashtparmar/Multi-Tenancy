@@ -161,7 +161,7 @@ class DashboardController extends Controller
             $chartData[] = (float) ($chartDataRaw[$date] ?? 0);
         }
 
-        $orderHistory = (clone $filteredOrderQuery)->with(['customer', 'creator'])->latest()->take(20)->get();
+        $orderHistory = (clone $filteredOrderQuery)->with(['customer', 'creator', 'items.product'])->latest()->take(20)->get();
 
         // Admin/User Activity Tracking
         $onlineUsersQuery = \App\Models\User::query()

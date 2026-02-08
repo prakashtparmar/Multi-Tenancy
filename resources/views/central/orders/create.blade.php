@@ -1085,19 +1085,19 @@
                                                             </div>
 
                                                             <div class="flex items-center gap-8 pl-16 md:pl-0">
-                                                                <!-- Preview Images -->
-                                                                <div class="hidden md:flex items-center -space-x-3">
-                                                                    <template
-                                                                        x-for="item in (order.items || []).slice(0,3)"
-                                                                        :key="item.id">
-                                                                        <img :src="item.product?.image_url || 'https://placehold.co/50x50'"
-                                                                            class="size-10 rounded-full border-2 border-white dark:border-zinc-900 object-cover bg-white shadow-sm"
-                                                                            :title="item.product?.name">
-                                                                    </template>
-                                                                    <div x-show="(order.item_count || 0) > 3"
-                                                                        class="size-10 rounded-full border-2 border-white dark:border-zinc-900 bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shadow-sm">
-                                                                        <span
-                                                                            x-text="'+' + ((order.item_count || 0) - 3)"></span>
+                                                                <!-- Ordered Items List -->
+                                                                <div class="hidden md:block">
+                                                                    <div class="flex flex-col gap-1">
+                                                                        <template x-for="item in order.items"
+                                                                            :key="item.id">
+                                                                            <div
+                                                                                class="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                                <span class="font-bold text-foreground"
+                                                                                    x-text="item.quantity + 'x'"></span>
+                                                                                <span
+                                                                                    x-text="item.product?.name || 'Unknown Product'"></span>
+                                                                            </div>
+                                                                        </template>
                                                                     </div>
                                                                 </div>
 
@@ -1123,23 +1123,36 @@
                                     <div class="space-y-4">
                                         <template x-for="order in activity.orders" :key="order.id">
                                             <div
-                                                class="flex items-center justify-between p-4 bg-background border border-border rounded-xl">
-                                                <div class="flex items-center gap-4">
-                                                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs"
-                                                        x-text="'#' + order.id"></div>
-                                                    <div>
-                                                        <p class="font-bold text-foreground"
-                                                            x-text="order.order_number"></p>
-                                                        <p class="text-xs text-muted-foreground"
-                                                            x-text="order.placed_at"></p>
+                                                class="flex flex-col p-4 bg-background border border-border rounded-xl gap-3">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex items-center gap-4">
+                                                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs"
+                                                            x-text="'#' + order.id"></div>
+                                                        <div>
+                                                            <p class="font-bold text-foreground"
+                                                                x-text="order.order_number"></p>
+                                                            <p class="text-xs text-muted-foreground"
+                                                                x-text="order.placed_at"></p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <p class="font-bold font-mono">Rs <span
+                                                                x-text="order.grand_total"></span></p>
+                                                        <span
+                                                            class="px-2 py-0.5 rounded-full bg-muted text-[10px] uppercase font-bold text-muted-foreground"
+                                                            x-text="order.status"></span>
                                                     </div>
                                                 </div>
-                                                <div class="text-right">
-                                                    <p class="font-bold font-mono">Rs <span
-                                                            x-text="order.grand_total"></span></p>
-                                                    <span
-                                                        class="px-2 py-0.5 rounded-full bg-muted text-[10px] uppercase font-bold text-muted-foreground"
-                                                        x-text="order.status"></span>
+                                                <!-- Items List -->
+                                                <div class="border-t border-border/50 pt-3 px-1">
+                                                    <template x-for="item in order.items" :key="item.id">
+                                                        <div
+                                                            class="flex items-center justify-between text-xs py-1 text-muted-foreground">
+                                                            <span x-text="item.product?.name || 'Unknown Item'"></span>
+                                                            <span class="font-mono font-bold text-foreground"
+                                                                x-text="'x' + item.quantity"></span>
+                                                        </div>
+                                                    </template>
                                                 </div>
                                             </div>
                                         </template>
@@ -2462,6 +2475,8 @@
                     tagOutcome: '',
                     tagNotes: '',
 
+                    interactionType: 'order_dropped',
+
                     // Activity State
                     activity: { orders: [], interactions: [] },
                     activityLoading: false,
@@ -2583,7 +2598,7 @@
                                     // SAFELY restore selected customer if available in storage
                                     if (parsed.selectedCustomer && parsed.selectedCustomer.id) {
                                         this.selectedCustomer = parsed.selectedCustomer;
-                                        
+
                                         // Defer history fetch to next tick to avoid init race conditions
                                         this.$nextTick(() => {
                                             if (typeof this.fetchOrderHistory === 'function') {
@@ -2883,7 +2898,7 @@
                                 body: JSON.stringify({
                                     outcome: this.tagOutcome,
                                     notes: this.tagNotes,
-                                    type: 'order_dropped',
+                                    type: this.interactionType || 'order_dropped',
                                     close_session: true,
                                     metadata: {
                                         cart_items: this.cart,
@@ -3189,18 +3204,17 @@
                                 throw new Error(data.message || res.statusText || 'Server Error');
                             }
 
-                            // Clear LocalStorage BEFORE redirecting so the wizard starts fresh
-                            localStorage.removeItem('order_wizard_state');
+                            // Success - Redirect to Customer Profile (Step 1)
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Order placed successfully!' } }));
 
-                            // Handle Success Redirect
-                            if (data.redirect_url) {
-                                window.location.href = data.redirect_url;
-                                return;
-                            }
+                            this.interactionType = 'order_placed';
+                            this.cart = []; // Clear cart
+                            this.step = 1; // Go back to customer profile
+                            this.fetchOrderHistory(this.selectedCustomer.id); // Refresh history
 
-                            // Fallback Success
-                            if (res.ok) {
-                                window.location.href = res.url;
+                            if (loadingBtn) {
+                                loadingBtn.disabled = false;
+                                loadingBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Place Order';
                             }
 
                         } catch (e) {
