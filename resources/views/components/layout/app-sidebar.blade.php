@@ -293,6 +293,13 @@
                     'permission' => 'inventory manage'
                 ],
                 [
+                    'title' => 'Stock Transfers',
+                    'url' => tenant() ? route('tenant.stock-transfers.index') : route('central.stock-transfers.index'),
+                    'active' => request()->routeIs('tenant.stock-transfers.*') || request()->routeIs('central.stock-transfers.*'),
+                    'icon' => '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'size-4\'><path d=\'m17 2 4 4-4 4\'/><path d=\'M3 11v-1a4 4 0 0 1 4-4h14\'/><path d=\'m7 22-4-4 4-4\'/><path d=\'M21 13v1a4 4 0 0 1-4 4H3\'/></svg>',
+                    'permission' => 'inventory manage'
+                ],
+                [
                     'title' => 'Suppliers',
                     'url' => tenant() ? route('tenant.suppliers.index') : route('central.suppliers.index'),
                     'active' => request()->routeIs('tenant.suppliers.*') || request()->routeIs('central.suppliers.*'),
@@ -437,95 +444,5 @@
 
     </div>
 
-    <!-- User Profile Footer -->
-    <div class="p-3 border-t border-sidebar-border/50 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shrink-0"
-        x-data="{ userMenuOpen: false }" @click.away="userMenuOpen = false">
-        <div class="relative">
-            <button @click="userMenuOpen = !userMenuOpen"
-                class="flex w-full items-center gap-3.5 rounded-xl p-2.5 transition-all duration-300 hover:bg-white dark:hover:bg-white/5 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] group/user border border-transparent hover:border-zinc-200 dark:hover:border-white/10"
-                :class="sidebarCollapsed ? 'justify-center' : ''">
-                <div class="relative h-9 w-9 shrink-0">
-                    <div
-                        class="h-full w-full rounded-xl bg-gradient-to-tr from-zinc-600 to-zinc-500 flex items-center justify-center text-white font-bold text-xs ring-2 ring-white/20 shadow-sm group-hover/user:scale-105 transition-transform duration-300">
-                        {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
-                    </div>
-                    <!-- Online Status Dot -->
-                    <span
-                        class="absolute bottom-[-1px] right-[-1px] h-3 w-3 rounded-full border-2 border-white dark:border-zinc-900 bg-emerald-500 shadow-sm"></span>
-                </div>
 
-                <div class="flex flex-col overflow-hidden text-start transition-all duration-300 ease-in-out"
-                    :class="sidebarCollapsed ? 'w-0 opacity-0 hidden' : 'w-full opacity-100'">
-                    <span
-                        class="truncate text-sm font-semibold leading-none text-foreground group-hover/user:text-primary transition-colors">{{ auth()->user()->name ?? 'User' }}</span>
-                    <span
-                        class="truncate text-[10px] text-muted-foreground mt-1">{{ auth()->user()->email ?? '' }}</span>
-                </div>
-
-                <svg x-show="!sidebarCollapsed" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="ml-auto size-4 text-muted-foreground/50 group-hover/user:text-muted-foreground transition-all duration-300"
-                    :class="userMenuOpen ? 'rotate-180' : ''">
-                    <path d="m18 15-6-6-6 6" />
-                </svg>
-            </button>
-
-            <!-- Menu Dropdown -->
-            <div x-show="userMenuOpen" x-cloak x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 translate-y-2 scale-95"
-                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                x-transition:leave="transition ease-in duration-150"
-                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-                x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-                class="absolute bottom-full left-0 mb-4 w-64 rounded-2xl border border-border/50 bg-popover/80 backdrop-blur-2xl p-2 shadow-2xl shadow-black/20 ring-1 ring-white/10 z-[100] origin-bottom-left max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <div class="px-3 py-3 mb-2 bg-muted/30 rounded-xl border border-white/5">
-                    <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Signed in as</p>
-                    <p class="text-xs font-medium truncate text-foreground mt-0.5">{{ auth()->user()->email ?? '' }}</p>
-                </div>
-
-                <div class="space-y-0.5">
-                    <a href="#"
-                        class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all hover:bg-primary/5 hover:text-primary font-medium group/item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
-                            class="size-4 text-muted-foreground group-hover/item:text-primary transition-colors">
-                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        Profile & Account
-                    </a>
-                    <a href="#"
-                        class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all hover:bg-primary/5 hover:text-primary font-medium group/item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
-                            class="size-4 text-muted-foreground group-hover/item:text-primary transition-colors">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                            <path d="M12 17h.01" />
-                        </svg>
-                        Help & Support
-                    </a>
-                </div>
-
-                <div class="h-px bg-border/50 my-2 mx-1"></div>
-
-                <form method="POST"
-                    action="{{ tenant() ? request()->getSchemeAndHttpHost() . '/logout' : config('app.url') . '/logout' }}">
-                    @csrf
-                    <button type="submit"
-                        class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all hover:bg-red-500/10 text-red-500/90 hover:text-red-600 font-semibold group/logout">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
-                            class="size-4 transition-transform group-hover/logout:translate-x-1">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                            <polyline points="16 17 21 12 16 7" />
-                            <line x1="21" x2="9" y1="12" y2="12" />
-                        </svg>
-                        Sign out
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
 </aside>

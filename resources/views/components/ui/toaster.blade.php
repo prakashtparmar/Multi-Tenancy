@@ -36,11 +36,11 @@
             }
         }
     }" x-init="
-        @if(session('success')) add('success', '{{ session('success') }}'); @endif
-        @if(session('error')) add('error', '{{ session('error') }}'); @endif
-        @if(session('warning')) add('warning', '{{ session('warning') }}'); @endif
-        @if(session('info')) add('info', '{{ session('info') }}'); @endif
-        @if($errors->any()) add('error', '{{ $errors->first() }}'); @endif
+        @if(session('success')) add('success', {{ \Illuminate\Support\Js::from(session('success')) }}); @endif
+        @if(session('error')) add('error', {{ \Illuminate\Support\Js::from(session('error')) }}); @endif
+        @if(session('warning')) add('warning', {{ \Illuminate\Support\Js::from(session('warning')) }}); @endif
+        @if(session('info')) add('info', {{ \Illuminate\Support\Js::from(session('info')) }}); @endif
+        @if($errors->any()) add('error', {{ \Illuminate\Support\Js::from($errors->first()) }}); @endif
         
         window.addEventListener('notify', event => {
             add(event.detail.type || 'info', event.detail.message);

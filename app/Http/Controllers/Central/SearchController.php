@@ -77,7 +77,7 @@ class SearchController extends Controller
     {
         $term = (string) $request->input('q', '');
         $query = Product::where('is_active', true)
-            ->with(['category', 'brand', 'images', 'stocks']);
+            ->with(['category', 'brand', 'images', 'stocks', 'taxClass.rates']);
 
         if (empty($term)) {
             $products = $query->limit(20)->get();
@@ -109,7 +109,17 @@ class SearchController extends Controller
                 'image_url' => $product->image_url,
                 'category' => $product->category->name ?? 'Uncategorized',
                 'default_discount_type' => $product->default_discount_type,
-                'default_discount_value' => (float) $product->default_discount_value
+                'default_discount_value' => (float) $product->default_discount_value,
+                'tax_rate' => $product->tax_rate,
+                'tax_class_id' => $product->tax_class_id,
+                'tax_class' => $product->taxClass ? [
+                    'id' => $product->taxClass->id,
+                    'name' => $product->taxClass->name,
+                    'rates' => $product->taxClass->rates->map(fn($r) => [
+                        'rate' => $r->rate,
+                        'name' => $r->name
+                    ])
+                ] : null,
             ];
         });
 

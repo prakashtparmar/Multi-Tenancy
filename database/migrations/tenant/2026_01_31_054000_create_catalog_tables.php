@@ -91,17 +91,25 @@ return new class extends Migration {
 
             // Pricing & Specs
             $table->decimal('price', 12, 2)->default(0);
+            $table->decimal('mrp', 12, 2)->nullable(); // Max Retail Price
+            $table->decimal('tax_rate', 5, 2)->nullable(); // Specific tax rate
+            $table->string('hsn_code')->nullable(); // GST HSN
+
             $table->string('default_discount_type')->nullable()->default('fixed');
             $table->decimal('default_discount_value', 15, 2)->nullable()->default(0);
             $table->decimal('cost_price', 12, 2)->default(0);
+
             $table->decimal('weight', 8, 3)->nullable(); // kg
             $table->json('dimensions')->nullable(); // L,W,H
+            $table->string('packing_size')->nullable(); // e.g. "500 ml"
 
             // Status
             $table->boolean('is_active')->default(true);
             $table->boolean('is_taxable')->default(true);
             $table->boolean('manage_stock')->default(true);
             $table->decimal('stock_on_hand', 12, 3)->default(0);
+            $table->integer('min_order_qty')->default(1);
+            $table->integer('reorder_level')->default(0);
 
             // SEO
             $table->string('meta_title')->nullable();

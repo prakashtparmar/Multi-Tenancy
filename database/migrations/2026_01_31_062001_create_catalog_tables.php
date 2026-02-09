@@ -10,6 +10,24 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        // 0. Tax System
+        Schema::create('tax_classes', function (Blueprint $table) {
+            $table->id();
+            $table->string('name'); // Standard Rate, Reduced Rate
+            $table->string('slug')->unique();
+            $table->timestamps();
+        });
+
+        Schema::create('tax_rates', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('tax_class_id')->constrained()->cascadeOnDelete();
+            $table->string('name'); // GST 18%
+            $table->decimal('rate', 8, 2); // 18.00
+            $table->string('zone')->nullable(); // For future use
+            $table->json('breakdown')->nullable(); // {cgst: 9, sgst: 9}
+            $table->timestamps();
+        });
+
         // 1. Catalog
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
@@ -60,12 +78,22 @@ return new class extends Migration {
             $table->json('gallery')->nullable();
 
             $table->decimal('price', 12, 2)->default(0);
+            $table->decimal('mrp', 12, 2)->nullable(); // Max Retail Price
             $table->decimal('cost_price', 12, 2)->nullable();
+            $table->foreignId('tax_class_id')->nullable()->constrained('tax_classes')->nullOnDelete();
+            $table->decimal('tax_rate', 5, 2)->nullable(); // Specific tax rate
+            $table->string('hsn_code')->nullable(); // GST HSN
+
+            $table->string('default_discount_type')->nullable()->default('fixed');
+            $table->decimal('default_discount_value', 15, 2)->nullable()->default(0);
 
             // Inventory
             $table->boolean('manage_stock')->default(true);
             $table->decimal('stock_on_hand', 12, 3)->default(0);
+            $table->integer('min_order_qty')->default(1);
+            $table->integer('reorder_level')->default(0);
             $table->string('unit_type')->default('piece'); // kg, gm, ltr, piece
+            $table->string('packing_size')->nullable(); // e.g. "500 ml"
 
             // Tax & Status
             $table->boolean('is_taxable')->default(true);
@@ -86,6 +114,7 @@ return new class extends Migration {
             $table->string('origin')->nullable();
             $table->boolean('is_organic')->default(false);
             $table->string('certification_number')->nullable();
+            $table->string('certificate_url')->nullable();
 
             // WMS attributes
             $table->decimal('weight', 8, 3)->nullable(); // kg
@@ -153,5 +182,7 @@ return new class extends Migration {
         Schema::dropIfExists('products');
         Schema::dropIfExists('brands');
         Schema::dropIfExists('categories');
+        Schema::dropIfExists('tax_rates');
+        Schema::dropIfExists('tax_classes');
     }
 };

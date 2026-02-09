@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Brand;
 use App\Models\ProductImage;
+use App\Models\TaxClass;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -28,13 +29,13 @@ class ProductController extends Controller
     {
         $this->authorize('products view');
 
-        $query = Product::with(['category', 'brand', 'images']);
+        $query = Product::with(['category', 'brand', 'images', 'taxClass']);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -61,7 +62,11 @@ class ProductController extends Controller
 
         $categories = Category::all();
         $brands = Brand::all();
-        return view('central.products.create', compact('categories', 'brands'));
+        $taxClasses = TaxClass::with('rates')->get();
+        // Fetch active warehouses for opening stock
+        $warehouses = \App\Models\Warehouse::where('is_active', true)->get();
+
+        return view('central.products.create', compact('categories', 'brands', 'taxClasses', 'warehouses'));
     }
 
     /**
@@ -78,22 +83,86 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
+
+            // Pricing
+            'mrp' => 'nullable|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
+            'tax_class_id' => 'nullable|exists:tax_classes,id',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'hsn_code' => 'nullable|string|max:50',
             'default_discount_type' => 'nullable|in:fixed,percent',
             'default_discount_value' => 'nullable|numeric|min:0',
+
+            // Inventory
+            'manage_stock' => 'boolean',
+            'stock_on_hand' => 'nullable|numeric|min:0', // Will be calculated from warehouse stock
+            'warehouse_id' => 'nullable|required_with:opening_stock|exists:warehouses,id',
+            'opening_stock' => 'nullable|numeric|min:0',
+
+            'min_order_qty' => 'nullable|integer|min:0',
+            'reorder_level' => 'nullable|integer|min:0',
+
+            // WMS
+            'weight' => 'nullable|numeric|min:0',
+            'dimensions' => 'nullable|array',
+            'packing_size' => 'nullable|string|max:100',
+            'unit_type' => 'required|string|max:50',
+
+            // Agri
+            'technical_name' => 'nullable|string|max:255',
+            'application_method' => 'nullable|string|max:255',
+            'usage_instructions' => 'nullable|string',
+            'target_crops' => 'nullable|array',
+            'target_pests' => 'nullable|array',
+            'search_keywords' => 'nullable|string',
             'harvest_date' => 'nullable|date',
             'expiry_date' => 'nullable|date|after_or_equal:harvest_date',
+            'pre_harvest_interval' => 'nullable|string|max:255',
+            'shelf_life' => 'nullable|string|max:255',
             'origin' => 'nullable|string|max:255',
             'is_organic' => 'boolean',
             'certification_number' => 'nullable|string|max:255',
-            'unit_type' => 'required|string|max:50',
+
+            // SEO & Status
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048'
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'is_taxable' => 'boolean',
+
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
         try {
             return DB::transaction(function () use ($request, $validated) {
-                $product = Product::create($validated);
+                // Remove warehouse/stock fields from product creation data
+                $productData = collect($validated)->except(['warehouse_id', 'opening_stock'])->toArray();
+
+                // Set initial stock_on_hand to opening_stock if provided, otherwise 0
+                $openingStock = $request->input('opening_stock', 0);
+                if ($request->filled('warehouse_id')) {
+                    $productData['stock_on_hand'] = $openingStock;
+                }
+
+                $product = Product::create($productData);
+
+                // Handle Inventory Stock if Warehouse is selected
+                if ($request->filled('warehouse_id') && $openingStock > 0) {
+                    $stock = \App\Models\InventoryStock::create([
+                        'product_id' => $product->id,
+                        'warehouse_id' => $request->warehouse_id,
+                        'quantity' => $openingStock,
+                        'reserve_quantity' => 0,
+                    ]);
+
+                    \App\Models\InventoryMovement::create([
+                        'stock_id' => $stock->id,
+                        'type' => 'opening',
+                        'quantity' => $openingStock,
+                        'reason' => 'Initial Opening Stock',
+                        'user_id' => auth()->id(),
+                    ]);
+                }
 
                 if ($request->hasFile('images')) {
                     foreach ($request->file('images') as $index => $image) {
@@ -120,9 +189,13 @@ class ProductController extends Controller
     {
         $this->authorize('products edit');
 
+        // Eager load stocks with warehouse info
+        $product->load(['stocks.warehouse']);
+
         $categories = Category::all();
         $brands = Brand::all();
-        return view('central.products.edit', compact('product', 'categories', 'brands'));
+        $taxClasses = TaxClass::with('rates')->get();
+        return view('central.products.edit', compact('product', 'categories', 'brands', 'taxClasses'));
     }
 
     /**
@@ -139,16 +212,50 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
+
+            // Pricing
+            'mrp' => 'nullable|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
+            'tax_class_id' => 'nullable|exists:tax_classes,id',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'hsn_code' => 'nullable|string|max:50',
             'default_discount_type' => 'nullable|in:fixed,percent',
             'default_discount_value' => 'nullable|numeric|min:0',
+
+            // Inventory
+            'manage_stock' => 'boolean',
+            'stock_on_hand' => 'nullable|numeric|min:0',
+            'min_order_qty' => 'nullable|integer|min:0',
+            'reorder_level' => 'nullable|integer|min:0',
+
+            // WMS
+            'weight' => 'nullable|numeric|min:0',
+            'dimensions' => 'nullable|array',
+            'packing_size' => 'nullable|string|max:100',
+            'unit_type' => 'required|string|max:50',
+
+            // Agri
+            'technical_name' => 'nullable|string|max:255',
+            'application_method' => 'nullable|string|max:255',
+            'usage_instructions' => 'nullable|string',
+            'target_crops' => 'nullable|array',
+            'target_pests' => 'nullable|array',
+            'search_keywords' => 'nullable|string',
             'harvest_date' => 'nullable|date',
             'expiry_date' => 'nullable|date|after_or_equal:harvest_date',
+            'pre_harvest_interval' => 'nullable|string|max:255',
+            'shelf_life' => 'nullable|string|max:255',
             'origin' => 'nullable|string|max:255',
             'is_organic' => 'boolean',
             'certification_number' => 'nullable|string|max:255',
-            'unit_type' => 'required|string|max:50',
+
+            // SEO & Status
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'is_taxable' => 'boolean',
+
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'delete_images.*' => 'exists:product_images,id'
         ]);
@@ -162,8 +269,9 @@ class ProductController extends Controller
                     $imagesToDelete = ProductImage::whereIn('id', $request->delete_images)
                         ->where('product_id', $product->id)
                         ->get();
-                    
+
                     foreach ($imagesToDelete as $img) {
+                        /** @var \App\Models\ProductImage $img */
                         Storage::disk('public')->delete($img->image_path);
                         $img->delete();
                     }
@@ -200,7 +308,7 @@ class ProductController extends Controller
     public function destroy(Product $product): RedirectResponse
     {
         $this->authorize('products delete');
-        
+
         $product->delete();
         return redirect()->route('central.products.index')->with('success', 'Product deleted successfully.');
     }

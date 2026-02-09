@@ -151,26 +151,7 @@
                     <strong>GST:</strong> 24AAMCK0386L1Z6
                 </div>
 
-                <div class="box">
-                    <table class="items-table">
-                        <thead>
-                            <tr>
-                                <th>Description</th>
-                                <th class="center">Qty</th>
-                                <th class="right">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($order->items as $item)
-                                <tr>
-                                    <td>{{ $item->product_name }}</td>
-                                    <td class="center">{{ $item->quantity }}</td>
-                                    <td class="right">{{ number_format($item->quantity * $item->unit_price, 2) }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+
 
                 <div class="divider"></div>
 

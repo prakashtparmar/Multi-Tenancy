@@ -241,8 +241,6 @@ Route::middleware('auth')->group(function () {
 
     Route::post('orders/{order}/update-status', [\App\Http\Controllers\Central\OrderController::class, 'updateStatus'])
         ->name('central.orders.update-status');
-    // Route::get('orders/{order}/invoice', [\App\Http\Controllers\Central\OrderController::class, 'downloadInvoice'])
-    //     ->name('central.orders.invoice');
     Route::get('orders/{order}/receipt', [\App\Http\Controllers\Central\OrderController::class, 'downloadReceipt'])
         ->name('central.orders.receipt');
     Route::post('orders/export', [\App\Http\Controllers\Central\OrderController::class, 'export'])
@@ -262,6 +260,22 @@ Route::middleware('auth')->group(function () {
         ->name('central.inventory.index');
     Route::post('inventory/adjust', [\App\Http\Controllers\Central\InventoryController::class, 'adjust'])
         ->name('central.inventory.adjust');
+
+    // Stock Transfers
+    Route::get('stock-transfers', [\App\Http\Controllers\Central\StockTransferController::class, 'index'])->name('central.stock-transfers.index');
+    Route::post('stock-transfers', [\App\Http\Controllers\Central\StockTransferController::class, 'store'])->name('central.stock-transfers.store');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Interaction Outcomes
+    |--------------------------------------------------------------------------
+    */
+    Route::group(['prefix' => 'api/central', 'as' => 'central.api.'], function () {
+        Route::get('outcomes', [\App\Http\Controllers\Central\InteractionOutcomeController::class, 'index'])->name('outcomes.index');
+        Route::post('outcomes', [\App\Http\Controllers\Central\InteractionOutcomeController::class, 'store'])->name('outcomes.store');
+        Route::put('outcomes/{outcome}', [\App\Http\Controllers\Central\InteractionOutcomeController::class, 'update'])->name('outcomes.update');
+        Route::delete('outcomes/{outcome}', [\App\Http\Controllers\Central\InteractionOutcomeController::class, 'destroy'])->name('outcomes.destroy');
+    });
 
     /*
     |--------------------------------------------------------------------------

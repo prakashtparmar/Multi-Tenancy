@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Brand;
+use App\Models\TaxClass;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -40,7 +41,8 @@ class ProductController extends Controller
 
         $categories = Category::all();
         $brands = Brand::all();
-        return view('tenant.products.create', compact('categories', 'brands'));
+        $taxClasses = TaxClass::with('rates')->get();
+        return view('tenant.products.create', compact('categories', 'brands', 'taxClasses'));
     }
 
     /**
@@ -74,11 +76,15 @@ class ProductController extends Controller
             'brand_id' => 'nullable|exists:brands,id',
             'default_discount_type' => 'nullable|in:fixed,percent',
             'default_discount_value' => 'nullable|numeric|min:0',
+            'tax_class_id' => 'nullable|exists:tax_classes,id',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'hsn_code' => 'nullable|string|max:20',
             // General
             'barcode' => 'nullable|string|max:255',
             'type' => 'nullable|string|in:simple,variable',
             'description' => 'nullable|string',
             'unit_type' => 'required|string|max:50',
+            'packing_size' => 'nullable|string|max:100',
             // Agri
             'harvest_date' => 'nullable|date',
             'expiry_date' => 'nullable|date',
@@ -92,11 +98,14 @@ class ProductController extends Controller
             'origin' => 'nullable|string|max:255',
             'is_organic' => 'boolean',
             'certification_number' => 'nullable|string|max:255',
+            'certificate_url' => 'nullable|file|mimes:pdf,jpg,png|max:5120',
             // WMS
             'weight' => 'nullable|numeric|min:0',
             'dimensions' => 'nullable|array',
             'manage_stock' => 'boolean',
             'stock_on_hand' => 'nullable|numeric|min:0',
+            'min_order_qty' => 'nullable|integer|min:1',
+            'reorder_level' => 'nullable|integer|min:0',
             // Status & SEO
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
@@ -116,6 +125,11 @@ class ProductController extends Controller
                 }
                 if (isset($validated['target_pests'])) {
                     $validated['target_pests'] = array_map('trim', explode(',', $validated['target_pests']));
+                }
+
+                // Handle Certificate Upload
+                if ($request->hasFile('certificate_url')) {
+                    $validated['certificate_url'] = $request->file('certificate_url')->store('certificates', 'public');
                 }
 
                 $product = Product::create($validated);
@@ -161,7 +175,8 @@ class ProductController extends Controller
 
         $categories = Category::all();
         $brands = Brand::all();
-        return view('tenant.products.edit', compact('product', 'categories', 'brands'));
+        $taxClasses = TaxClass::with('rates')->get();
+        return view('tenant.products.edit', compact('product', 'categories', 'brands', 'taxClasses'));
     }
 
     /**
@@ -179,11 +194,15 @@ class ProductController extends Controller
             'brand_id' => 'nullable|exists:brands,id',
             'default_discount_type' => 'nullable|in:fixed,percent',
             'default_discount_value' => 'nullable|numeric|min:0',
+            'tax_class_id' => 'nullable|exists:tax_classes,id',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'hsn_code' => 'nullable|string|max:20',
             // General
             'barcode' => 'nullable|string|max:255',
             'type' => 'nullable|string|in:simple,variable',
             'description' => 'nullable|string',
             'unit_type' => 'required|string|max:50',
+            'packing_size' => 'nullable|string|max:100',
             // Agri
             'harvest_date' => 'nullable|date',
             'expiry_date' => 'nullable|date',
@@ -197,11 +216,14 @@ class ProductController extends Controller
             'origin' => 'nullable|string|max:255',
             'is_organic' => 'boolean',
             'certification_number' => 'nullable|string|max:255',
+            'certificate_url' => 'nullable|file|mimes:pdf,jpg,png|max:5120',
             // WMS
             'weight' => 'nullable|numeric|min:0',
             'dimensions' => 'nullable|array',
             'manage_stock' => 'boolean',
             'stock_on_hand' => 'nullable|numeric|min:0',
+            'min_order_qty' => 'nullable|integer|min:1',
+            'reorder_level' => 'nullable|integer|min:0',
             // Status & SEO
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
@@ -221,6 +243,15 @@ class ProductController extends Controller
                 }
                 if (isset($validated['target_pests'])) {
                     $validated['target_pests'] = array_map('trim', explode(',', $validated['target_pests']));
+                }
+
+                // Handle Certificate Upload
+                if ($request->hasFile('certificate_url')) {
+                    // Delete old certificate if exists
+                    if ($product->certificate_url) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($product->certificate_url);
+                    }
+                    $validated['certificate_url'] = $request->file('certificate_url')->store('certificates', 'public');
                 }
 
                 $product->update($validated);

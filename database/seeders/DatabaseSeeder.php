@@ -14,12 +14,15 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(CentralAdminSeeder::class);
         $this->call(CentralSeeder::class);
-        
+
+        // Enterprise Seeders
         // Enterprise Seeders
         $this->call([
+            TaxSeeder::class, // Added Tax Classes
             WarehouseSeeder::class,
             CategorySeeder::class,
             DemoAgricultureSeeder::class, // Added Demo Data
+            VillageSeeder::class,
         ]);
     }
 }
