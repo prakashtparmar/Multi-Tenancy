@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use App\Models\Product;
+use App\Notifications\InventoryUpdatedNotification;
 
 class InventoryController extends Controller
 {
@@ -57,13 +59,10 @@ class InventoryController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($validated) {
+            $result = DB::transaction(function () use ($validated) {
                 // Use FQCN to avoid namespace resolution errors
                 $stock = \App\Models\InventoryStock::firstOrCreate(
-                    [
-                        'product_id' => $validated['product_id'],
-                        'warehouse_id' => $validated['warehouse_id']
-                    ],
+                    ['product_id' => $validated['product_id'], 'warehouse_id' => $validated['warehouse_id']],
                     ['quantity' => 0, 'reserve_quantity' => 0]
                 );
 
@@ -92,17 +91,32 @@ class InventoryController extends Controller
                     'user_id' => auth()->id(),
                 ]);
 
-                // Sync denormalized stock
                 $product = \App\Models\Product::find($validated['product_id']);
                 $oldTotal = $product->stock_on_hand;
                 $totalStock = \App\Models\InventoryStock::where('product_id', $product->id)->sum('quantity');
 
                 $product->update(['stock_on_hand' => $totalStock]);
 
-                return back()->with('success', "Stock updated successfully. Total is now {$totalStock} (was {$oldTotal}).");
+                return [
+                    'message' => "Stock updated successfully. Total is now {$totalStock} (was {$oldTotal}).",
+                    'old_total' => $oldTotal,
+                    'new_total' => $totalStock
+                ];
             });
 
-            return back()->with('success', session('success')); // Pass specific message out of closure
+            // Send Notification
+            $product = Product::find($validated['product_id']);
+            $user = auth()->user();
+            $user->notify(new InventoryUpdatedNotification(
+                $product,
+                (float) $validated['quantity'],
+                $validated['type'],
+                $validated['reason'],
+                (float) $result['old_total'],
+                (float) $result['new_total']
+            ));
+
+            return back()->with('success', $result['message']);
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to adjust inventory: ' . $e->getMessage());
         }

@@ -17,6 +17,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Exception;
+use App\Notifications\ProductCreatedNotification;
 
 class ProductController extends Controller
 {
@@ -134,7 +135,7 @@ class ProductController extends Controller
         ]);
 
         try {
-            return DB::transaction(function () use ($request, $validated) {
+            $product = DB::transaction(function () use ($request, $validated) {
                 // Remove warehouse/stock fields from product creation data
                 $productData = collect($validated)->except(['warehouse_id', 'opening_stock'])->toArray();
 
@@ -175,8 +176,16 @@ class ProductController extends Controller
                     }
                 }
 
-                return redirect()->route('central.products.index')->with('success', 'Product created successfully.');
+                return $product;
             });
+
+            // Send Notification (Outside Transaction)
+            if ($product) {
+                $user = auth()->user();
+                $user->notify(new ProductCreatedNotification($product));
+            }
+
+            return redirect()->route('central.products.index')->with('success', 'Product created successfully.');
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Failed to create product: ' . $e->getMessage());
         }

@@ -14,7 +14,7 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
-        $notifications = $user->unreadNotifications()->latest()->limit(10)->get()->map(function ($notification) {
+        $notifications = $user->notifications()->latest()->limit(10)->get()->map(function ($notification) {
             return [
                 'id' => $notification->id,
                 'data' => $notification->data,

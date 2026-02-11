@@ -442,7 +442,8 @@
                 <button @click="open = !open"
                     class="group relative inline-flex items-center justify-center rounded-xl size-10 text-muted-foreground hover:bg-white/50 dark:hover:bg-white/10 hover:text-primary transition-all duration-300 active:scale-90">
                     <span x-show="unreadCount > 0" x-transition
-                        class="absolute top-2 right-2 size-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"></span>
+                        class="absolute -top-1 -right-1 min-w-[20px] h-5 flex items-center justify-center px-1 rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse border-2 border-white dark:border-zinc-950"
+                        x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                         class="size-5 relative z-10 transition-all group-hover:rotate-[15deg] group-hover:scale-110 active:scale-95">
@@ -455,7 +456,7 @@
                 <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 translate-y-4 scale-[0.98]"
                     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                    class="absolute right-0 mt-3 w-80 sm:w-96 rounded-3xl border border-white/20 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 overflow-hidden ring-1 ring-black/5">
+                    class="absolute right-0 mt-3 w-80 sm:w-96 md:w-[450px] rounded-3xl border border-white/20 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 overflow-hidden ring-1 ring-black/5">
 
                     <div
                         class="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-white/5 dark:bg-white/2">
@@ -487,25 +488,28 @@
                         </template>
 
                         <template x-for="note in notifications" :key="note.id">
-                            <div class="group relative flex gap-4 p-4 rounded-2xl hover:bg-secondary/20 dark:hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-black/5 dark:hover:border-white/5"
+                            <div class="group relative flex gap-4 p-4 rounded-2xl hover:bg-secondary/20 dark:hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-black/5 dark:hover:border-white/5 select-text"
                                 :class="{ 'bg-primary/5': !note.read_at }">
 
                                 <div class="shrink-0 pt-1"
                                     x-html="note.data.icon || '<svg class=\'size-5 text-primary\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\' /></svg>'">
                                 </div>
 
-                                <div class="flex-1 space-y-1">
-                                    <div class="flex items-center justify-between">
-                                        <h4 class="text-xs font-bold text-foreground" x-text="note.data.title"></h4>
-                                        <span class="text-[10px] font-medium text-muted-foreground"
+                                <div class="flex-1 space-y-1.5">
+                                    <div class="flex items-start justify-between gap-4">
+                                        <h4 class="text-sm font-bold text-foreground leading-tight"
+                                            x-text="note.data.title"></h4>
+                                        <span
+                                            class="text-[10px] font-medium text-muted-foreground whitespace-nowrap shrink-0"
                                             x-text="note.created_at"></span>
                                     </div>
-                                    <p class="text-xs text-muted-foreground leading-relaxed" x-text="note.data.message">
-                                    </p>
+                                    <p class="text-xs text-muted-foreground leading-relaxed font-medium"
+                                        x-text="note.data.message"></p>
                                 </div>
 
                                 <div x-show="!note.read_at"
-                                    class="absolute top-4 right-4 size-1.5 rounded-full bg-primary/50"></div>
+                                    class="absolute top-4 right-2 size-2 rounded-full bg-rose-500 shadow-sm ring-2 ring-white dark:ring-zinc-900">
+                                </div>
                             </div>
                         </template>
                     </div>
