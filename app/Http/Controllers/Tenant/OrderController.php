@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Warehouse;
 use App\Models\Product;
 use App\Services\OrderService;
+use App\Services\TaxService;
 use App\Exports\OrdersExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
@@ -27,10 +28,12 @@ class OrderController extends Controller
     use AuthorizesRequests;
 
     protected OrderService $orderService;
+    protected TaxService $taxService;
 
-    public function __construct(OrderService $orderService)
+    public function __construct(OrderService $orderService, TaxService $taxService)
     {
         $this->orderService = $orderService;
+        $this->taxService = $taxService;
     }
 
     /**
@@ -114,11 +117,14 @@ class OrderController extends Controller
                 $itemDiscountsTotal = 0;
 
                 $productIds = collect($validated['items'])->pluck('product_id');
-                $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+                $products = Product::whereIn('id', $productIds)->with(['taxClass.rates'])->get()->keyBy('id');
 
                 $preparedItems = [];
+                $totalTaxAmount = 0;
 
                 foreach ($validated['items'] as $item) {
+
+                    $product = $products[$item['product_id']] ?? null;
 
                     $itemBasePrice = $item['quantity'] * $item['price'];
 
@@ -132,8 +138,14 @@ class OrderController extends Controller
                     $subTotalAmount += $itemBasePrice;
                     $itemDiscountsTotal += $itemDiscount;
 
+                    $taxDetails = $this->taxService->calculate($product, (float) $item['price'], (float) $item['quantity']);
+                    $itemTaxAmount = $taxDetails['amount'];
+                    $totalTaxAmount += $itemTaxAmount;
+
                     $preparedItems[] = array_merge($item, [
                         'discount_amount' => $itemDiscount,
+                        'tax_percent' => $taxDetails['rate'],
+                        'tax_amount' => $itemTaxAmount,
                     ]);
                 }
 
@@ -147,7 +159,7 @@ class OrderController extends Controller
                     ? $netAfterItems * ($orderDiscountValue / 100)
                     : $orderDiscountValue;
 
-                $grandTotal = $netAfterItems - $orderDiscountAmount;
+                $grandTotal = ($netAfterItems - $orderDiscountAmount) + $totalTaxAmount;
 
                 // Create Order
                 $order = Order::create([
@@ -191,7 +203,7 @@ class OrderController extends Controller
                         'discount_amount' => $item['discount_amount'],
                         'total_price' => $item['quantity'] * $item['price'],
                         'cost_price' => $product->cost_price ?? 0, // Snapshot cost
-                        'tax_percent' => 0,
+                        'tax_percent' => $item['tax_percent'] ?? 0,
                     ]);
                 }
             });
@@ -335,8 +347,9 @@ class OrderController extends Controller
                 $subTotalAmount = 0;
                 $itemDiscountsTotal = 0;
                 $productIds = collect($validated['items'])->pluck('product_id');
-                $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+                $products = Product::whereIn('id', $productIds)->with(['taxClass.rates'])->get()->keyBy('id');
                 $preparedItems = [];
+                $totalTaxAmount = 0;
 
                 foreach ($validated['items'] as $item) {
                     $product = $products[$item['product_id']] ?? null;
@@ -366,6 +379,13 @@ class OrderController extends Controller
                         'discount_value' => $itemDiscountValue,
                         'discount_amount' => $itemDiscountAmount,
                     ];
+
+                    $taxDetails = $this->taxService->calculate($product, (float) $item['price'], (float) $item['quantity']);
+                    $itemTaxAmount = $taxDetails['amount'];
+                    $totalTaxAmount += $itemTaxAmount;
+
+                    // Add tax info to prepared items (array access)
+                    $preparedItems[count($preparedItems) - 1]['tax_percent'] = $taxDetails['rate'];
                 }
 
                 // Order Level Discount
@@ -380,7 +400,7 @@ class OrderController extends Controller
                     $orderDiscountAmount = (float) $orderDiscountValue;
                 }
 
-                $grandTotal = max(0, $netAfterItemDiscounts - $orderDiscountAmount);
+                $grandTotal = max(0, ($netAfterItemDiscounts - $orderDiscountAmount) + $totalTaxAmount);
 
                 foreach ($preparedItems as $pItem) {
                     $order->items()->create($pItem);
@@ -397,6 +417,7 @@ class OrderController extends Controller
                     'warehouse_id' => $validated['warehouse_id'],
                     'total_amount' => $subTotalAmount,
                     'discount_amount' => $itemDiscountsTotal + $orderDiscountAmount,
+                    'tax_amount' => $totalTaxAmount,
                     'discount_type' => $orderDiscountType,
                     'discount_value' => $orderDiscountValue,
                     'grand_total' => $grandTotal,

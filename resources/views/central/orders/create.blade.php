@@ -1,5 +1,6 @@
 <x-app-layout>
-    <div x-data="orderWizard(@js($products), @js($preSelectedCustomer))" class="flex flex-col min-h-screen bg-muted/5">
+    <div x-data="orderWizard(@js($products), @js($preSelectedCustomer), @js(auth()->user()->hasRole('Super Admin')))"
+        class="flex flex-col min-h-screen bg-muted/5">
 
         <!-- MANDATORY INTERACTION TAGGING MODAL -->
         <template x-teleport="body">
@@ -44,21 +45,61 @@
                                 <label
                                     class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Reason
                                     for no order</label>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <template x-for="opt in [
-                                        {id: 'enquiry', label: 'Enquiry Only'},
-                                        {id: 'pricing', label: 'Price Too High'},
-                                        {id: 'stock', label: 'Out of Stock'},
-                                        {id: 'follow_up', label: 'Need Follow-up'},
-                                        {id: 'comparison', label: 'Comparing Market'},
-                                        {id: 'other', label: 'Other Reason'}
-                                    ]">
-                                        <button @click="tagOutcome = opt.id"
-                                            :class="tagOutcome === opt.id ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.02]' : 'bg-secondary/20 hover:bg-secondary/40 border-border text-muted-foreground'"
-                                            class="p-4 rounded-xl text-xs font-black uppercase tracking-widest border transition-all duration-300 text-center">
-                                            <span x-text="opt.label"></span>
+                                <!-- Dynamic Outcomes List -->
+                                <div class="grid grid-cols-2 gap-3" x-show="!showManageOutcomes">
+                                    <template x-for="opt in outcomes" :key="opt.id">
+                                        <button @click="tagOutcome = opt.name"
+                                            :class="tagOutcome === opt.name ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.02]' : 'bg-secondary/20 hover:bg-secondary/40 border-border text-muted-foreground'"
+                                            class="p-4 rounded-xl text-xs font-black uppercase tracking-widest border transition-all duration-300 text-center relative group">
+                                            <span x-text="opt.name"></span>
                                         </button>
                                     </template>
+
+                                    <!-- Add New Trigger -->
+                                    <button @click="showManageOutcomes = true" x-show="isSuperAdmin"
+                                        class="p-4 rounded-xl text-xs font-black uppercase tracking-widest border border-dashed border-primary/30 text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2">
+                                        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Manage
+                                    </button>
+                                </div>
+
+                                <!-- Management UI -->
+                                <div class="space-y-4" x-show="showManageOutcomes" x-transition>
+                                    <div class="flex gap-2">
+                                        <input type="text" x-model="newOutcomeName" placeholder="New Outcome Name"
+                                            class="flex-1 bg-secondary/20 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary">
+                                        <button @click="addOutcome()"
+                                            :disabled="!newOutcomeName.trim() || outcomeLoading"
+                                            class="px-6 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest disabled:opacity-50">
+                                            Add
+                                        </button>
+                                    </div>
+
+                                    <div class="max-h-40 overflow-y-auto custom-scrollbar space-y-2 pr-2">
+                                        <template x-for="opt in outcomes" :key="opt.id">
+                                            <div
+                                                class="flex justify-between items-center p-3 bg-secondary/10 rounded-lg border border-border/50 group">
+                                                <span class="text-xs font-bold" x-text="opt.name"></span>
+                                                <button @click="deleteOutcome(opt.id)"
+                                                    class="text-red-500 hover:text-red-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <svg class="size-4" fill="none" viewBox="0 0 24 24"
+                                                        stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <button @click="showManageOutcomes = false"
+                                        class="w-full py-3 text-xs font-bold text-muted-foreground hover:text-foreground uppercase tracking-widest">
+                                        Done
+                                    </button>
                                 </div>
                             </div>
 
@@ -1552,8 +1593,20 @@
 
                                             <!-- Price -->
                                             <td class="p-4 text-right">
-                                                <span class="font-bold text-lg text-foreground font-mono">Rs
-                                                    <span x-text="parseFloat(product.price).toFixed(2)"></span></span>
+                                                <div class="flex flex-col items-end">
+                                                    <span class="font-bold text-lg text-foreground font-mono">Rs
+                                                        <span x-text="parseFloat(product.price).toFixed(2)"></span>
+                                                    </span>
+                                                    <span
+                                                        class="text-[10px] text-muted-foreground font-medium bg-muted px-1.5 py-0.5 rounded"
+                                                        x-show="product.tax_rate > 0 || (product.tax_class && product.tax_class.rates && product.tax_class.rates.length > 0)">
+                                                        <span x-text="
+                                                            (product.tax_class && product.tax_class.rates && product.tax_class.rates.length > 0) 
+                                                            ? product.tax_class.rates[0].rate + '% Tax' 
+                                                            : (product.tax_rate > 0 ? parseFloat(product.tax_rate) + '% Tax' : '')
+                                                        "></span>
+                                                    </span>
+                                                </div>
                                             </td>
 
                                             <!-- Action -->
@@ -1752,7 +1805,16 @@
                                             <div class="flex items-center justify-between">
                                                 <p class="text-xs text-muted-foreground">Rs <span
                                                         x-text="item.price.toFixed(2)"></span> x <span
-                                                        x-text="item.quantity"></span></p>
+                                                        x-text="item.quantity"></span>
+                                                    <span class="ml-1 text-[10px] bg-muted px-1 rounded"
+                                                        x-show="item.tax_rate > 0 || (item.tax_class && item.tax_class.rates && item.tax_class.rates.length > 0)">
+                                                        <span x-text="
+                                                            (item.tax_class && item.tax_class.rates && item.tax_class.rates.length > 0) 
+                                                            ? '+' + item.tax_class.rates[0].rate + '% Tax' 
+                                                            : (item.tax_rate > 0 ? '+' + parseFloat(item.tax_rate) + '% Tax' : '')
+                                                        "></span>
+                                                    </span>
+                                                </p>
                                                 <div class="flex items-center gap-2">
                                                     <button @click="updateCartQty(item.product_id, -1)"
                                                         class="text-muted-foreground hover:text-primary px-1 font-bold">-</button>
@@ -1800,7 +1862,7 @@
                         <!-- Cart Footer -->
                         <div class="p-5 border-t border-border bg-muted/20 rounded-b-xl space-y-3">
                             <div class="flex justify-between items-center text-xs">
-                                <span class="text-muted-foreground">Subtotal</span>
+                                <span class="text-muted-foreground">Subtotal (Excl. Tax)</span>
                                 <span class="font-medium">Rs <span x-text="subTotal.toFixed(2)"></span></span>
                             </div>
                             <template x-if="cartDiscountTotal > 0">
@@ -1809,8 +1871,12 @@
                                     <span>- Rs <span x-text="cartDiscountTotal.toFixed(2)"></span></span>
                                 </div>
                             </template>
+                            <div class="flex justify-between items-center text-xs text-muted-foreground">
+                                <span>Tax</span>
+                                <span class="font-medium">Rs <span x-text="taxTotal.toFixed(2)"></span></span>
+                            </div>
                             <div class="flex justify-between items-end pt-2 border-t border-border/50">
-                                <span class="text-muted-foreground text-sm font-bold">Grand Total</span>
+                                <span class="text-muted-foreground text-sm font-bold">Grand Total (Incl. Tax)</span>
                                 <span class="font-bold text-2xl text-primary text-foreground">Rs <span
                                         x-text="grandTotal.toFixed(2)"></span></span>
                             </div>
@@ -2194,7 +2260,7 @@
 
                                 <div class="space-y-3 pb-4 border-b border-border mb-4">
                                     <div class="flex justify-between items-center text-sm">
-                                        <span class="text-muted-foreground">Gross Amount</span>
+                                        <span class="text-muted-foreground">Subtotal (Excl. Tax)</span>
                                         <span class="font-medium">Rs <span x-text="subTotal.toFixed(2)"></span></span>
                                     </div>
                                     <template x-if="cartDiscountTotal > 0">
@@ -2229,13 +2295,13 @@
                                     </template>
 
                                     <div class="flex justify-between items-center text-sm text-muted-foreground pt-2">
-                                        <span>Tax (0%)</span>
-                                        <span>Rs 0.00</span>
+                                        <span>Tax</span>
+                                        <span>Rs <span x-text="taxTotal.toFixed(2)"></span></span>
                                     </div>
                                 </div>
 
                                 <div class="flex justify-between items-center text-2xl font-black text-primary mb-6">
-                                    <span>Grand Total</span>
+                                    <span>Grand Total (Incl. Tax)</span>
                                     <span>Rs <span x-text="grandTotal.toFixed(2)"></span></span>
                                 </div>
 
@@ -2391,8 +2457,9 @@
         </div>
 
         <script>
-            function orderWizard(initialProducts, preSelectedCustomer) {
+            function orderWizard(initialProducts, preSelectedCustomer, isSuperAdmin = false) {
                 return {
+                    isSuperAdmin: isSuperAdmin,
                     step: 1, // Always start at Step 1 (Customer Profile) to show the dashboard
 
                     // Order State
@@ -2480,7 +2547,15 @@
                     tagOutcome: '',
                     tagNotes: '',
 
+                    tagOutcome: '',
+                    tagNotes: '',
                     interactionType: 'order_dropped',
+
+                    // Dynamic Interaction Outcomes
+                    outcomes: [],
+                    showManageOutcomes: false,
+                    newOutcomeName: '',
+                    outcomeLoading: false,
 
                     // Activity State
                     activity: { orders: [], interactions: [] },
@@ -2558,6 +2633,7 @@
                     },
 
                     init() {
+                        this.fetchOutcomes();
                         this.isRestoring = true;
 
                         // 1. Check for Reset Parameter
@@ -2807,6 +2883,57 @@
                     },
 
                     // API Calls
+                    async fetchOutcomes() {
+                        try {
+                            let res = await fetch("{{ route('central.api.outcomes.index') }}");
+                            if (res.ok) {
+                                this.outcomes = await res.json();
+                            }
+                        } catch (e) {
+                            console.error('Failed to fetch outcomes', e);
+                        }
+                    },
+
+                    async addOutcome() {
+                        if (!this.newOutcomeName.trim()) return;
+                        this.outcomeLoading = true;
+                        try {
+                            let res = await fetch("{{ route('central.api.outcomes.store') }}", {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                },
+                                body: JSON.stringify({ name: this.newOutcomeName, type: 'custom', color: 'bg-gray-100 text-gray-800' })
+                            });
+                            if (res.ok) {
+                                await this.fetchOutcomes();
+                                this.newOutcomeName = '';
+                            }
+                        } catch (e) {
+                            console.error(e);
+                        } finally {
+                            this.outcomeLoading = false;
+                        }
+                    },
+
+                    async deleteOutcome(id) {
+                        if (!confirm('Are you sure?')) return;
+                        try {
+                            let res = await fetch(`{{ url('api/central/outcomes') }}/${id}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                }
+                            });
+                            if (res.ok) {
+                                await this.fetchOutcomes();
+                            }
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    },
+
                     async searchCustomers() {
                         if (this.customerQuery.length < 2) return;
                         try {
@@ -3195,8 +3322,16 @@
 
                             // Handle 422 Validation Errors
                             if (res.status === 422) {
-                                let errors = Object.values(data.errors || {}).flat().join('\n');
-                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Validation Failed: ' + errors } }));
+                                let errorMsg = '';
+                                if (data.errors) {
+                                    errorMsg = Object.values(data.errors).flat().join('\n');
+                                } else if (data.message) {
+                                    errorMsg = data.message;
+                                } else {
+                                    errorMsg = 'Validation failed.';
+                                }
+
+                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: errorMsg } }));
                                 if (loadingBtn) {
                                     loadingBtn.disabled = false;
                                     loadingBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Place Order';
@@ -3302,7 +3437,10 @@
                                 quantity: 1,
                                 max_stock: product.stock_on_hand,
                                 discount_type: product.default_discount_type || 'fixed',
-                                discount_value: parseFloat(product.default_discount_value || 0)
+                                discount_value: parseFloat(product.default_discount_value || 0),
+                                tax_rate: product.tax_rate,
+                                tax_class_id: product.tax_class_id,
+                                tax_class: product.tax_class
                             });
                         }
                     },
@@ -3334,6 +3472,8 @@
 
                     // Helper to open modal with pre-filled data
                     openCreateCustomerModal() {
+                        this.cropsList = ['Cotton', 'Paddy', 'Wheat', 'Soybean', 'Chilli', 'Maize', 'Tur', 'Gram', 'Groundnut', 'Sugarcane', 'Banana', 'Vegetables'];
+
                         this.newCustomer = {
                             id: null,
                             display_name: '',
@@ -3367,44 +3507,16 @@
                         }
                         else if (this.customerQuery.length > 0) {
                             this.newCustomer.first_name = this.customerQuery;
-                            this.newCustomer.display_name = this.customerQuery;
+                            this.updateDisplayName();
                         }
 
                         this.showCreateCustomerModal = true;
                     },
 
-                    editCustomerDetails() {
-                        if (!this.selectedCustomer) return;
-
-                        this.newCustomer = {
-                            id: this.selectedCustomer.id,
-                            display_name: this.selectedCustomer.display_name,
-                            first_name: this.selectedCustomer.first_name,
-                            last_name: this.selectedCustomer.last_name,
-                            mobile: this.selectedCustomer.mobile,
-                            phone_number_2: this.selectedCustomer.phone_number_2,
-                            relative_phone: this.selectedCustomer.relative_phone,
-                            email: this.selectedCustomer.email,
-                            source: this.selectedCustomer.source,
-                            type: this.selectedCustomer.type,
-                            category: this.selectedCustomer.category || 'individual',
-                            company_name: this.selectedCustomer.company_name,
-                            gst_number: this.selectedCustomer.gst_number,
-                            pan_number: this.selectedCustomer.pan_number,
-                            land_area: this.selectedCustomer.land_area,
-                            land_unit: this.selectedCustomer.land_unit || 'acre',
-                            irrigation_type: this.selectedCustomer.irrigation_type,
-                            crops: this.selectedCustomer.crops || [],
-                            credit_limit: this.selectedCustomer.credit_limit,
-                            credit_valid_till: this.selectedCustomer.credit_valid_till,
-                            aadhaar_last4: this.selectedCustomer.aadhaar_last4,
-                            kyc_completed: !!this.selectedCustomer.kyc_completed,
-                            internal_notes: this.selectedCustomer.internal_notes,
-                            is_active: this.selectedCustomer.is_active !== 0,
-                            is_blacklisted: this.selectedCustomer.is_blacklisted === 1
-                        };
-
-                        this.showCreateCustomerModal = true;
+                    updateDisplayName() {
+                        const first = this.newCustomer.first_name || '';
+                        const last = this.newCustomer.last_name || '';
+                        this.newCustomer.display_name = (first + ' ' + last).trim();
                     },
 
                     get subTotal() {
@@ -3431,8 +3543,33 @@
                         return parseFloat(this.order.discount_value || 0);
                     },
 
+                    get taxTotal() {
+                        return this.cart.reduce((sum, item) => {
+                            let taxRate = 0;
+                            // Priority 1: Tax Class
+                            if (item.tax_class_id && item.tax_class && item.tax_class.rates && item.tax_class.rates.length > 0) {
+                                // For now, taking the first rate as per simple TaxService logic (sum of rates if needed, but TaxService takes first for now)
+                                // Actually TaxService sums them up if multiple rates exist in a class? 
+                                // Looking at TaxService: $tax_amount = $amount * ($rate->rate / 100); It loops through rates. 
+                                // So we should loop here too if we want to be 100% accurate, but usually 1 rate per class.
+                                // Let's sum all rates in the class for safety.
+                                taxRate = item.tax_class.rates.reduce((rSum, r) => rSum + parseFloat(r.rate), 0);
+                            }
+                            // Priority 2: Manual Rate
+                            else if (item.tax_rate > 0) {
+                                taxRate = parseFloat(item.tax_rate);
+                            }
+
+                            if (taxRate > 0) {
+                                let lineTotal = item.price * item.quantity;
+                                sum += lineTotal * (taxRate / 100);
+                            }
+                            return sum;
+                        }, 0);
+                    },
+
                     get grandTotal() {
-                        return (this.subTotal - this.cartDiscountTotal - this.orderDiscountAmount);
+                        return Math.max(0, (this.subTotal - this.cartDiscountTotal - this.orderDiscountAmount) + this.taxTotal);
                     }
                 }
             }

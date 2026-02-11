@@ -22,30 +22,6 @@ return new class extends Migration {
         });
 
         // 1. Finance Basics
-        Schema::create('tax_zones', function (Blueprint $table) {
-            $table->id();
-            $table->string('name'); // NY State, VAT Zone
-            $table->string('zone_type')->default('state'); // zip, state, country
-            $table->string('match_value')->nullable(); // NY, 10001, US
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
-
-        Schema::create('tax_classes', function (Blueprint $table) {
-            $table->id();
-            $table->string('name'); // Standard, Reduced, Zero
-            $table->timestamps();
-        });
-
-        Schema::create('tax_rates', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tax_zone_id')->constrained();
-            $table->foreignId('tax_class_id')->constrained();
-            $table->decimal('rate_percent', 5, 2)->default(0);
-            $table->integer('priority')->default(1);
-            $table->timestamps();
-        });
-
         Schema::create('price_lists', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // Wholesale, Retail
@@ -241,9 +217,7 @@ return new class extends Migration {
         Schema::dropIfExists('coupons');
         Schema::dropIfExists('product_prices');
         Schema::dropIfExists('price_lists');
-        Schema::dropIfExists('tax_rates');
-        Schema::dropIfExists('tax_classes');
-        Schema::dropIfExists('tax_zones');
+        Schema::dropIfExists('price_lists');
         Schema::dropIfExists('expenses');
     }
 };

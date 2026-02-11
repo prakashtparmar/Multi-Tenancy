@@ -64,15 +64,22 @@
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                     value="{{ old('barcode', $product->barcode) }}">
                             </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Unit Type *</label>
                                 <select name="unit_type"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                     required>
-                                    @foreach(['kg', 'g', 'l', 'ml', 'pack', 'bottle', 'bag'] as $type)
+                                    @foreach(['kg', 'g', 'l', 'ml', 'piece', 'pack', 'bottle', 'bag'] as $type)
                                         <option value="{{ $type }}" {{ old('unit_type', $product->unit_type) == $type ? 'selected' : '' }}>{{ ucfirst($type) }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Packing Size</label>
+                                <input type="text" name="packing_size" placeholder="e.g. 500g, 1L"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                    value="{{ old('packing_size', $product->packing_size) }}">
                             </div>
                         </div>
 
@@ -133,6 +140,23 @@
                                 </div>
                             </div>
                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Tax Rate (%)</label>
+                                <div class="relative mt-1 rounded-md shadow-sm">
+                                    <input type="number" step="0.01" name="tax_rate"
+                                        class="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                        placeholder="0.00" value="{{ old('tax_rate', $product->tax_rate) }}">
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <span class="text-gray-500 sm:text-sm">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">HSN Code</label>
+                                <input type="text" name="hsn_code"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                    value="{{ old('hsn_code', $product->hsn_code) }}">
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-gray-700">Is Taxable?</label>
                                 <select name="is_taxable"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
@@ -160,11 +184,26 @@
                                     </label>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Stock On Hand</label>
                                 <input type="number" step="0.001" name="stock_on_hand"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                     value="{{ old('stock_on_hand', $product->stock_on_hand) }}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Min Order Qty</label>
+                                <input type="number" step="1" name="min_order_qty"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                    value="{{ old('min_order_qty', $product->min_order_qty) }}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Reorder Level</label>
+                                <input type="number" step="1" name="reorder_level"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                    value="{{ old('reorder_level', $product->reorder_level) }}">
                             </div>
                         </div>
 
@@ -311,6 +350,22 @@
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                     value="{{ old('certification_number', $product->certification_number) }}">
                             </div>
+                        </div>
+
+                        <div class="mt-6 border-t pt-4">
+                            <label class="block text-sm font-medium text-gray-700">Certificate File (PDF/Image)</label>
+                            @if($product->certificate_url)
+                                <div class="mb-2">
+                                    <a href="{{ asset('storage/' . $product->certificate_url) }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 text-sm">View Current Certificate</a>
+                                </div>
+                            @endif
+                            <input type="file" name="certificate_url" accept=".pdf,image/*"
+                                class="mt-1 block w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-full file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-indigo-50 file:text-indigo-700
+                                hover:file:bg-indigo-100">
                         </div>
                     </div>
 

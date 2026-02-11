@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\InventoryStock;
 use App\Models\InventoryMovement;
 use App\Services\OrderService;
+use App\Services\TaxService;
 use App\Exports\OrdersExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
@@ -24,9 +25,12 @@ class OrderController extends Controller
 {
     use AuthorizesRequests;
     protected OrderService $orderService;
-    public function __construct(OrderService $orderService)
+    protected TaxService $taxService;
+
+    public function __construct(OrderService $orderService, TaxService $taxService)
     {
         $this->orderService = $orderService;
+        $this->taxService = $taxService;
     }
     /**
      * Display a listing of central orders.
@@ -74,7 +78,7 @@ class OrderController extends Controller
         $customerId = $request->query('customer_id');
         $preSelectedCustomer = $customerId ? Customer::with('addresses')->withCount('orders')->find($customerId) : null;
         $products = Product::where('is_active', true)
-            ->with(['stocks', 'images'])
+            ->with(['stocks', 'images', 'taxClass.rates'])
             ->limit(20)
             ->get()
             ->map(
@@ -93,6 +97,16 @@ class OrderController extends Controller
                     'category' => $product->category->name ?? 'Uncategorized',
                     'default_discount_type' => $product->default_discount_type,
                     'default_discount_value' => $product->default_discount_value,
+                    'tax_rate' => $product->tax_rate,
+                    'tax_class_id' => $product->tax_class_id,
+                    'tax_class' => $product->taxClass ? [
+                        'id' => $product->taxClass->id,
+                        'name' => $product->taxClass->name,
+                        'rates' => $product->taxClass->rates->map(fn($r) => [
+                            'rate' => $r->rate,
+                            'name' => $r->name
+                        ])
+                    ] : null,
                 ],
             );
         return view('central.orders.create', [
@@ -139,11 +153,14 @@ class OrderController extends Controller
                 $itemDiscountsTotal = 0;
 
                 $productIds = collect($validated['items'])->pluck('product_id');
-                $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+                $products = Product::whereIn('id', $productIds)->with(['taxClass.rates'])->get()->keyBy('id'); // Updated to load Tax Info
 
                 $preparedItems = [];
+                $totalTaxAmount = 0; // Track Total Tax
 
                 foreach ($validated['items'] as $item) {
+
+                    $product = $products[$item['product_id']] ?? null; // Get product for Tax Calc
 
                     $itemBasePrice = $item['quantity'] * $item['price'];
 
@@ -157,8 +174,15 @@ class OrderController extends Controller
                     $subTotalAmount += $itemBasePrice;
                     $itemDiscountsTotal += $itemDiscount;
 
+                    // Tax Calculation
+                    $taxDetails = $this->taxService->calculate($product, (float) $item['price'], (float) $item['quantity']);
+                    $itemTaxAmount = $taxDetails['amount'];
+                    $totalTaxAmount += $itemTaxAmount;
+
                     $preparedItems[] = array_merge($item, [
                         'discount_amount' => $itemDiscount,
+                        'tax_percent' => $taxDetails['rate'], // Store Rate
+                        'tax_amount' => $itemTaxAmount,       // Store Amount (Logic Use)
                     ]);
                 }
 
@@ -172,7 +196,15 @@ class OrderController extends Controller
                     ? $netAfterItems * ($orderDiscountValue / 100)
                     : $orderDiscountValue;
 
-                $grandTotal = $netAfterItems - $orderDiscountAmount;
+                // Grand Total = (Subtotal - ItemDisc - OrderDisc) + Tax
+                // Note: Typically tax is calculated on the discounted price. 
+                // However, simple implementation usually does Tax on Base or Tax on Net.
+                // For now, let's assume Tax is Inclusive or Exclusive? 
+                // The provided TaxService calculates on Base Price * Quantity.
+                // Only if we want Post-Discount Tax we need to adj.
+                // Given "Non-disruptive", let's keeps Tax on Line Base for now (Standard GST often on transaction value).
+
+                $grandTotal = ($netAfterItems - $orderDiscountAmount) + $totalTaxAmount;
 
                 // Create Order
                 $order = Order::create([
@@ -180,6 +212,7 @@ class OrderController extends Controller
                     'warehouse_id' => $validated['warehouse_id'],
                     'total_amount' => $subTotalAmount,
                     'discount_amount' => $itemDiscountsTotal + $orderDiscountAmount,
+                    'tax_amount' => $totalTaxAmount, // Store Tax Total
                     'discount_type' => $orderDiscountType,
                     'discount_value' => $orderDiscountValue,
                     'status' => ($validated['is_future_order'] ?? false) ? 'scheduled' : 'pending',
@@ -213,7 +246,7 @@ class OrderController extends Controller
                         'discount_value' => $item['discount_value'] ?? 0,
                         'discount_amount' => $item['discount_amount'],
                         'total_price' => $item['quantity'] * $item['price'],
-                        'tax_percent' => 0,
+                        'tax_percent' => $item['tax_percent'] ?? 0,
                     ]);
                 }
 
@@ -488,8 +521,9 @@ class OrderController extends Controller
                 $subTotalAmount = 0;
                 $itemDiscountsTotal = 0;
                 $productIds = collect($validated['items'])->pluck('product_id');
-                $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+                $products = Product::whereIn('id', $productIds)->with(['taxClass.rates'])->get()->keyBy('id');
                 $preparedItems = [];
+                $totalTaxAmount = 0;
                 foreach ($validated['items'] as $item) {
                     $product = $products[$item['product_id']] ?? null;
                     if (!$product) {
@@ -506,6 +540,10 @@ class OrderController extends Controller
                         $itemDiscountAmount = (float) $itemDiscountValue;
                     }
                     $itemDiscountsTotal += $itemDiscountAmount;
+                    $taxDetails = $this->taxService->calculate($product, (float) $item['price'], (float) $item['quantity']);
+                    $itemTaxAmount = $taxDetails['amount'];
+                    $totalTaxAmount += $itemTaxAmount;
+
                     $preparedItems[] = [
                         'product_id' => $item['product_id'],
                         'product_name' => $product->name,
@@ -516,6 +554,7 @@ class OrderController extends Controller
                         'discount_type' => $itemDiscountType,
                         'discount_value' => $itemDiscountValue,
                         'discount_amount' => $itemDiscountAmount,
+                        'tax_percent' => $taxDetails['rate'],
                     ];
                 }
                 // Order Level Discount
@@ -528,7 +567,7 @@ class OrderController extends Controller
                 } else {
                     $orderDiscountAmount = (float) $orderDiscountValue;
                 }
-                $grandTotal = max(0, $netAfterItemDiscounts - $orderDiscountAmount);
+                $grandTotal = max(0, ($netAfterItemDiscounts - $orderDiscountAmount) + $totalTaxAmount);
                 foreach ($preparedItems as $pItem) {
                     $order->items()->create($pItem);
                 }
@@ -551,6 +590,7 @@ class OrderController extends Controller
                     'warehouse_id' => $validated['warehouse_id'],
                     'total_amount' => $subTotalAmount,
                     'discount_amount' => $itemDiscountsTotal + $orderDiscountAmount,
+                    'tax_amount' => $totalTaxAmount,
                     'discount_type' => $orderDiscountType,
                     'discount_value' => $orderDiscountValue,
                     'grand_total' => $grandTotal,

@@ -122,6 +122,10 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     Route::get('inventory', [\App\Http\Controllers\Tenant\InventoryController::class, 'index'])->name('tenant.inventory.index');
     Route::post('inventory/adjust', [\App\Http\Controllers\Tenant\InventoryController::class, 'adjust'])->name('tenant.inventory.adjust');
 
+    // Stock Transfers
+    Route::get('stock-transfers', [\App\Http\Controllers\Tenant\StockTransferController::class, 'index'])->name('tenant.stock-transfers.index');
+    Route::post('stock-transfers', [\App\Http\Controllers\Tenant\StockTransferController::class, 'store'])->name('tenant.stock-transfers.store');
+
     // Search Endpoints (AJAX) - "Command Center" Functionality
     Route::prefix('api')->group(function () {
         Route::get('search/customers', [\App\Http\Controllers\Tenant\SearchController::class, 'customers'])

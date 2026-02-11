@@ -1,330 +1,269 @@
 @extends('layouts.app')
 
 @section('content')
-    <div id="products-page-wrapper" class="flex flex-1 flex-col space-y-8 p-8 animate-in fade-in duration-500">
+    <div id="products-page-wrapper" class="flex flex-1 flex-col space-y-8 p-8 animate-in fade-in duration-500 selection:bg-indigo-100 selection:text-indigo-800">
+        <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-1">
-                <h1
-                    class="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                    Products</h1>
-                <p class="text-muted-foreground text-sm">Manage global product catalog, pricing, and stock.</p>
+                <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                    Products
+                </h1>
+                <p class="text-gray-500 text-sm">Manage global product catalog, pricing, and stock inventory.</p>
             </div>
-            <div class="flex items-center p-1 bg-muted/50 rounded-xl border border-border/50 backdrop-blur-sm">
+            
+            <!-- Filter Pills -->
+            <div class="flex items-center p-1 bg-white/60 rounded-xl border border-gray-200/50 backdrop-blur-sm shadow-sm">
                 <a href="{{ route('central.products.index') }}"
-                    class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === null ? 'bg-background text-foreground shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-foreground hover:bg-background/50' }}">
+                    class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === null ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50' }}">
                     All Products
                 </a>
-                <div class="w-px h-4 bg-border/40 mx-1"></div>
+                <div class="w-px h-4 bg-gray-200 mx-1"></div>
                 <a href="{{ route('central.products.index', ['status' => 'active']) }}"
-                    class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'active' ? 'bg-background text-emerald-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-emerald-600 hover:bg-background/50' }}">
+                    class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'active' ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:text-emerald-600 hover:bg-gray-50' }}">
                     Active
                 </a>
-                <div class="w-px h-4 bg-border/40 mx-1"></div>
+                <div class="w-px h-4 bg-gray-200 mx-1"></div>
                 <a href="{{ route('central.products.index', ['stock' => 'low']) }}"
-                    class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('stock') === 'low' ? 'bg-background text-amber-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-amber-600 hover:bg-background/50' }}">
+                    class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request('stock') === 'low' ? 'bg-white text-amber-600 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:text-amber-600 hover:bg-gray-50' }}">
                     Low Stock
                 </a>
             </div>
         </div>
 
         <div id="products-table-container" x-data="{ selected: [] }">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-1.5 rounded-2xl">
-                <div class="flex items-center gap-3 min-h-[44px]">
+            <!-- Toolbar -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <!-- Selection Counter -->
                     <div x-cloak x-show="selected.length > 0" x-transition.opacity.duration.300ms
                         class="flex items-center gap-3 animate-in fade-in slide-in-from-left-4">
-                        <div
-                            class="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold shadow-sm">
+                        <div class="px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold shadow-sm">
                             <span x-text="selected.length"></span> selected
                         </div>
                     </div>
 
-                    <form id="search-form" method="GET" action="{{ url()->current() }}"
-                        class="flex items-center gap-2 group">
+                    <!-- Search Box -->
+                    <form id="search-form" method="GET" action="{{ url()->current() }}" class="flex-1 sm:flex-none">
                         @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
                         @if(request('stock')) <input type="hidden" name="stock" value="{{ request('stock') }}"> @endif
-                        @if(request('per_page')) <input type="hidden" name="per_page" value="{{ request('per_page') }}">
-                        @endif
+                        @if(request('per_page')) <input type="hidden" name="per_page" value="{{ request('per_page') }}"> @endif
 
-                        <div class="relative transition-all duration-300 group-focus-within:w-72"
-                            :class="selected.length > 0 ? 'w-48' : 'w-64'">
+                        <div class="relative group">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    class="text-muted-foreground group-focus-within:text-primary transition-colors">
-                                    <circle cx="11" cy="11" r="8" />
-                                    <path d="m21 21-4.3-4.3" />
+                                <svg class="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
                                 </svg>
                             </div>
                             <input type="text" name="search" value="{{ request('search') }}"
-                                placeholder="Search products..."
-                                class="block w-full rounded-xl border-0 py-2.5 pl-10 pr-3 text-foreground bg-muted/40 ring-1 ring-inset ring-transparent placeholder:text-muted-foreground focus:bg-background focus:ring-2 focus:ring-primary/20 sm:text-sm sm:leading-6 transition-all shadow-sm">
+                                placeholder="Search products, SKU..."
+                                class="block w-full sm:w-72 rounded-xl border-gray-200 pl-10 pr-3 py-2.5 text-sm placeholder-gray-400 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm transition-all bg-white/80 backdrop-blur-sm hover:bg-white">
                         </div>
                     </form>
                 </div>
 
                 <a href="{{ route('central.products.create') }}"
-                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 12h14" />
-                        <path d="M12 5v14" />
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all duration-200 w-full sm:w-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
                     </svg>
                     <span>Add Product</span>
                 </a>
             </div>
 
-            <div class="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-xl shadow-sm overflow-hidden relative">
-                <div id="table-loading"
-                    class="absolute inset-0 z-50 bg-background/50 backdrop-blur-[2px] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
-                    <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent shadow-lg">
-                    </div>
+            <!-- Table Card -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative">
+                <!-- Loading Overlay -->
+                <div id="table-loading" class="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+                    <div class="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent shadow-lg"></div>
                 </div>
 
-                <div
-                    class="border-b border-border/40 p-4 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span
-                            class="flex h-6 w-6 items-center justify-center rounded-md bg-background border border-border font-medium text-foreground shadow-sm">
-                            {{ $products->total() }}
-                        </span>
-                        <span>products found</span>
+                <!-- Pagination/Count Header -->
+                <div class="border-b border-gray-100 p-4 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-sm text-gray-500">
+                        Showing <span class="font-semibold text-gray-900">{{ $products->firstItem() ?? 0 }}</span> to <span class="font-semibold text-gray-900">{{ $products->lastItem() ?? 0 }}</span> of <span class="font-semibold text-gray-900">{{ $products->total() }}</span> products
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <form id="per-page-form" method="GET" action="{{ url()->current() }}"
-                            class="flex items-center gap-2">
-                            @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}">
-                            @endif
-                            @if(request('stock')) <input type="hidden" name="stock" value="{{ request('stock') }}"> @endif
-                            @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}">
-                            @endif
-
-                            <label for="per_page"
-                                class="text-xs font-medium text-muted-foreground whitespace-nowrap">View</label>
-                            <div class="relative">
-                                <select name="per_page" id="per_page"
-                                    class="appearance-none h-8 pl-3 pr-8 rounded-lg border border-border bg-background text-xs font-medium focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors cursor-pointer hover:bg-accent/50">
-                                    <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
-                                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
-                                </select>
-                                <div
-                                    class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
-                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </div>
-                            </div>
+                        <form id="per-page-form" method="GET" action="{{ url()->current() }}" class="flex items-center gap-2">
+                            @foreach(request()->except(['per_page', 'page']) as $key => $value)
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endforeach
+                            
+                            <label for="per_page" class="text-xs font-medium text-gray-500 uppercase tracking-wider">Per Page</label>
+                            <select name="per_page" id="per_page" class="form-select block w-20 h-9 rounded-lg border-gray-200 text-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white">
+                                <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
+                                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                            </select>
                         </form>
                     </div>
                 </div>
 
-                <div class="relative w-full overflow-auto">
-                    <table class="w-full caption-bottom text-sm">
-                        <thead class="[&_tr]:border-b">
-                            <tr
-                                class="border-b border-border/40 transition-colors hover:bg-muted/30 data-[state=selected]:bg-muted bg-muted/20">
-                                <th class="h-12 w-[50px] px-6 text-left align-middle">
-                                    <div class="flex items-center">
-                                        <input type="checkbox"
-                                            class="h-4 w-4 rounded border-input text-primary focus:ring-primary/20 bg-background cursor-pointer transition-all checked:bg-primary checked:border-primary"
-                                            @click="selected = $event.target.checked ? [{{ $products->pluck('id')->join(',') }}] : []">
-                                    </div>
+                <!-- Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50/50 border-b border-gray-100">
+                                <th class="p-4 w-[40px]">
+                                    <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                        @click="selected = $event.target.checked ? [{{ $products->pluck('id')->join(',') }}] : []">
                                 </th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Product</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Category</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Type</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Origin</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Price</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Details</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Stock</th>
-                                <th
-                                    class="h-12 px-6 text-right align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Actions</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Product Info</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Category & Brand</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Inventory</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Pricing</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tax Details</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="[&_tr:last-child]:border-0 text-sm">
+                        <tbody class="divide-y divide-gray-100 bg-white">
                             @forelse($products as $product)
-                                <tr
-                                    class="group border-b border-border/40 transition-all duration-200 hover:bg-muted/40 data-[state=selected]:bg-muted/60">
-                                    <td class="p-6 align-middle">
-                                        <div class="flex items-center">
-                                            <input type="checkbox" value="{{ $product->id }}" x-model="selected"
-                                                class="h-4 w-4 rounded border-input text-primary focus:ring-primary/20 bg-background cursor-pointer transition-all checked:bg-primary checked:border-primary">
-                                        </div>
+                                <tr class="group hover:bg-gray-50/80 transition-colors duration-200">
+                                    <td class="p-4 align-top pt-5">
+                                        <input type="checkbox" value="{{ $product->id }}" x-model="selected" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                                     </td>
-                                    <td class="p-6 align-middle">
-                                        <div class="flex items-center gap-4">
-                                            <div
-                                                class="h-12 w-12 rounded-xl bg-muted flex items-center justify-center overflow-hidden border border-border/50 shadow-sm group-hover:scale-105 transition-transform duration-300">
-                                                <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
-                                                    class="h-full w-full object-cover">
+                                    
+                                    <!-- Product Info -->
+                                    <td class="p-4">
+                                        <div class="flex gap-4">
+                                            <div class="h-16 w-16 flex-shrink-0 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden shadow-sm">
+                                                <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
                                             </div>
-                                            <div class="flex flex-col space-y-0.5">
-                                                <span
-                                                    class="font-semibold text-foreground text-sm tracking-tight">{{ $product->name }}</span>
-                                                <span class="text-xs text-muted-foreground font-mono flex items-center gap-1.5">
+                                            <div class="space-y-1">
+                                                <div class="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">{{ $product->name }}</div>
+                                                <div class="flex items-center gap-2 text-xs text-gray-500 font-mono">
                                                     {{ $product->sku }}
-                                                    @if($product->brand)
-                                                        <span class="inline-block w-1 h-1 rounded-full bg-border"></span>
-                                                        <span class="text-primary/70">{{ $product->brand->name }}</span>
+                                                </div>
+                                                <div class="flex gap-2 mt-1">
+                                                    <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">{{ ucfirst($product->type) }}</span>
+                                                    @if($product->is_featured)
+                                                        <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">Featured</span>
                                                     @endif
-                                                </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="p-6 align-middle">
-                                        @if($product->category)
-                                            <span
-                                                class="inline-flex items-center gap-1.5 rounded-lg border border-primary/10 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary shadow-sm">
-                                                {{ $product->category->name }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted-foreground/40 text-xs italic">Uncategorized</span>
-                                        @endif
-                                    </td>
-                                    <td class="p-6 align-middle">
-                                        <div class="flex flex-col gap-1.5">
-                                            <span
-                                                class="capitalize text-xs font-semibold px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground w-fit">{{ $product->type }}</span>
-                                            @if($product->is_organic)
-                                                <span
-                                                    class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-600 uppercase tracking-tight">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"
-                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                                        stroke-linecap="round" stroke-linejoin="round">
-                                                        <path
-                                                            d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-                                                        <path d="M2 21c0-3 1.85-5.36 5.08-6C10.9 14.36 12 12 12 12" />
-                                                    </svg>
-                                                    Organic
-                                                </span>
+
+                                    <!-- Category -->
+                                    <td class="p-4 align-top pt-5">
+                                        <div class="flex flex-col gap-1">
+                                            <span class="text-sm text-gray-900">{{ $product->category->name ?? 'Uncategorized' }}</span>
+                                            @if($product->brand)
+                                                <span class="text-xs text-gray-500">{{ $product->brand->name }}</span>
                                             @endif
                                         </div>
                                     </td>
-                                    <td class="p-6 align-middle">
-                                        <span class="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
-                                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round" class="opacity-50">
-                                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                                                <circle cx="12" cy="10" r="3" />
-                                            </svg>
-                                            {{ $product->origin ?? 'Global' }}
-                                        </span>
+
+                                    <!-- Inventory -->
+                                    <td class="p-4 align-top pt-5">
+                                        <div class="space-y-2">
+                                            @if($product->manage_stock)
+                                                @if($product->stock_on_hand <= 0)
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                                                        <span class="h-1.5 w-1.5 rounded-full bg-red-600"></span> Out of Stock
+                                                    </span>
+                                                @elseif($product->stock_on_hand <= $product->reorder_level || $product->stock_on_hand <= 10)
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                                                        <span class="h-1.5 w-1.5 rounded-full bg-amber-600"></span> Low Stock: {{ floatval($product->stock_on_hand) }}
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+                                                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span> In Stock: {{ floatval($product->stock_on_hand) }}
+                                                    </span>
+                                                @endif
+                                                <div class="text-xs text-gray-500 pl-1">{{ $product->unit_type }}</div>
+                                            @else
+                                                <span class="text-xs text-gray-500 italic">Stock Not Tracked</span>
+                                            @endif
+                                        </div>
                                     </td>
-                                    <td class="p-6 align-middle">
-                                        <div class="flex flex-col">
-                                            <span class="font-bold text-foreground text-sm">Rs
-                                                {{ number_format($product->price, 2) }}</span>
+
+                                    <!-- Pricing -->
+                                    <td class="p-4 text-right align-top pt-5">
+                                        <div class="flex flex-col items-end">
+                                            <span class="text-sm font-bold text-gray-900">₹{{ number_format($product->price, 2) }}</span>
+                                            @if($product->mrp > $product->price)
+                                                <span class="text-xs text-gray-400 line-through">₹{{ number_format($product->mrp, 2) }}</span>
+                                            @endif
                                             @if($product->cost_price > 0)
-                                                <span class="text-[10px] text-muted-foreground/60 italic">Cost: Rs
-                                                    {{ number_format($product->cost_price, 2) }}</span>
+                                                <span class="text-[10px] text-gray-400 mt-1">Cost: ₹{{ number_format($product->cost_price, 2) }}</span>
                                             @endif
                                         </div>
                                     </td>
-                                    <td class="p-6 align-middle">
-                                        @if($product->default_discount_value > 0)
-                                            <div
-                                                class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-xs font-semibold text-amber-600 shadow-sm">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
-                                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round" class="opacity-70">
-                                                    <path d="M7 10v4h3v7h4v-7h3l-5-7Z" />
-                                                </svg>
-                                                {{ $product->default_discount_type == 'percent' ? $product->default_discount_value . '%' : 'Rs ' . number_format($product->default_discount_value, 2) }}
-                                            </div>
-                                        @else
-                                            <span class="text-muted-foreground/30">—</span>
-                                        @endif
-                                    </td>
-                                    <td class="p-6 align-middle">
-                                        @if($product->stock_on_hand > 10)
-                                            <div class="flex flex-col gap-1">
-                                                <span
-                                                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 w-fit">
-                                                    {{ floatval($product->stock_on_hand) }} {{ $product->unit_type }}
+
+                                    <!-- Tax Details (Premium Bifurcation) -->
+                                    <td class="p-4 align-top pt-5">
+                                        @php
+                                            $rate = 0;
+                                            $className = 'None';
+                                            if($product->taxClass) {
+                                                $rate = $product->taxClass->rates->first()->rate ?? 0;
+                                                $className = $product->taxClass->name;
+                                            } elseif($product->tax_rate > 0) {
+                                                $rate = $product->tax_rate;
+                                                $className = 'Custom';
+                                            }
+                                        @endphp
+
+                                        @if($rate > 0)
+                                            <div class="flex flex-col gap-1.5">
+                                                <!-- Tax Class Badge -->
+                                                <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 w-fit">
+                                                    {{ $className }} ({{ floatval($rate) }}%)
                                                 </span>
-                                                <div class="h-1 w-16 bg-muted rounded-full overflow-hidden">
-                                                    <div class="h-full bg-emerald-500 w-full"></div>
+                                                
+                                                <!-- Bifurcation Display -->
+                                                <div class="flex items-center gap-2 text-[10px] font-mono leading-none">
+                                                    <div class="flex flex-col items-center bg-gray-50 rounded border border-gray-100 px-1.5 py-1">
+                                                        <span class="text-gray-500 mb-0.5">SGST</span>
+                                                        <span class="font-bold text-gray-700">{{ number_format($rate / 2, 2) }}%</span>
+                                                    </div>
+                                                    <div class="text-gray-300">|</div>
+                                                    <div class="flex flex-col items-center bg-gray-50 rounded border border-gray-100 px-1.5 py-1">
+                                                        <span class="text-gray-500 mb-0.5">CGST</span>
+                                                        <span class="font-bold text-gray-700">{{ number_format($rate / 2, 2) }}%</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        @elseif($product->stock_on_hand > 0)
-                                            <div class="flex flex-col gap-1">
-                                                <span
-                                                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20 w-fit">
-                                                    {{ floatval($product->stock_on_hand) }} low
-                                                </span>
-                                                <div class="h-1 w-16 bg-muted rounded-full overflow-hidden">
-                                                    <div class="h-full bg-amber-500 w-1/3"></div>
-                                                </div>
-                                            </div>
                                         @else
-                                            <span
-                                                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
-                                                Out of Stock
-                                            </span>
+                                            <span class="text-xs text-gray-400">Exempt / Zero Rated</span>
                                         @endif
                                     </td>
-                                    <td class="p-6 align-middle text-right">
-                                        <div class="relative flex justify-end" x-data="{ open: false }"
-                                            @click.away="open = false">
-                                            <button @click="open = !open"
-                                                class="group/btn inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground/70 transition-all hover:text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring active:scale-95">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                    stroke-linecap="round" stroke-linejoin="round">
-                                                    <circle cx="12" cy="12" r="1" />
-                                                    <circle cx="12" cy="5" r="1" />
-                                                    <circle cx="12" cy="19" r="1" />
+
+                                    <!-- Actions -->
+                                    <td class="p-4 text-right align-middle">
+                                        <div class="flex items-center justify-end gap-2 text-right">
+                                            <a href="{{ route('central.products.edit', $product) }}"
+                                                class="text-gray-400 hover:text-indigo-600 transition-colors p-1.5 rounded-lg hover:bg-indigo-50">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                                 </svg>
-                                            </button>
-                                            <div x-show="open"
-                                                class="absolute right-0 top-9 z-50 min-w-[180px] overflow-hidden rounded-xl border border-border/60 bg-popover/95 p-1 text-popover-foreground shadow-xl shadow-black/5 backdrop-blur-xl"
-                                                style="display: none;">
-                                                <div
-                                                    class="px-2 py-1.5 text-xs font-semibold text-muted-foreground/50 uppercase tracking-wider">
-                                                    Manage</div>
-                                                <a href="{{ route('central.products.edit', $product) }}"
-                                                    class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
-                                                    Edit Details
-                                                </a>
-                                                <div class="my-1 h-px bg-border/50"></div>
-                                                <form action="{{ route('central.products.destroy', $product) }}" method="POST"
-                                                    onsubmit="return confirm('Delete product?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                        class="w-full flex cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-destructive/10 hover:text-destructive text-destructive/80">
-                                                        Delete Product
-                                                    </button>
-                                                </form>
-                                            </div>
+                                            </a>
+                                            <form action="{{ route('central.products.destroy', $product) }}" method="POST"
+                                                onsubmit="return confirm('Are you sure you want to delete this product?');" class="inline-block">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-gray-400 hover:text-red-600 transition-colors p-1.5 rounded-lg hover:bg-red-50">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="p-16 text-center">
-                                        <div class="flex flex-col items-center justify-center text-muted-foreground/50">
-                                            <p class="text-lg font-semibold text-foreground">No products found</p>
-                                            <p class="text-sm mt-1">Add a new product to get started.</p>
+                                    <td colspan="7" class="p-12 text-center text-gray-500">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <svg class="h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                            </svg>
+                                            <p class="text-lg font-medium text-gray-900">No products found</p>
+                                            <p class="text-sm mt-1">Get started by creating a new product.</p>
+                                            <a href="{{ route('central.products.create') }}" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                                                Add Product
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -333,19 +272,17 @@
                     </table>
                 </div>
 
+                <!-- Footer/Pagination -->
                 @if($products->hasPages())
-                    <div
-                        class="border-t border-border/40 p-4 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="text-xs text-muted-foreground px-2">Page <span
-                                class="font-medium text-foreground">{{ $products->currentPage() }}</span> of <span
-                                class="font-medium">{{ $products->lastPage() }}</span></div>
-                        <div>{{ $products->links() }}</div>
+                    <div class="border-t border-gray-100 p-4 bg-gray-50/50">
+                        {{ $products->links() }}
                     </div>
                 @endif
             </div>
         </div>
     </div>
 
+    <!-- AJAX Script for smooth interactions (preserved) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const container = document.getElementById('products-table-container');
@@ -378,7 +315,7 @@
             window.addEventListener('popstate', () => loadContent(window.location.href, false));
 
             container.addEventListener('click', (e) => {
-                const link = e.target.closest('a.page-link') || e.target.closest('nav[role="navigation"] a') || e.target.closest('.pagination a');
+                const link = e.target.closest('a.page-link') || e.target.closest('.pagination a');
                 if (link && container.contains(link) && link.href) {
                     e.preventDefault();
                     loadContent(link.href);
@@ -396,20 +333,10 @@
                     }, 400);
                 }
             });
-
-            container.addEventListener('change', (e) => {
+            
+             container.addEventListener('change', (e) => {
                 if (e.target.id === 'per_page') {
                     const form = e.target.closest('form');
-                    const url = new URL(form.action);
-                    const params = new URLSearchParams(new FormData(form));
-                    loadContent(`${url.origin}${url.pathname}?${params.toString()}`);
-                }
-            });
-
-            container.addEventListener('submit', (e) => {
-                if (e.target.id === 'search-form' || e.target.id === 'per-page-form') {
-                    e.preventDefault();
-                    const form = e.target;
                     const url = new URL(form.action);
                     const params = new URLSearchParams(new FormData(form));
                     loadContent(`${url.origin}${url.pathname}?${params.toString()}`);

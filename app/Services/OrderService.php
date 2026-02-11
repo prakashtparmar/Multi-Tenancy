@@ -26,10 +26,22 @@ class OrderService
         return DB::transaction(function () use ($order) {
 
             foreach ($order->items as $item) {
+                // Use firstOrCreate to ensure stock record exists to correct "No query results" error
+                // We use firstOrNew -> lock -> save to be safe with locking, or simply handle the null case.
+
                 $stock = InventoryStock::where('product_id', $item->product_id)
                     ->where('warehouse_id', $order->warehouse_id)
                     ->lockForUpdate()
-                    ->firstOrFail();
+                    ->first();
+
+                if (!$stock) {
+                    $stock = InventoryStock::create([
+                        'product_id' => $item->product_id,
+                        'warehouse_id' => $order->warehouse_id,
+                        'quantity' => 0,
+                        'reserve_quantity' => 0,
+                    ]);
+                }
 
                 $available = $stock->quantity - $stock->reserve_quantity;
 
@@ -178,7 +190,16 @@ class OrderService
             $stock = InventoryStock::where('product_id', $item->product_id)
                 ->where('warehouse_id', $order->warehouse_id)
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->first();
+
+            if (!$stock) {
+                $stock = InventoryStock::create([
+                    'product_id' => $item->product_id,
+                    'warehouse_id' => $order->warehouse_id,
+                    'quantity' => 0,
+                    'reserve_quantity' => 0,
+                ]);
+            }
 
             $available = $stock->quantity - $stock->reserve_quantity;
 

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use App\Models\TaxClass;
 
 class Product extends Model
 {
@@ -19,6 +20,8 @@ class Product extends Model
         'is_taxable' => 'boolean',
         'price' => 'decimal:2',
         'cost_price' => 'decimal:2',
+        'mrp' => 'decimal:2',
+        'tax_rate' => 'decimal:2',
         'stock_on_hand' => 'decimal:3',
         'default_discount_value' => 'decimal:2',
         'harvest_date' => 'datetime',
@@ -26,6 +29,8 @@ class Product extends Model
         'target_crops' => 'array',
         'target_pests' => 'array',
         'dimensions' => 'array',
+        'min_order_qty' => 'integer',
+        'reorder_level' => 'integer',
     ];
 
     protected static function boot()
@@ -53,6 +58,11 @@ class Product extends Model
     public function brand()
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    public function taxClass()
+    {
+        return $this->belongsTo(TaxClass::class);
     }
 
     public function images()
