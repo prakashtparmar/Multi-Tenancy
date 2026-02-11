@@ -69,8 +69,9 @@ class ChatController extends Controller
 
         $group = ChatGroup::find($id);
         if ($group) {
-            $group->update($request->all());
-            return response()->json(['message' => 'Group updated successfully', 'data' => $group]);
+            $updateData = $request->all();
+            $group->update($updateData);
+            return response()->json(['message' => 'Group updated successfully', 'data' => $group, 'success' => true]);
         }
         return response()->json(['message' => 'Group not found'], 404);
     }
@@ -91,31 +92,90 @@ class ChatController extends Controller
 
     public function viewGroupMembers(Request $request)
     {
-        // Logic from ChatGroupController@view_members
-        $id = $request->group_id;
-        $chatGroupMembers = ChatGroup::find($id);
+        $id = $request->group_id ?? $request->id;
+        $chatGroup = ChatGroup::find($id);
 
-        if (!empty($chatGroupMembers->members_ids)) {
-            // Updated to use App\Models\User
-            $userList = User::where('status', 'active') // Assuming 'status' based on User model
-                ->whereIn('id', $chatGroupMembers->members_ids)
-                ->select('name', 'id', 'profile_pic') // Removed role_id, check User model if exists
-                // ->with('roles') // standard spatie
-                ->get();
-            return response()->json(array('flag' => true, 'member_data' => $userList));
+        if ($chatGroup) {
+            $membersIds = $chatGroup->members_ids;
+            if (is_string($membersIds)) {
+                $membersIds = json_decode($membersIds, true);
+            }
+            $ids = is_array($membersIds) ? $membersIds : [];
+
+            if (!empty($ids)) {
+                $userList = User::whereIn('id', $ids)
+                    ->select('name', 'id')
+                    ->get();
+                return response()->json(['flag' => true, 'member_data' => $userList, 'success' => true]);
+            }
         }
 
-        return response()->json(array('flag' => false));
+        return response()->json(['flag' => false, 'member_data' => [], 'success' => true]);
     }
 
     public function destroyGroup($id)
     {
         $chatGroup = ChatGroup::find($id);
         if ($chatGroup) {
+            // Optional: delete associated messages? 
+            // For now, just delete the group as requested.
             $chatGroup->delete();
-            return response()->json(['message' => 'Group deleted successfully']);
+            return response()->json(['message' => 'Group deleted successfully', 'success' => true]);
         }
-        return response()->json(['message' => 'Group not found'], 404);
+        return response()->json(['message' => 'Group not found', 'success' => false], 404);
+    }
+
+    public function addMembers(Request $request, $id)
+    {
+        $request->validate([
+            'members_ids' => 'required|array',
+        ]);
+
+        $group = ChatGroup::find($id);
+        if (!$group) {
+            return response()->json(['message' => 'Group not found', 'success' => false], 404);
+        }
+
+        $membersIds = $group->members_ids;
+        if (is_string($membersIds)) {
+            $membersIds = json_decode($membersIds, true);
+        }
+        $currentMembers = is_array($membersIds) ? array_map('strval', $membersIds) : [];
+        $newMembers = array_map('strval', $request->members_ids);
+
+        $updatedMembers = array_unique(array_merge($currentMembers, $newMembers));
+        $group->members_ids = array_values($updatedMembers);
+        $group->save();
+
+        return response()->json(['message' => 'Members added successfully', 'data' => $group, 'success' => true]);
+    }
+
+    public function removeMembers(Request $request, $id)
+    {
+        $request->validate([
+            'members_ids' => 'required|array',
+        ]);
+
+        $group = ChatGroup::find($id);
+        if (!$group) {
+            return response()->json(['message' => 'Group not found', 'success' => false], 404);
+        }
+
+        $membersIds = $group->members_ids;
+        if (is_string($membersIds)) {
+            $membersIds = json_decode($membersIds, true);
+        }
+        $currentMembers = is_array($membersIds) ? array_map('strval', $membersIds) : [];
+        $toRemove = array_map('strval', $request->members_ids);
+
+        $updatedMembers = array_filter($currentMembers, function ($memberId) use ($toRemove) {
+            return !in_array($memberId, $toRemove);
+        });
+
+        $group->members_ids = array_values($updatedMembers);
+        $group->save();
+
+        return response()->json(['message' => 'Members removed successfully', 'data' => $group, 'success' => true]);
     }
 
     /*

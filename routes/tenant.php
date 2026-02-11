@@ -90,6 +90,8 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
 
         // Chat Group Resources
         Route::get('group', [ChatController::class, 'indexGroup'])->name('tenant.chatgroup.index');
+        Route::post('group/add_members/{id}', [ChatController::class, 'addMembers'])->name('tenant.chatgroup.add_members');
+        Route::post('group/remove_members/{id}', [ChatController::class, 'removeMembers'])->name('tenant.chatgroup.remove_members');
         Route::post('group', [ChatController::class, 'storeGroup'])->name('tenant.chatgroup.store');
         Route::delete('group/{id}', [ChatController::class, 'destroyGroup'])->name('tenant.chatgroup.destroy');
 
