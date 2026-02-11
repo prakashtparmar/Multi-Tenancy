@@ -150,6 +150,11 @@
                                  </a>
                             </template>
 
+                            <!-- Sender Name for Groups -->
+                            <template x-if="currentUser && currentUser.group_id != '0' && !msg.send_by_you">
+                                <div class="text-[10px] font-bold text-primary mb-1" x-text="msg.name"></div>
+                            </template>
+
                             <div x-html="msg.body" class="whitespace-pre-wrap break-words"></div>
                             
                             <span class="text-[10px] opacity-70 block text-right mt-1" x-text="msg.created_at"></span>
