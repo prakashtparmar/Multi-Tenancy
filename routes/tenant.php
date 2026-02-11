@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\AuthController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Chat\ChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,6 +72,31 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     Route::post('purchase-orders/{purchaseOrder}/receive', [\App\Http\Controllers\Tenant\PurchaseOrderController::class, 'receive'])->name('tenant.purchase-orders.receive');
     Route::resource('purchase-orders', \App\Http\Controllers\Tenant\PurchaseOrderController::class)->names('tenant.purchase-orders');
 
+
+    // Purchase Orders
+    Route::post('purchase-orders/{purchaseOrder}/receive', [\App\Http\Controllers\Tenant\PurchaseOrderController::class, 'receive'])->name('tenant.purchase-orders.receive');
+    Route::resource('purchase-orders', \App\Http\Controllers\Tenant\PurchaseOrderController::class)->names('tenant.purchase-orders');
+
+    // Chat System (Tenant)
+    Route::prefix('chat')->group(function () {
+        Route::get('group/view_members', [ChatController::class, 'viewGroupMembers'])->name('tenant.chatgroup.view_members');
+        Route::post('group/update/{id}', [ChatController::class, 'updateGroup'])->name('tenant.chatgroup.update_group');
+        Route::get('group/get_group', [ChatController::class, 'getGroup'])->name('tenant.chatgroup.get_group');
+        Route::get('get_chat', [ChatController::class, 'getChat'])->name('tenant.userchat.get_chat');
+        Route::get('get_users', [ChatController::class, 'getUsers'])->name('tenant.userchat.get_users');
+        Route::post('mark_as_read', [ChatController::class, 'markAsRead'])->name('tenant.chatgroup.mark_as_read');
+        Route::post('mark_as_starred', [ChatController::class, 'markAsStarred'])->name('tenant.userchat.mark_as_starred');
+        Route::post('forward_msg', [ChatController::class, 'forwardMsg'])->name('tenant.userchat.forward_msg');
+
+        // Chat Group Resources
+        Route::get('group', [ChatController::class, 'indexGroup'])->name('tenant.chatgroup.index');
+        Route::post('group', [ChatController::class, 'storeGroup'])->name('tenant.chatgroup.store');
+        Route::delete('group/{id}', [ChatController::class, 'destroyGroup'])->name('tenant.chatgroup.destroy');
+
+        // User Chat Resources
+        Route::get('/', [ChatController::class, 'indexChat'])->name('tenant.userchat.index');
+        Route::post('/', [ChatController::class, 'storeChat'])->name('tenant.userchat.store');
+    });
 
     // Activity Logs
     Route::get('/activity-logs', [\App\Http\Controllers\Platform\ActivityLogController::class, 'index'])->name('tenant.activity-logs.index');

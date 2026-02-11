@@ -28,9 +28,9 @@ class AuthController extends Controller
 
         // Force 'remember' to false for Auth::attempt to ensure session expiration on close.
         // We handle 'remember email' manually via cookie persistence.
-        if (! Auth::attempt($request->only('email', 'password'), false)) {
+        if (!Auth::attempt($request->only('email', 'password'), false)) {
             Log::warning('Login failed for ' . $request->email);
-            
+
             if ($request->expectsJson()) {
                 throw ValidationException::withMessages([
                     'email' => __('auth.failed'),
@@ -100,6 +100,9 @@ class AuthController extends Controller
                 ->performedOn($user)
                 ->causedBy($user)
                 ->log('User logged out');
+
+            // Set last_seen_at to 6 minutes ago to show user as offline immediately
+            $user->update(['last_seen_at' => now()->subMinutes(6)]);
         }
 
         Auth::guard('web')->logout();
@@ -114,7 +117,7 @@ class AuthController extends Controller
         }
 
         $loginUrl = tenant() ? '/login' : '/login'; // Dynamic based on host
-        
+
         return redirect(request()->getSchemeAndHttpHost() . $loginUrl);
     }
 
