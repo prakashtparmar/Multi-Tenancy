@@ -28,6 +28,9 @@
         "psy/psysh": "0.12.19"
     },
     "autoload": {
+        "files": [
+            "app/Helpers/S3ChatHelpers.php"
+        ],
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",

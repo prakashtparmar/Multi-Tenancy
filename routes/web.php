@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Chat\ChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -262,6 +263,32 @@ Route::middleware('auth')->group(function () {
         ->name('central.inventory.index');
     Route::post('inventory/adjust', [\App\Http\Controllers\Central\InventoryController::class, 'adjust'])
         ->name('central.inventory.adjust');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Chat System
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('chat')->group(function () {
+        Route::get('group/view_members', [ChatController::class, 'viewGroupMembers'])->name('chatgroup.view_members');
+        Route::post('group/update/{id}', [ChatController::class, 'updateGroup'])->name('chatgroup.update_group');
+        Route::get('group/get_group', [ChatController::class, 'getGroup'])->name('chatgroup.get_group');
+        Route::get('get_chat', [ChatController::class, 'getChat'])->name('userchat.get_chat');
+        Route::get('get_users', [ChatController::class, 'getUsers'])->name('userchat.get_users');
+        Route::post('mark_as_read', [ChatController::class, 'markAsRead'])->name('chatgroup.mark_as_read');
+        Route::post('mark_as_starred', [ChatController::class, 'markAsStarred'])->name('userchat.mark_as_starred');
+        Route::post('forward_msg', [ChatController::class, 'forwardMsg'])->name('userchat.forward_msg');
+
+        // Chat Group Resources
+        Route::get('group', [ChatController::class, 'indexGroup'])->name('chatgroup.index');
+        Route::post('group', [ChatController::class, 'storeGroup'])->name('chatgroup.store');
+        Route::delete('group/{id}', [ChatController::class, 'destroyGroup'])->name('chatgroup.destroy');
+
+        // User Chat Resources
+        Route::get('/', [ChatController::class, 'indexChat'])->name('userchat.index');
+        Route::post('/', [ChatController::class, 'storeChat'])->name('userchat.store');
+    });
 
     /*
     |--------------------------------------------------------------------------
