@@ -118,6 +118,13 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     Route::get('orders/{order}/invoice', [\App\Http\Controllers\Tenant\OrderController::class, 'downloadInvoice'])->name('tenant.orders.invoice');
     Route::get('orders/{order}/receipt', [\App\Http\Controllers\Tenant\OrderController::class, 'downloadReceipt'])->name('tenant.orders.receipt');
     Route::post('orders/export', [\App\Http\Controllers\Tenant\OrderController::class, 'export'])->name('tenant.orders.export');
+
+    // Order Verification
+    Route::get('orders/verification', [\App\Http\Controllers\Tenant\OrderVerificationController::class, 'index'])
+        ->name('tenant.orders.verification.index');
+    Route::post('orders/{order}/verification', [\App\Http\Controllers\Tenant\OrderVerificationController::class, 'store'])
+        ->name('tenant.orders.verification.store');
+
     Route::resource('orders', \App\Http\Controllers\Tenant\OrderController::class)->names('tenant.orders');
 
     // Inventory Management

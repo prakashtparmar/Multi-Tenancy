@@ -37,6 +37,7 @@ return new class extends Migration {
             $table->foreignId('customer_id')->constrained();
             $table->foreignId('warehouse_id')->nullable()->constrained(); // Allocation
             $table->string('status')->default('pending'); // pending, confirmed, processing, shipped, delivered, cancelled
+            $table->string('verification_status')->default('unverified');
             $table->string('payment_status')->default('unpaid'); // unpaid, partial, paid, refunded
             $table->string('shipping_status')->default('pending'); // pending, shipped, delivered
 
@@ -44,6 +45,8 @@ return new class extends Migration {
             $table->decimal('total_amount', 12, 2)->default(0);
             $table->decimal('tax_amount', 12, 2)->default(0);
             $table->decimal('discount_amount', 12, 2)->default(0);
+            $table->string('discount_type')->default('fixed'); // fixed, percent
+            $table->decimal('discount_value', 12, 2)->default(0);
             $table->decimal('shipping_amount', 12, 2)->default(0);
             $table->decimal('grand_total', 12, 2)->default(0);
 
@@ -60,6 +63,9 @@ return new class extends Migration {
             $table->timestamp('placed_at')->useCurrent();
             $table->timestamp('scheduled_at')->nullable();
             $table->boolean('is_future_order')->default(false);
+            $table->json('tags')->nullable();
+            $table->string('currency', 10)->default('INR');
+            $table->string('channel', 20)->default('web'); // web, app, pos
 
             // Lifecycle Audit
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
@@ -83,6 +89,9 @@ return new class extends Migration {
             $table->string('product_name'); // Snapshot
             $table->decimal('quantity', 12, 3);
             $table->decimal('unit_price', 12, 2);
+            $table->string('discount_type')->default('fixed'); // fixed, percent
+            $table->decimal('discount_value', 12, 2)->default(0);
+            $table->decimal('discount_amount', 12, 2)->default(0);
             $table->decimal('cost_price', 12, 2)->nullable(); // Snapshot of cost
             $table->decimal('tax_percent', 5, 2)->default(0);
             $table->decimal('total_price', 12, 2);
@@ -149,6 +158,9 @@ return new class extends Migration {
             $table->decimal('weight', 8, 3)->nullable();
             $table->timestamp('shipped_at')->nullable();
             $table->timestamp('delivered_at')->nullable();
+            $table->date('estimated_delivery_date')->nullable();
+            $table->unsignedInteger('packages_count')->default(1);
+            $table->string('dimensions', 50)->nullable(); // LxWxH
             $table->timestamps();
         });
 
@@ -162,6 +174,9 @@ return new class extends Migration {
             $table->decimal('total_amount', 12, 2);
             $table->decimal('paid_amount', 12, 2)->default(0);
             $table->string('status')->default('draft'); // draft, sent, paid, overdue, void
+            $table->string('gstin', 20)->nullable();
+            $table->string('pdf_path')->nullable();
+            $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
@@ -175,6 +190,8 @@ return new class extends Migration {
             $table->decimal('amount', 12, 2);
             $table->timestamp('paid_at')->useCurrent();
             $table->text('notes')->nullable();
+            $table->string('gateway', 30)->nullable(); // stripe, razorpay
+            $table->json('gateway_response')->nullable();
             $table->timestamps();
         });
 
@@ -187,6 +204,9 @@ return new class extends Migration {
             $table->string('status')->default('requested'); // requested, approved, received, refunded, rejected
             $table->text('reason')->nullable();
             $table->string('refund_method')->nullable(); // credit, refund
+            $table->foreignId('inspected_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('inspected_at')->nullable();
+            $table->decimal('refunded_amount', 12, 2)->nullable();
             $table->timestamps();
         });
 
@@ -195,7 +215,9 @@ return new class extends Migration {
             $table->foreignId('return_id')->constrained('returns')->cascadeOnDelete();
             $table->foreignId('product_id')->constrained();
             $table->decimal('quantity', 12, 3);
+            $table->decimal('quantity_received', 12, 3)->nullable();
             $table->string('condition')->default('sellable'); // sellable, damaged
+            $table->string('condition_received')->nullable();
             $table->timestamps();
         });
     }

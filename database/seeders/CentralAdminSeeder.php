@@ -69,6 +69,7 @@ class CentralAdminSeeder extends Seeder
             'orders edit',
             'orders delete',
             'orders manage', // Legacy - keeping for now to avoid breaking other logic, but will phasing out usage in OrderController
+            'orders verify', // For accessing verification page
             'orders approve',
             'orders process',
             'orders ship',
@@ -208,8 +209,14 @@ class CentralAdminSeeder extends Seeder
             'dashboard view',
             'analytics view',
             'orders view',
+            'orders create',
+            'orders edit',
+            'orders verify',
+            'orders cancel',
             'customers view',
-            'reports view',
+            'customers create',
+            'customers edit',
+            'customers manage',
         ];
 
         $ovRole = Role::firstOrCreate([

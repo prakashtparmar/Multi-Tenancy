@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('customers', function (Blueprint $table) {
@@ -22,8 +21,8 @@ return new class extends Migration
             $table->string('mobile', 20)->unique();
             $table->string('email')->nullable()->index();
             // Identity (Extra Phones)
-$table->string('phone_number_2', 20)->nullable();
-$table->string('relative_phone', 20)->nullable();
+            $table->string('phone_number_2', 20)->nullable();
+            $table->string('relative_phone', 20)->nullable();
 
 
             // ✅ Source (NEW)
@@ -63,6 +62,7 @@ $table->string('relative_phone', 20)->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_blacklisted')->default(false);
             $table->text('internal_notes')->nullable();
+            $table->json('tags')->nullable();
 
             // Audit
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();

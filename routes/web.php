@@ -248,6 +248,13 @@ Route::middleware('auth')->group(function () {
         ->name('central.orders.export');
     Route::post('orders/bulk-print', [\App\Http\Controllers\Central\OrderController::class, 'bulkPrint'])
         ->name('central.orders.bulk-print');
+
+    // Order Verification
+    Route::get('orders/verification', [\App\Http\Controllers\Central\OrderVerificationController::class, 'index'])
+        ->name('central.orders.verification.index');
+    Route::post('orders/{order}/verification', [\App\Http\Controllers\Central\OrderVerificationController::class, 'store'])
+        ->name('central.orders.verification.store');
+
     Route::resource('orders', \App\Http\Controllers\Central\OrderController::class)
         ->names('central.orders');
 

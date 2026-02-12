@@ -65,17 +65,17 @@
                 @endcan
 
                 <!-- @can('analytics view')
-                                                        <x-layout.nav-link title="Analytics" url="#" :active="false">
-                                                            <x-slot name="icon">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                                                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
-                                                                    class="size-5">
-                                                                    <path d="M3 3v18h18" />
-                                                                    <path d="m19 9-5 5-4-4-3 3" />
-                                                                </svg>
-                                                            </x-slot>
-                                                        </x-layout.nav-link>
-                                                    @endcan -->
+                                                                    <x-layout.nav-link title="Analytics" url="#" :active="false">
+                                                                        <x-slot name="icon">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                                                                                class="size-5">
+                                                                                <path d="M3 3v18h18" />
+                                                                                <path d="m19 9-5 5-4-4-3 3" />
+                                                                            </svg>
+                                                                        </x-slot>
+                                                                    </x-layout.nav-link>
+                                                                @endcan -->
 
                 @can('reports view')
                     <x-layout.nav-link title="Reports" url="/reports" :active="request()->is('reports*')">
@@ -163,9 +163,16 @@
                 @php
                     $salesItems = array_filter([
                         [
+                            'title' => 'Verification',
+                            'url' => tenant() ? route('tenant.orders.verification.index') : route('central.orders.verification.index'),
+                            'active' => request()->routeIs('tenant.orders.verification.*') || request()->routeIs('central.orders.verification.*'),
+                            'icon' => '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'size-4\'><path d=\'M22 11.08V12a10 10 0 1 1-5.93-9.14\'/><polyline points=\'22 4 12 14.01 9 11.01\'/></svg>',
+                            'permission' => 'orders verify'
+                        ],
+                        [
                             'title' => 'Orders',
                             'url' => tenant() ? route('tenant.orders.index') : route('central.orders.index'),
-                            'active' => request()->routeIs('tenant.orders.*') || request()->routeIs('central.orders.*'),
+                            'active' => (request()->routeIs('tenant.orders.*') || request()->routeIs('central.orders.*')) && !request()->routeIs('*.verification.*'),
                             'icon' => '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'size-4\'><rect width=\'16\' height=\'20\' x=\'4\' y=\'2\' rx=\'2\'/><path d=\'M9 22v-4h6v4\'/><path d=\'M8 6h.01\'/><path d=\'M16 6h.01\'/><path d=\'M12 6h.01\'/><path d=\'M12 10h.01\'/><path d=\'M12 14h.01\'/><path d=\'M16 10h.01\'/><path d=\'M16 14h.01\'/><path d=\'M8 10h.01\'/><path d=\'M8 14h.01\'/></svg>',
                             'permission' => 'orders view'
                         ],
