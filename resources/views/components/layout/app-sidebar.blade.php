@@ -65,17 +65,17 @@
                 @endcan
 
                 <!-- @can('analytics view')
-                                                <x-layout.nav-link title="Analytics" url="#" :active="false">
-                                                    <x-slot name="icon">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
-                                                            class="size-5">
-                                                            <path d="M3 3v18h18" />
-                                                            <path d="m19 9-5 5-4-4-3 3" />
-                                                        </svg>
-                                                    </x-slot>
-                                                </x-layout.nav-link>
-                                            @endcan -->
+                                                        <x-layout.nav-link title="Analytics" url="#" :active="false">
+                                                            <x-slot name="icon">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                                                                    class="size-5">
+                                                                    <path d="M3 3v18h18" />
+                                                                    <path d="m19 9-5 5-4-4-3 3" />
+                                                                </svg>
+                                                            </x-slot>
+                                                        </x-layout.nav-link>
+                                                    @endcan -->
 
                 @can('reports view')
                     <x-layout.nav-link title="Reports" url="/reports" :active="request()->is('reports*')">
@@ -96,7 +96,7 @@
         @endcanany
 
 
-        @role('Super Admin')
+
         <!-- SECTION: COMMERCE -->
         @php
             $catalogItems = array_filter([
@@ -120,6 +120,13 @@
                     'active' => request()->is('brands*'),
                     'icon' => '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'size-4\'><path d=\'M6 9H4.5a2.5 2.5 0 0 1 0-5H6\'/><path d=\'M18 9h1.5a2.5 2.5 0 0 0 0-5H18\'/><path d=\'M4 22h16\'/><path d=\'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22\'/><path d=\'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22\'/><path d=\'M18 2H6v7a6 6 0 0 0 12 0V2Z\'/></svg>',
                     'permission' => 'brands view'
+                ],
+                [
+                    'title' => 'Collections',
+                    'url' => '#',
+                    'active' => false,
+                    'icon' => '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'size-4\'><path d=\'M3 6h18\'/><path d=\'M7 6v14\'/><path d=\'M17 6v14\'/><rect width=\'18\' height=\'4\' x=\'3\' y=\'2\' rx=\'1\'/></svg>',
+                    'permission' => 'collections view'
                 ],
 
             ], fn($item) => auth()->check() && auth()->user()->can($item['permission']));
@@ -234,6 +241,7 @@
                 @endif
 
 
+                @role('Super Admin')
                 <!-- 4. CUSTOMERS -->
                 @php
                     $customerItems = array_filter([
@@ -275,10 +283,11 @@
                         </x-slot>
                     </x-layout.nav-collapsible>
                 @endif
+                @endrole
             </div>
         @endif
 
-        @endrole
+
         <!-- SECTION: OPERATIONS -->
         @php
             $operationsItems = array_filter([
@@ -345,7 +354,29 @@
             </div>
         @endif
 
-        @role('Super Admin')
+        <!-- SECTION: MARKETING -->
+        @can('marketing view')
+            <div class="space-y-1">
+                <div class="px-3 mb-2 transition-opacity duration-300"
+                    :class="sidebarCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100'">
+                    <h3 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/60">
+                        Marketing
+                    </h3>
+                </div>
+
+                <x-layout.nav-link title="Overview" url="#" :active="false">
+                    <x-slot name="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                            class="size-5">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                            <path d="m15 5 3 3" />
+                        </svg>
+                    </x-slot>
+                </x-layout.nav-link>
+            </div>
+        @endcan
         <!-- SECTION: ORGANIZATION -->
         <div class="space-y-1">
             <div class="px-3 mb-2 transition-opacity duration-300"
@@ -447,7 +478,7 @@
             @endif
         </div>
 
-        @endrole
+
 
 
 

@@ -221,6 +221,7 @@
 
                         <!-- ===== Payment History ===== -->
                         <div class="mt-6 border-t pt-4">
+                            <div class="text-xl font-bold text-gray-900 dark:text-gray-100">Krushify Agro Pvt Ltd.</div>
                             <h4 class="text-xs font-bold text-gray-500 uppercase mb-2">
                                 Payment History
                             </h4>

@@ -118,7 +118,7 @@
             <table>
                 <tr>
                     <td width="60%">
-                        <div class="company-name">Krushify</div>
+                        <div class="company-name">Krushify Agro Pvt Ltd.</div>
                         <div class="muted">
                             <strong>Mobile:</strong> 9199125925<br>
                             <strong>Address:</strong> The One World (B), 1005, Ayodhya Circle<br>

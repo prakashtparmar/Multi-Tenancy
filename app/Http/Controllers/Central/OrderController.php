@@ -40,6 +40,10 @@ class OrderController extends Controller
     {
         $this->authorize('orders view');
         $query = Order::with(['customer', 'warehouse', 'creator', 'shipments', 'items']);
+
+        if (!auth()->user()->hasRole('Super Admin')) {
+            $query->where('created_by', auth()->id());
+        }
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where('order_number', 'like', "%{$search}%")->orWhereHas('customer', function ($q) use ($search) {

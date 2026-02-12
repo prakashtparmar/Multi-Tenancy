@@ -47,6 +47,10 @@ class OrderController extends Controller
         // Tenant specific: Simple pagination for now, can be improved to match Central's filtering later if needed
         $query = Order::with(['customer', 'warehouse', 'creator', 'shipments', 'items']);
 
+        if (!auth()->user()->hasRole('Super Admin')) {
+            $query->where('created_by', auth()->id());
+        }
+
         $orders = $query->latest()->paginate(10);
 
         return view('tenant.orders.index', compact('orders'));
