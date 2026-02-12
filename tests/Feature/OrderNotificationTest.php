@@ -47,13 +47,12 @@ class OrderNotificationTest extends TestCase
 
         $this->address = CustomerAddress::create([
             'customer_id' => $this->customer->id,
-            'address_line_1' => '123 Test St',
-            'city' => 'Test City',
+            'address_line1' => '123 Test St',
+            'village' => 'Test Village',
             'state' => 'Test State',
-            'postal_code' => '12345',
+            'pincode' => '12345',
             'country' => 'India',
-            'is_default_billing' => true,
-            'is_default_shipping' => true,
+            'is_default' => true,
         ]);
 
         $this->warehouse = Warehouse::create([
@@ -91,17 +90,24 @@ class OrderNotificationTest extends TestCase
             'shipping_method' => 'standard',
         ]);
 
-        $response->assertStatus(200);
+        $response->assertRedirect();
 
+        // Creator (admin) should receive notification
         Notification::assertSentTo($this->admin, OrderNotification::class, function ($notification) {
             return $notification->toArray($this->admin)['action'] === 'created';
         });
     }
 
     /** @test */
-    public function it_sends_notification_when_order_status_is_updated()
+    public function it_sends_notification_to_creator_when_status_updated_by_admin()
     {
         Notification::fake();
+
+        // Create a user who creates the order
+        $creator = User::factory()->create();
+
+        // Admin performs the action
+        $admin = $this->admin;
 
         $order = Order::create([
             'order_number' => 'ORD-001',
@@ -111,31 +117,47 @@ class OrderNotificationTest extends TestCase
             'grand_total' => 100,
             'status' => 'pending',
             'placed_at' => now(),
-            'created_by' => $this->admin->id,
+            'created_by' => $creator->id, // Created by User
             'billing_address_id' => $this->address->id,
             'shipping_address_id' => $this->address->id,
         ]);
 
-        $response = $this->actingAs($this->admin)->post(route('central.orders.update-status', $order), [
+        $response = $this->actingAs($admin)->post(route('central.orders.update-status', $order), [
             'action' => 'confirm',
         ]);
 
         $response->assertRedirect();
 
-        Notification::assertSentTo($this->admin, OrderNotification::class, function ($notification) {
-            return $notification->toArray($this->admin)['action'] === 'confirm';
+        // Creator should receive notification
+        Notification::assertSentTo($creator, OrderNotification::class, function ($notification) use ($creator) {
+            return $notification->toArray($creator)['action'] === 'confirm';
         });
+
+        // Admin (Actor) should NOT receive it (unless they are also Super Admin, but specifically targeting the "user notify" call)
+        // Note: Admin might see it via God View, but the specific $order->creator->notify() only targets creator.
+        // We can assert assertSentTo was NOT called for Admin IF Admin != Creator
+        if ($admin->id !== $creator->id) {
+            Notification::assertNotSentTo($admin, OrderNotification::class, function ($notification) use ($admin) {
+                // We need to be careful here. If God View works by PULLING data, then assertNotSentTo is correct for PUSH notifications.
+                // However, our code change was PUSH: $order->creator->notify().
+                // So Admin should NOT get a PUSH notification.
+                return $notification->toArray($admin)['action'] === 'confirm';
+            });
+        }
     }
 
     /** @test */
-    public function it_sends_notification_when_order_is_updated()
+    public function it_sends_notification_to_creator_when_order_updated_by_admin()
     {
         Notification::fake();
+
+        $creator = User::factory()->create();
+        $admin = $this->admin;
 
         $order = Order::create([
             'order_number' => 'ORD-002',
             'status' => 'pending',
-            'created_by' => $this->admin->id,
+            'created_by' => $creator->id,
             'customer_id' => $this->customer->id,
             'warehouse_id' => $this->warehouse->id,
             'total_amount' => 100,
@@ -144,7 +166,7 @@ class OrderNotificationTest extends TestCase
             'shipping_address_id' => $this->address->id,
         ]);
 
-        $response = $this->actingAs($this->admin)->put(route('central.orders.update', $order), [
+        $response = $this->actingAs($admin)->put(route('central.orders.update', $order), [
             'customer_id' => $this->customer->id,
             'warehouse_id' => $this->warehouse->id,
             'items' => [
@@ -157,10 +179,14 @@ class OrderNotificationTest extends TestCase
             'billing_address_id' => $this->address->id,
         ]);
 
-        $response->assertStatus(200);
+        if (session('errors')) {
+            dump(session('errors')->all());
+        }
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
 
-        Notification::assertSentTo($this->admin, OrderNotification::class, function ($notification) {
-            return $notification->toArray($this->admin)['action'] === 'updated';
+        Notification::assertSentTo($creator, OrderNotification::class, function ($notification) use ($creator) {
+            return $notification->toArray($creator)['action'] === 'updated';
         });
     }
 }

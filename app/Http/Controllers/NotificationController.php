@@ -14,7 +14,16 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
-        $notifications = $user->notifications()->latest()->limit(10)->get()->map(function ($notification) {
+        if ($user->hasRole('Super Admin')) {
+            $notifications = \Illuminate\Notifications\DatabaseNotification::where('type', 'App\Notifications\OrderNotification')
+                ->latest()
+                ->limit(10)
+                ->get();
+        } else {
+            $notifications = $user->notifications()->latest()->limit(10)->get();
+        }
+
+        $mappedNotifications = $notifications->map(function ($notification) {
             return [
                 'id' => $notification->id,
                 'data' => $notification->data,
@@ -23,7 +32,7 @@ class NotificationController extends Controller
             ];
         });
 
-        return response()->json($notifications);
+        return response()->json($mappedNotifications);
     }
 
     /**
@@ -31,7 +40,16 @@ class NotificationController extends Controller
      */
     public function markAllRead(Request $request): JsonResponse
     {
-        $request->user()->unreadNotifications->markAsRead();
+        $user = $request->user();
+
+        if ($user->hasRole('Super Admin')) {
+            \Illuminate\Notifications\DatabaseNotification::where('type', 'App\Notifications\OrderNotification')
+                ->whereNull('read_at')
+                ->update(['read_at' => now()]);
+        } else {
+            $user->unreadNotifications->markAsRead();
+        }
+
         return response()->json(['success' => true]);
     }
 
@@ -40,8 +58,16 @@ class NotificationController extends Controller
      */
     public function markAsRead(Request $request, string $id): JsonResponse
     {
-        $notification = $request->user()->notifications()->findOrFail($id);
+        $user = $request->user();
+
+        if ($user->hasRole('Super Admin')) {
+            $notification = \Illuminate\Notifications\DatabaseNotification::findOrFail($id);
+        } else {
+            $notification = $user->notifications()->findOrFail($id);
+        }
+
         $notification->markAsRead();
+
         return response()->json(['success' => true]);
     }
 }

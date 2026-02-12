@@ -428,7 +428,7 @@ class OrderController extends Controller
                     throw new Exception("Invalid action: {$action}");
             }
 
-            auth()->user()->notify(new OrderNotification($order, $action));
+            $order->creator->notify(new OrderNotification($order, $action));
 
             return redirect()
                 ->route('central.orders.show', $order)
@@ -610,7 +610,7 @@ class OrderController extends Controller
                     'updated_by' => auth()->id(),
                 ]);
             });
-            auth()->user()->notify(new OrderNotification($order, 'updated'));
+            $order->creator->notify(new OrderNotification($order, 'updated'));
             if ($request->wantsJson()) {
                 session()->flash('success', 'Order updated successfully.');
                 return response()->json([

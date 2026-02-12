@@ -436,7 +436,7 @@ class OrderController extends Controller
                 ]);
             });
 
-            auth()->user()->notify(new OrderNotification($order, 'updated'));
+            $order->creator->notify(new OrderNotification($order, 'updated'));
 
             if ($request->wantsJson()) {
                 session()->flash('success', 'Order updated successfully.');
@@ -558,7 +558,7 @@ class OrderController extends Controller
                     throw new Exception("Invalid action: {$action}");
             }
             $order->refresh();
-            auth()->user()->notify(new OrderNotification($order, $action));
+            $order->creator->notify(new OrderNotification($order, $action));
 
             return redirect()
                 ->route('tenant.orders.show', $order)

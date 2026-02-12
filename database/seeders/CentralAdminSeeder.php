@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class CentralAdminSeeder extends Seeder
 {
@@ -141,7 +142,7 @@ class CentralAdminSeeder extends Seeder
         }
 
         // 2. Create Super Admin Role
-        $superAdmin = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
+        $superAdmin = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
         $superAdmin->syncPermissions(Permission::all());
 
         // 3. Create Master Admin User
@@ -154,5 +155,70 @@ class CentralAdminSeeder extends Seeder
         ]);
 
         $user->assignRole($superAdmin);
+
+
+        // 4. Create CSR Role with specific permissions
+        $csrPermissions = [
+            'dashboard view',
+            'analytics view',
+            'orders view',
+            'orders create',
+            'orders edit',
+            'customers view',
+            'customers create',
+            'customers edit',
+            'customers manage',
+        ];
+
+        $csrRole = Role::firstOrCreate([
+            'name' => 'CSR',
+            'guard_name' => 'web'
+        ]);
+
+        $csrRole->syncPermissions(
+            Permission::whereIn('name', $csrPermissions)->get()
+        );
+
+
+        // 5. Create Team Lead Role (example – adjust permissions as needed)
+        $teamLeadPermissions = [
+            'dashboard view',
+            'analytics view',
+            'orders view',
+            'orders create',
+            'orders edit',
+            'orders approve',
+            'customers view',
+            'customers manage',
+            'reports view',
+        ];
+
+        $teamLeadRole = Role::firstOrCreate([
+            'name' => 'Team Lead',
+            'guard_name' => 'web'
+        ]);
+
+        $teamLeadRole->syncPermissions(
+            Permission::whereIn('name', $teamLeadPermissions)->get()
+        );
+
+
+        // 6. Create OV Role (example – usually read-only)
+        $ovPermissions = [
+            'dashboard view',
+            'analytics view',
+            'orders view',
+            'customers view',
+            'reports view',
+        ];
+
+        $ovRole = Role::firstOrCreate([
+            'name' => 'OV',
+            'guard_name' => 'web'
+        ]);
+
+        $ovRole->syncPermissions(
+            Permission::whereIn('name', $ovPermissions)->get()
+        );
     }
 }
