@@ -15,7 +15,7 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         $isSuperAdmin = $user->hasRole('Super Admin');
-        $orderQuery = Order::where('status', '!=', 'cancelled');
+        $orderQuery = Order::query(); // Restore base to include all statuses
         $customerQuery = Customer::query();
         $tenantQuery = Tenant::query();
         $period = $request->input('period', 'today'); // Default shift to 'today'
@@ -81,7 +81,7 @@ class DashboardController extends Controller
             $filteredCustomerQuery->where('created_at', '<=', $endDate);
         }
 
-        $totalSales = (float) $filteredOrderQuery->sum('grand_total');
+        $totalSales = (float) (clone $filteredOrderQuery)->whereNotIn('status', ['cancelled', 'scheduled'])->sum('grand_total');
         $ordersCount = $filteredOrderQuery->count();
         $customersCount = $filteredCustomerQuery->count();
         $tenantsCount = $tenantQuery->count();
@@ -92,7 +92,7 @@ class DashboardController extends Controller
         $compareEndDate = $endDate ? (clone $endDate)->subDays($duration) : (clone $startDate)->subSecond();
 
         $prevOrderQuery = (clone $orderQuery)->whereBetween('created_at', [$compareStartDate, $compareEndDate]);
-        $prevSales = (float) $prevOrderQuery->sum('grand_total');
+        $prevSales = (float) (clone $prevOrderQuery)->whereNotIn('status', ['cancelled', 'scheduled'])->sum('grand_total');
 
         $salesChange = $prevSales > 0
             ? (($totalSales - $prevSales) / $prevSales) * 100
@@ -148,6 +148,7 @@ class DashboardController extends Controller
         $chartDataDuration = $startDate->diffInDays($endDate ?? now()) + 1;
         $chartDataRaw = (clone $orderQuery)
             ->whereBetween('created_at', [$startDate, $endDate ?? now()])
+            ->whereNotIn('status', ['cancelled', 'scheduled'])
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(grand_total) as total'))
             ->groupBy('date')
             ->orderBy('date')
@@ -220,7 +221,7 @@ class DashboardController extends Controller
                 fputcsv($file, [
                     $u->name,
                     $u->location ?? 'Unknown',
-                    $u->isOnline() ? 'Online' : 'Offline',
+                    ($u->last_seen_at && $u->last_seen_at->gt(now()->subMinutes(5))) ? 'Online' : 'Offline',
                     $u->last_seen_at ? $u->last_seen_at->format('Y-m-d H:i:s') : 'Never',
                     $duration,
                     $u->orders_count,

@@ -22,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Exception;
 use App\Models\Invoice;
+use App\Notifications\OrderNotification;
 
 class OrderController extends Controller
 {
@@ -56,7 +57,7 @@ class OrderController extends Controller
      */
     public function create(): View
     {
-        $this->authorize('orders manage');
+        $this->authorize('orders create');
 
         // Tenant specific: Active Customer Session Logic
         $activeCustomerId = session('active_customer_id');
@@ -79,7 +80,7 @@ class OrderController extends Controller
      */
     public function store(Request $request): JsonResponse|RedirectResponse
     {
-        $this->authorize('orders manage');
+        $this->authorize('orders create');
 
         // Validation rules adapted from Central
         $validated = $request->validate([
@@ -111,7 +112,7 @@ class OrderController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($validated, $request) {
+            $order = DB::transaction(function () use ($validated, $request) {
 
                 $subTotalAmount = 0;
                 $itemDiscountsTotal = 0;
@@ -206,9 +207,11 @@ class OrderController extends Controller
                         'tax_percent' => $item['tax_percent'] ?? 0,
                     ]);
                 }
+                return $order;
             });
 
             if ($request->wantsJson()) {
+                auth()->user()->notify(new OrderNotification($order, 'created'));
                 session()->flash('success', 'Order created successfully.');
                 return response()->json([
                     'success' => true,
@@ -217,6 +220,7 @@ class OrderController extends Controller
                 ]);
             }
 
+            auth()->user()->notify(new OrderNotification($order, 'created'));
             return redirect()
                 ->route('tenant.orders.index') // Tenant route
                 ->with('success', 'Order created successfully.');
@@ -251,7 +255,7 @@ class OrderController extends Controller
      */
     public function edit(Order $order): View|RedirectResponse
     {
-        $this->authorize('orders manage');
+        $this->authorize('orders edit');
 
         if (in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned'])) {
             return back()->with('error', 'Cannot edit orders that are already delivered, completed, cancelled, or returned.');
@@ -301,7 +305,7 @@ class OrderController extends Controller
      */
     public function update(Request $request, Order $order): JsonResponse|RedirectResponse
     {
-        $this->authorize('orders manage');
+        $this->authorize('orders edit');
 
         if (in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned'])) {
             $msg = 'Cannot update orders that are already delivered, completed, cancelled, or returned.';
@@ -432,6 +436,8 @@ class OrderController extends Controller
                 ]);
             });
 
+            auth()->user()->notify(new OrderNotification($order, 'updated'));
+
             if ($request->wantsJson()) {
                 session()->flash('success', 'Order updated successfully.');
                 return response()->json([
@@ -458,7 +464,18 @@ class OrderController extends Controller
      */
     public function updateStatus(Request $request, Order $order): RedirectResponse
     {
-        $this->authorize('orders manage');
+        // $this->authorize('orders manage'); // Legacy
+
+        $action = (string) $request->input('action');
+
+        match ($action) {
+            'confirm' => $this->authorize('orders approve'),
+            'process', 'ready_to_ship' => $this->authorize('orders process'),
+            'ship' => $this->authorize('orders ship'),
+            'deliver' => $this->authorize('orders deliver'),
+            'cancel' => $this->authorize('orders cancel'),
+            default => $this->authorize('orders manage'), // Fallback
+        };
 
         // Always use fresh state
         $order->refresh();
@@ -540,6 +557,8 @@ class OrderController extends Controller
                 default:
                     throw new Exception("Invalid action: {$action}");
             }
+            $order->refresh();
+            auth()->user()->notify(new OrderNotification($order, $action));
 
             return redirect()
                 ->route('tenant.orders.show', $order)

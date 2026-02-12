@@ -42,9 +42,11 @@ class CustomerController extends Controller
 
         $perPage = (int) $request->input('per_page', 10);
 
-        $customers = $query->with(['addresses' => function ($q) {
-            $q->where('is_default', true);
-        }])->latest()->paginate($perPage)->withQueryString();
+        $customers = $query->with([
+            'addresses' => function ($q) {
+                $q->where('is_default', true);
+            }
+        ])->latest()->paginate($perPage)->withQueryString();
 
         return view('central.customers.index', compact('customers'));
     }
@@ -78,9 +80,20 @@ class CustomerController extends Controller
             DB::transaction(function () use ($data, $request) {
                 $customer = Customer::create(
                     collect($data)->except([
-                        'address_line1', 'address_line2', 'village', 'taluka', 'district', 'state',
-                        'pincode', 'country', 'post_office', 'latitude', 'longitude',
-                        'primary_crops', 'secondary_crops', 'tags'
+                        'address_line1',
+                        'address_line2',
+                        'village',
+                        'taluka',
+                        'district',
+                        'state',
+                        'pincode',
+                        'country',
+                        'post_office',
+                        'latitude',
+                        'longitude',
+                        'primary_crops',
+                        'secondary_crops',
+                        'tags'
                     ])->all()
                 );
 
@@ -147,9 +160,11 @@ class CustomerController extends Controller
     {
         $this->authorize('customers manage');
 
-        $customer->load(['addresses' => function ($q) {
-            $q->where('is_default', true);
-        }]);
+        $customer->load([
+            'addresses' => function ($q) {
+                $q->where('is_default', true);
+            }
+        ]);
 
         return view('central.customers.edit', compact('customer'));
     }
@@ -183,9 +198,20 @@ class CustomerController extends Controller
             DB::transaction(function () use ($customer, $data, $request) {
                 $customer->update(
                     collect($data)->except([
-                        'address_line1', 'address_line2', 'village', 'taluka', 'district', 'state',
-                        'pincode', 'country', 'post_office', 'latitude', 'longitude',
-                        'primary_crops', 'secondary_crops', 'tags'
+                        'address_line1',
+                        'address_line2',
+                        'village',
+                        'taluka',
+                        'district',
+                        'state',
+                        'pincode',
+                        'country',
+                        'post_office',
+                        'latitude',
+                        'longitude',
+                        'primary_crops',
+                        'secondary_crops',
+                        'tags'
                     ])->all()
                 );
 
@@ -305,6 +331,11 @@ class CustomerController extends Controller
      */
     public function storeInteraction(Request $request, Customer $customer)
     {
+        // Allow interaction logging if user has 'customers manage' OR 'orders manage'
+        if (!$request->user()->can('customers manage') && !$request->user()->can('orders manage')) {
+            $this->authorize('customers manage');
+        }
+
         $validated = $request->validate([
             'outcome' => 'required|string',
             'notes' => 'nullable|string',

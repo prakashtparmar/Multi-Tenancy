@@ -21,6 +21,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Exception;
 use App\Models\Invoice;
+use App\Notifications\OrderNotification;
 class OrderController extends Controller
 {
     use AuthorizesRequests;
@@ -73,7 +74,7 @@ class OrderController extends Controller
      */
     public function create(Request $request): View
     {
-        $this->authorize('orders manage');
+        $this->authorize('orders create');
         $warehouses = Warehouse::where('is_active', true)->get();
         $customerId = $request->query('customer_id');
         $preSelectedCustomer = $customerId ? Customer::with('addresses')->withCount('orders')->find($customerId) : null;
@@ -121,7 +122,7 @@ class OrderController extends Controller
      */
     public function store(Request $request): JsonResponse|RedirectResponse
     {
-        $this->authorize('orders manage');
+        $this->authorize('orders create');
 
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
@@ -255,13 +256,7 @@ class OrderController extends Controller
 
             if ($request->wantsJson()) {
                 // Send Notification
-                $bgUser = auth()->user();
-                $bgUser->notify(new \App\Notifications\SystemAlert(
-                    'Order Created',
-                    "Order #{$order->id} for {$order->customer->first_name} has been successfully placed.",
-                    route('central.orders.show', $order),
-                    'success'
-                ));
+                auth()->user()->notify(new OrderNotification($order, 'created'));
 
                 session()->flash('success', 'Order created successfully.');
                 return response()->json([
@@ -271,6 +266,7 @@ class OrderController extends Controller
                 ]);
             }
 
+            auth()->user()->notify(new OrderNotification($order, 'created'));
             return redirect()
                 ->route('central.orders.create')
                 ->with('success', 'Order created successfully.');
@@ -306,7 +302,18 @@ class OrderController extends Controller
      */
     public function updateStatus(Request $request, Order $order): RedirectResponse
     {
-        $this->authorize('orders manage');
+        // $this->authorize('orders manage'); // Legacy broad check
+
+        $action = (string) $request->input('action');
+
+        match ($action) {
+            'confirm' => $this->authorize('orders approve'),
+            'process', 'ready_to_ship' => $this->authorize('orders process'),
+            'ship' => $this->authorize('orders ship'),
+            'deliver' => $this->authorize('orders deliver'),
+            'cancel' => $this->authorize('orders cancel'),
+            default => $this->authorize('orders manage'), // Fallback
+        };
 
         // Always use fresh state
         $order->refresh();
@@ -421,6 +428,8 @@ class OrderController extends Controller
                     throw new Exception("Invalid action: {$action}");
             }
 
+            auth()->user()->notify(new OrderNotification($order, $action));
+
             return redirect()
                 ->route('central.orders.show', $order)
                 ->with('success', 'Order status updated successfully.');
@@ -437,12 +446,9 @@ class OrderController extends Controller
         }
     }
 
-    /**
-     * Show the form for editing the specified order.
-     */
     public function edit(Order $order): View|RedirectResponse
     {
-        $this->authorize('orders manage');
+        $this->authorize('orders edit');
         if (in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned'])) {
             return back()->with('error', 'Cannot edit orders that are already delivered, completed, cancelled, or returned.');
         }
@@ -477,7 +483,7 @@ class OrderController extends Controller
      */
     public function update(Request $request, Order $order): JsonResponse|RedirectResponse
     {
-        $this->authorize('orders manage');
+        $this->authorize('orders edit');
         if (in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned'])) {
             $msg = 'Cannot update orders that are already delivered, completed, cancelled, or returned.';
             if ($request->wantsJson()) {
@@ -604,6 +610,7 @@ class OrderController extends Controller
                     'updated_by' => auth()->id(),
                 ]);
             });
+            auth()->user()->notify(new OrderNotification($order, 'updated'));
             if ($request->wantsJson()) {
                 session()->flash('success', 'Order updated successfully.');
                 return response()->json([

@@ -57,14 +57,26 @@ class CentralAdminSeeder extends Seeder
             'collections create',
             'collections edit',
             'collections delete',
+            'brands view',
+            'brands create',
+            'brands edit',
+            'brands delete',
 
             // Sales (Orders, Invoices, Shipments, Returns)
             'orders view',
             'orders create',
             'orders edit',
             'orders delete',
-            'orders manage', // Approval/Status updates
+            'orders manage', // Legacy - keeping for now to avoid breaking other logic, but will phasing out usage in OrderController
+            'orders approve',
+            'orders process',
+            'orders ship',
+            'orders deliver',
+            'orders cancel',
             'orders export',
+            'orders import',
+            'orders restore',
+            'orders force-delete',
             'invoices view',
             'invoices create',
             'invoices edit',
@@ -90,6 +102,10 @@ class CentralAdminSeeder extends Seeder
             // Operations (Inventory, Warehouses, Suppliers, POs)
             'inventory view',
             'inventory manage', // Adjustments
+            'stock-transfers view',
+            'stock-transfers create',
+            'stock-transfers edit',
+            'stock-transfers delete',
             'warehouses view',
             'warehouses create',
             'warehouses edit',
@@ -112,7 +128,6 @@ class CentralAdminSeeder extends Seeder
             'settings view',
             'settings manage', // Edit settings
             'activity-logs view',
-            'reports view',
             'reports view',
             'reports export',
 

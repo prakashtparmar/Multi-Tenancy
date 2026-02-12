@@ -35,7 +35,7 @@
                     <div
                         class="size-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]">
                     </div>
-                    {{ tenant() ? ucfirst(tenant('id')) : 'Master Platform' }}
+                    {{ tenant() ? ucfirst(tenant('id')) : 'Home' }}
                 </a>
 
                 <div class="px-1 opacity-20">

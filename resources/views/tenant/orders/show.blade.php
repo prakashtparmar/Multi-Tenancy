@@ -167,9 +167,11 @@
                     <div class="flex flex-wrap gap-4 mt-8" x-data="{ showShipModal: false }">
                         <a href="{{ route('tenant.orders.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded shadow hover:bg-gray-600 transition text-sm">Back to List</a>
                         
-                        @if(!in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned']))
-                            <a href="{{ route('tenant.orders.edit', $order) }}" class="bg-blue-800 text-white px-4 py-2 rounded shadow hover:bg-blue-900 transition text-sm">Edit Order</a>
-                        @endif
+                        @can('orders edit')
+                            @if(!in_array($order->status, ['completed', 'delivered', 'cancelled', 'returned']))
+                                <a href="{{ route('tenant.orders.edit', $order) }}" class="bg-blue-800 text-white px-4 py-2 rounded shadow hover:bg-blue-900 transition text-sm">Edit Order</a>
+                            @endif
+                        @endcan
 
                         @if(in_array($order->status, ['completed', 'delivered']))
                              <a href="{{ route('tenant.returns.create', ['order_id' => $order->id]) }}" class="bg-orange-600 text-white px-4 py-2 rounded shadow hover:bg-orange-700 transition text-sm">
@@ -189,31 +191,39 @@
 
                         <!-- State Transitions -->
                         @if($order->status === 'pending')
-                            <form action="{{ route('tenant.orders.status', $order) }}" method="POST" onsubmit="return confirm('Confirm this order?')">
-                                @csrf
-                                <input type="hidden" name="status" value="confirmed">
-                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">Mark Confirmed</button>
-                            </form>
+                            @can('orders approve')
+                                <form action="{{ route('tenant.orders.status', $order) }}" method="POST" onsubmit="return confirm('Confirm this order?')">
+                                    @csrf
+                                    <input type="hidden" name="status" value="confirmed">
+                                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">Mark Confirmed</button>
+                                </form>
+                            @endcan
                         @endif
 
                         @if($order->status === 'confirmed' || $order->status === 'processing')
-                            <button @click="showShipModal = true" class="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 transition">Ship Order</button>
+                            @can('orders process')
+                                <button @click="showShipModal = true" class="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 transition">Ship Order</button>
+                            @endcan
                         @endif
 
                         @if($order->status === 'shipped')
-                            <form action="{{ route('tenant.orders.status', $order) }}" method="POST" onsubmit="return confirm('Mark as Delivered?')">
-                                @csrf
-                                <input type="hidden" name="status" value="delivered">
-                                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition">Mark Delivered</button>
-                            </form>
+                            @can('orders deliver')
+                                <form action="{{ route('tenant.orders.status', $order) }}" method="POST" onsubmit="return confirm('Mark as Delivered?')">
+                                    @csrf
+                                    <input type="hidden" name="status" value="delivered">
+                                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition">Mark Delivered</button>
+                                </form>
+                            @endcan
                         @endif
 
                         @if(!in_array($order->status, ['cancelled', 'delivered', 'returned']))
-                            <form action="{{ route('tenant.orders.status', $order) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this order?')">
-                                @csrf
-                                <input type="hidden" name="status" value="cancelled">
-                                <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition">Cancel Order</button>
-                            </form>
+                            @can('orders cancel')
+                                <form action="{{ route('tenant.orders.status', $order) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this order?')">
+                                    @csrf
+                                    <input type="hidden" name="status" value="cancelled">
+                                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition">Cancel Order</button>
+                                </form>
+                            @endcan
                         @endif
 
                         <!-- Shipping Modal -->

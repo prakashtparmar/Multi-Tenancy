@@ -1,7 +1,7 @@
 @section('title', 'Edit Order #' . $orderData->order_number)
 
 <x-app-layout>
-    <div x-data="orderWizard({{ $products->toJson() }}, {{ $orderData->customer->toJson() }}, {{ $orderData->toJson() }})"
+    <div x-data="orderWizard({{ $products->toJson() }}, {{ $orderData->customer->toJson() }}, {{ $orderData->toJson() }}, {{ auth()->user()->can('customers manage') ? 'true' : 'false' }})"
         class="flex flex-1 flex-col p-8 space-y-8 animate-in fade-in duration-700">
 
         <!-- MANDATORY INTERACTION TAGGING MODAL -->
@@ -1625,16 +1625,14 @@
                         <div>
                             <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Pincode
                                 <span class="text-red-500">*</span></label>
-                            <input type="text" x-model="addressForm.pincode"
-                                @input="handleAddressInput($event, 'pincode')"
+                            <input type="text" x-model="addressForm.pincode" id="modal_pincode"
                                 class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
                                 placeholder="6-digit code">
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Post
                                 Office</label>
-                            <input type="text" x-model="addressForm.post_office"
-                                @input="handleAddressInput($event, 'post_office')"
+                            <input type="text" x-model="addressForm.post_office" id="modal_post_office"
                                 class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
                                 placeholder="Post Office">
                         </div>
@@ -1644,16 +1642,14 @@
                         <div>
                             <label
                                 class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Village/City</label>
-                            <input type="text" x-model="addressForm.village"
-                                @input="handleAddressInput($event, 'village')"
+                            <input type="text" x-model="addressForm.village" id="modal_village"
                                 class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
                                 placeholder="Village Name">
                         </div>
                         <div>
                             <label
                                 class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">Taluka</label>
-                            <input type="text" x-model="addressForm.taluka"
-                                @input="handleAddressInput($event, 'taluka')"
+                            <input type="text" x-model="addressForm.taluka" id="modal_taluka"
                                 class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
                                 placeholder="Taluka">
                         </div>
@@ -1663,15 +1659,14 @@
                         <div>
                             <label
                                 class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">District</label>
-                            <input type="text" x-model="addressForm.district"
-                                @input="handleAddressInput($event, 'district')"
+                            <input type="text" x-model="addressForm.district" id="modal_district"
                                 class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
                                 placeholder="District">
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1.5 focus:text-primary transition-colors">State
                                 <span class="text-red-500">*</span></label>
-                            <input type="text" x-model="addressForm.state" @input="handleAddressInput($event, 'state')"
+                            <input type="text" x-model="addressForm.state" id="modal_state"
                                 class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
                                 placeholder="State Name">
                         </div>
@@ -1705,8 +1700,9 @@
             </div>
 
             <script>
-                function orderWizard(initialProducts, preSelectedCustomer, existingOrder) {
+                function orderWizard(initialProducts, preSelectedCustomer, existingOrder, canManageCustomers) {
                     return {
+                        canManageCustomers: canManageCustomers,
                         step: existingOrder ? 2 : (preSelectedCustomer ? 2 : 1),
                         isEdit: !!existingOrder,
 
@@ -2050,6 +2046,10 @@
                                 error: ''
                             };
                             this.showAddressModal = true;
+                        // Setup auto-complete after modal is shown
+                            this.$nextTick(() => {
+                                this.setupAddressAutoComplete();
+                            });
                         },
 
                         editAddress(addr) {
@@ -2071,6 +2071,238 @@
                                 error: ''
                             };
                             this.showAddressModal = true;
+
+                            // Setup auto-complete after modal is shown
+                            this.$nextTick(() => {
+                                this.setupAddressAutoComplete();
+                            });
+                        },
+
+                        // Village Lookup Logic - Enhanced to match customer create page
+                        setupAddressAutoComplete() {
+                            const fields = ['pincode', 'post_office', 'village', 'taluka', 'district', 'state'];
+                            const dropdown = document.getElementById('addressDropdown');
+
+                            if (!dropdown) return;
+
+                            let activeField = null;
+                            let debounceTimer = null;
+                            let preventBlurClose = false;
+
+                            const setAll = (data) => {
+                                Object.keys(data).forEach(key => {
+                                    if (key === 'pincode') this.addressForm.pincode = data[key] ?? this.addressForm.pincode;
+                                    if (key === 'post_office') this.addressForm.post_office = data[key] ?? this.addressForm.post_office;
+                                    if (key === 'village') this.addressForm.village = data[key] ?? this.addressForm.village;
+                                    if (key === 'taluka') this.addressForm.taluka = data[key] ?? this.addressForm.taluka;
+                                    if (key === 'district') this.addressForm.district = data[key] ?? this.addressForm.district;
+                                    if (key === 'state') this.addressForm.state = data[key] ?? this.addressForm.state;
+                                });
+                            };
+
+                            const hideDropdown = (force = false) => {
+                                if (preventBlurClose && !force) return;
+                                dropdown.classList.add('hidden');
+                                dropdown.innerHTML = '';
+                            };
+
+                            const showDropdown = (list, anchor) => {
+                                dropdown.innerHTML = '';
+                                dropdown.classList.remove('hidden');
+
+                                // Position dropdown relative to input
+                                dropdown.style.minWidth = anchor.offsetWidth + 'px';
+                                dropdown.style.left = anchor.offsetLeft + 'px';
+                                dropdown.style.top = (anchor.offsetTop + anchor.offsetHeight + 4) + 'px';
+
+                                list.forEach(item => {
+                                    const option = document.createElement('div');
+                                    option.className = 'px-3 py-2 cursor-pointer hover:bg-muted text-sm border-b border-border/50 last:border-0';
+                                    option.innerHTML = `
+                                <div class="font-medium">${item.label || ''}</div>
+                            `;
+
+                                    option.addEventListener('mousedown', e => {
+                                        e.preventDefault();
+                                        setAll(item.data);
+                                        hideDropdown(true);
+                                    });
+
+                                    dropdown.appendChild(option);
+                                });
+                            };
+
+                            const lookup = (query, anchor) => {
+                                fetch(`{{ url('/api/village-lookup') }}?${query}`, {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                })
+                                    .then(res => res.ok ? res.json() : null)
+                                    .then(res => {
+                                        if (!res || !res.found) {
+                                            hideDropdown();
+                                            return;
+                                        }
+
+                                        if (res.mode === 'single') {
+                                            setAll(res.data);
+                                            hideDropdown();
+                                        }
+
+                                        if (res.mode === 'multiple') {
+                                            showDropdown(res.list, anchor);
+                                        }
+                                    })
+                                    .catch(err => {
+                                        console.error('Lookup error:', err);
+                                        hideDropdown();
+                                    });
+                            };
+
+                            fields.forEach(id => {
+                                const el = document.getElementById('modal_' + id);
+                                if (!el) return;
+
+                                const isReadonly = el.hasAttribute('readonly');
+
+                                // For typing fields
+                                el.addEventListener('input', e => {
+                                    if (isReadonly) return;
+
+                                    const value = e.target.value.trim();
+                                    activeField = el;
+
+                                    clearTimeout(debounceTimer);
+                                    debounceTimer = setTimeout(() => {
+                                        if (id === 'pincode' && value.length < 6) return;
+                                        if (id !== 'pincode' && value.length < 2) return;
+
+                                        lookup(`${id}=${encodeURIComponent(value)}`, el);
+                                    }, 300);
+                                });
+
+                                // For readonly dropdown fields (Post Office)
+                                el.addEventListener('focus', () => {
+                                    activeField = el;
+
+                                    if (isReadonly) {
+                                        const baseValue =
+                                            document.getElementById('modal_pincode')?.value ||
+                                            document.getElementById('modal_village')?.value ||
+                                            '';
+
+                                        if (baseValue.length >= 2) {
+                                            // Trigger lookup based on other field
+                                            const queryBase = document.getElementById('modal_pincode')?.value ? 'pincode' : 'village';
+                                            lookup(`${queryBase}=${encodeURIComponent(baseValue)}`, el);
+                                        }
+                                    }
+                                });
+
+                                el.addEventListener('blur', () => {
+                                    setTimeout(() => hideDropdown(), 200);
+                                });
+                            });
+                        },
+
+                        async submitOrder() {
+                            // Validation
+                            if (this.cart.length === 0) {
+                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Your cart is empty. Please add products to place an order.' } }));
+                                return;
+                            }
+
+                            if (!this.order.billing_address_id) {
+                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Billing address is compulsory. Please select a billing address.' } }));
+                                return;
+                            }
+
+                            if (!this.order.same_as_billing && !this.order.shipping_address_id) {
+                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Shipping address is compulsory. Please select a shipping address or verify "Same as Billing".' } }));
+                                return;
+                            }
+
+                            // Prepare payload
+                            const payload = {
+                                customer_id: this.selectedCustomer.id,
+                                warehouse_id: document.querySelector('[name="warehouse_id"]')?.value,
+                                order_number: document.querySelector('[name="order_number"]')?.value,
+                                notes: document.querySelector('[name="notes"]')?.value,
+                                billing_address_id: this.order.billing_address_id,
+                                shipping_address_id: this.order.shipping_address_id,
+                                is_future_order: this.order.is_future_order,
+                                scheduled_at: this.order.scheduled_at,
+                                discount_type: this.order.discount_type,
+                                discount_value: this.order.discount_value,
+                                items: this.cart.map(item => ({
+                                    product_id: item.product_id,
+                                    quantity: item.quantity,
+                                    price: item.price,
+                                    discount_type: item.discount_type,
+                                    discount_value: item.discount_value
+                                }))
+                            };
+
+                            const loadingBtn = document.getElementById('submitBtn');
+
+                            try {
+                                if (loadingBtn) {
+                                    loadingBtn.disabled = true;
+                                    loadingBtn.innerHTML = '<span class="animate-spin mr-2">⏳</span> Processing...';
+                                }
+
+                                let res = await fetch(this.isEdit ? `{{ url('/orders') }}/${existingOrder.id}` : `{{ route('central.orders.store') }}`, {
+                                    method: this.isEdit ? 'PATCH' : 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json',
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                    },
+                                    body: JSON.stringify(payload)
+                                });
+
+                                let data = await res.json().catch(() => ({}));
+
+                                // Handle 422 Validation Errors
+                                if (res.status === 422) {
+                                    let errors = Object.values(data.errors || {}).flat().join('\n');
+                                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Validation Failed: ' + errors } }));
+                                    if (loadingBtn) {
+                                        loadingBtn.disabled = false;
+                                        loadingBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Place Order';
+                                    }
+                                    return;
+                                }
+
+                                // Handle Generic Failures (500, etc)
+                                if (!res.ok || (data && data.success === false)) {
+                                    throw new Error(data.message || res.statusText || 'Server Error');
+                                }
+
+                                // Clear LocalStorage BEFORE redirecting so the wizard starts fresh
+                                localStorage.removeItem('order_wizard_state');
+
+                                // Handle Success Redirect
+                                if (data.redirect_url) {
+                                    window.location.href = data.redirect_url;
+                                    return;
+                                }
+
+                                // Fallback Success
+                                if (res.ok) {
+                                    window.location.href = res.url;
+                                }
+
+                            } catch (e) {
+                                console.error(e);
+                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Error: ' + e.message } }));
+                                if (loadingBtn) {
+                                    loadingBtn.disabled = false;
+                                    loadingBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Place Order';
+                                }
+                            }
                         },
 
                         // Village Lookup Logic
@@ -2180,104 +2412,6 @@
                                 });
                                 dropdown.appendChild(option);
                             });
-                        },
-
-                        async submitOrder() {
-                            // Validation
-                            if (this.cart.length === 0) {
-                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Your cart is empty. Please add products to place an order.' } }));
-                                return;
-                            }
-
-                            if (!this.order.billing_address_id) {
-                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Billing address is compulsory. Please select a billing address.' } }));
-                                return;
-                            }
-
-                            if (!this.order.same_as_billing && !this.order.shipping_address_id) {
-                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Shipping address is compulsory. Please select a shipping address or verify "Same as Billing".' } }));
-                                return;
-                            }
-
-                            // Prepare payload
-                            const payload = {
-                                customer_id: this.selectedCustomer.id,
-                                warehouse_id: document.querySelector('[name="warehouse_id"]')?.value,
-                                order_number: document.querySelector('[name="order_number"]')?.value,
-                                notes: document.querySelector('[name="notes"]')?.value,
-                                billing_address_id: this.order.billing_address_id,
-                                shipping_address_id: this.order.shipping_address_id,
-                                is_future_order: this.order.is_future_order,
-                                scheduled_at: this.order.scheduled_at,
-                                discount_type: this.order.discount_type,
-                                discount_value: this.order.discount_value,
-                                items: this.cart.map(item => ({
-                                    product_id: item.product_id,
-                                    quantity: item.quantity,
-                                    price: item.price,
-                                    discount_type: item.discount_type,
-                                    discount_value: item.discount_value
-                                }))
-                            };
-
-                            const loadingBtn = document.getElementById('submitBtn');
-
-                            try {
-                                if (loadingBtn) {
-                                    loadingBtn.disabled = true;
-                                    loadingBtn.innerHTML = '<span class="animate-spin mr-2">⏳</span> Processing...';
-                                }
-
-                                let res = await fetch(this.isEdit ? `{{ url('/orders') }}/${existingOrder.id}` : `{{ route('central.orders.store') }}`, {
-                                    method: this.isEdit ? 'PATCH' : 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Accept': 'application/json',
-                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                                    },
-                                    body: JSON.stringify(payload)
-                                });
-
-                                let data = await res.json().catch(() => ({}));
-
-                                // Handle 422 Validation Errors
-                                if (res.status === 422) {
-                                    let errors = Object.values(data.errors || {}).flat().join('\n');
-                                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Validation Failed: ' + errors } }));
-                                    if (loadingBtn) {
-                                        loadingBtn.disabled = false;
-                                        loadingBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Place Order';
-                                    }
-                                    return;
-                                }
-
-                                // Handle Generic Failures (500, etc)
-                                if (!res.ok || (data && data.success === false)) {
-                                    throw new Error(data.message || res.statusText || 'Server Error');
-                                }
-
-                                // Clear LocalStorage BEFORE redirecting so the wizard starts fresh
-                                localStorage.removeItem('order_wizard_state');
-
-                                // Handle Success Redirect
-                                if (data.redirect_url) {
-                                    window.location.href = data.redirect_url;
-                                    return;
-                                }
-
-                                // Fallback Success
-                                if (res.ok) {
-                                    window.location.href = res.url;
-                                }
-
-                            } catch (e) {
-                                console.error(e);
-                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Error: ' + e.message } }));
-                                if (loadingBtn) {
-                                    loadingBtn.disabled = false;
-                                    loadingBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Place Order';
-                                }
-                            }
                         },
 
                         async saveAddress() {
@@ -2418,7 +2552,7 @@
                                 this.updateDisplayName();
                             }
 
-                            this.showCreateCustomerModal = true;
+                   this.showCreateCustomerModal = true;
                         },
 
                         updateDisplayName() {

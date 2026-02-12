@@ -14,8 +14,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Exception;
 
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 class SearchController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
      * Search for customers via AJAX.
      */
@@ -131,6 +135,8 @@ class SearchController extends Controller
      */
     public function storeCustomer(Request $request): JsonResponse
     {
+        $this->authorize('customers manage');
+
         try {
             \Illuminate\Support\Facades\Log::info('Store Customer Request:', $request->all());
 
@@ -202,6 +208,8 @@ class SearchController extends Controller
      */
     public function storeAddress(Request $request): JsonResponse
     {
+        $this->authorize('customers manage');
+
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'id' => 'nullable|exists:customer_addresses,id',

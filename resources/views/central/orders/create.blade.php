@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div x-data="orderWizard(@js($products), @js($preSelectedCustomer), @js(auth()->user()->hasRole('Super Admin')))"
+    <div x-data="orderWizard(@js($products), @js($preSelectedCustomer), @js(auth()->user()->hasRole('Super Admin')), @js(auth()->user()->can('customers manage')))"
         class="flex flex-col min-h-screen bg-muted/5">
 
         <!-- MANDATORY INTERACTION TAGGING MODAL -->
@@ -450,7 +450,7 @@
                                                 <h3 class="font-bold text-foreground">No matches found</h3>
                                                 <p class="text-sm text-muted-foreground mb-6">Can't find this customer
                                                     in the registry.</p>
-                                                <button @click="openCreateCustomerModal()"
+                                                <button x-show="canManageCustomers" @click="openCreateCustomerModal()"
                                                     class="inline-flex items-center gap-2.5 bg-primary text-primary-foreground text-sm font-bold uppercase tracking-wider px-8 py-4 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20">
                                                     <svg class="size-4" fill="none" stroke="currentColor"
                                                         viewBox="0 0 24 24" stroke-width="3">
@@ -570,11 +570,11 @@
                                         <!-- Quick Actions -->
                                         <div
                                             class="flex flex-col gap-3 shrink-0 w-full md:w-auto p-4 bg-white/40 dark:bg-black/20 rounded-[28px] border border-white/20 backdrop-blur-md">
-                                            <button @click="editCustomerDetails()"
+                                            <button x-show="canManageCustomers" @click="editCustomerDetails()"
                                                 class="flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-white dark:bg-zinc-800 hover:bg-primary/5 border border-transparent hover:border-primary/20 font-bold text-xs uppercase tracking-wider transition-all shadow-sm">
                                                 Edit Profile
                                             </button>
-                                            <button @click="openAddressModal('billing')"
+                                            <button x-show="canManageCustomers" @click="openAddressModal('billing')"
                                                 class="flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-white dark:bg-zinc-800 hover:bg-primary/5 border border-transparent hover:border-primary/20 font-bold text-xs uppercase tracking-wider transition-all shadow-sm">
                                                 Manage Addresses
                                             </button>
@@ -1968,7 +1968,8 @@
                                     <div class="flex items-center justify-between">
                                         <h4 class="text-sm font-bold text-muted-foreground uppercase tracking-wider">
                                             Billing Address</h4>
-                                        <button type="button" @click.prevent="openAddressModal('billing')"
+                                        <button x-show="canManageCustomers" type="button"
+                                            @click.prevent="openAddressModal('billing')"
                                             class="text-xs font-semibold text-primary hover:underline flex items-center gap-1 z-20 relative">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -2000,7 +2001,7 @@
                                                                 class="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Default</span>
                                                         </span>
                                                         <div class="flex gap-2 transition-opacity z-20 relative">
-                                                            <button type="button"
+                                                            <button x-show="canManageCustomers" type="button"
                                                                 @click.prevent.stop="editAddress(addr)"
                                                                 class="text-xs text-primary hover:underline font-medium px-2 py-1 rounded hover:bg-primary/10">Edit</button>
                                                         </div>
@@ -2031,7 +2032,8 @@
                                                     class="rounded border-border text-primary focus:ring-primary/20 w-3.5 h-3.5">
                                                 Same as Billing
                                             </label>
-                                            <button type="button" @click.prevent="openAddressModal('shipping')"
+                                            <button x-show="canManageCustomers" type="button"
+                                                @click.prevent="openAddressModal('shipping')"
                                                 class="text-xs font-semibold text-primary hover:underline flex items-center gap-1 z-20 relative">
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor"
                                                     viewBox="0 0 24 24">
@@ -2063,7 +2065,7 @@
                                                             <span x-text="addr.label || 'Address'"></span>
                                                         </span>
                                                         <div class="flex gap-2 transition-opacity z-20 relative">
-                                                            <button type="button"
+                                                            <button x-show="canManageCustomers" type="button"
                                                                 @click.prevent.stop="editAddress(addr)"
                                                                 class="text-xs text-primary hover:underline font-medium px-2 py-1 rounded hover:bg-primary/10">Edit</button>
                                                         </div>
@@ -2457,8 +2459,9 @@
         </div>
 
         <script>
-            function orderWizard(initialProducts, preSelectedCustomer, isSuperAdmin = false) {
+            function orderWizard(initialProducts, preSelectedCustomer, isSuperAdmin = false, canManageCustomers = false) {
                 return {
+                    canManageCustomers: canManageCustomers,
                     isSuperAdmin: isSuperAdmin,
                     step: 1, // Always start at Step 1 (Customer Profile) to show the dashboard
 

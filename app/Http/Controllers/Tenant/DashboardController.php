@@ -51,7 +51,7 @@ class DashboardController extends Controller
         }
 
         // KPI logic (date-aware)
-        $totalSales = Order::where('status', '!=', 'cancelled')
+        $totalSales = Order::whereNotIn('status', ['cancelled', 'scheduled'])
             ->whereBetween('created_at', [$startDate, $endDate])
             ->sum('grand_total');
 
@@ -64,7 +64,7 @@ class DashboardController extends Controller
         $compareStartDate = (clone $startDate)->subDays($duration);
         $compareEndDate = (clone $endDate)->subDays($duration);
 
-        $prevSales = Order::where('status', '!=', 'cancelled')
+        $prevSales = Order::whereNotIn('status', ['cancelled', 'scheduled'])
             ->whereBetween('created_at', [$compareStartDate, $compareEndDate])
             ->sum('grand_total');
 
@@ -125,7 +125,7 @@ class DashboardController extends Controller
             ->get();
 
         // Chart Data (date-aware)
-        $chartDataRaw = Order::where('status', '!=', 'cancelled')
+        $chartDataRaw = Order::whereNotIn('status', ['cancelled', 'scheduled'])
             ->whereBetween('created_at', [$startDate, $endDate])
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(grand_total) as total'))
             ->groupBy('date')
