@@ -26,7 +26,7 @@ class OrderVerificationController extends Controller
         // Default to 'unverified' if no status is provided
         $status = $request->input('status', 'unverified');
 
-        $query = Order::with(['customer', 'items', 'verifications.user'])
+        $query = Order::with(['customer', 'items', 'verifications.user', 'billingAddress', 'shippingAddress'])
             ->latest();
 
         // Apply Status Filter
