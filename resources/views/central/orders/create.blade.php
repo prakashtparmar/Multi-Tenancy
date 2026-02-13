@@ -1163,52 +1163,7 @@
                                     </div>
                                 </div>
 
-                                <!-- ORDERS TAB -->
-                                <div x-show="activeTab === 'orders'"
-                                    class="p-6 md:p-8 animate-in fade-in slide-in-from-right-2">
-                                    <div class="space-y-4">
-                                        <template x-for="order in activity.orders" :key="order.id">
-                                            <div
-                                                class="flex flex-col p-4 bg-background border border-border rounded-xl gap-3">
-                                                <div class="flex items-center justify-between">
-                                                    <div class="flex items-center gap-4">
-                                                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs"
-                                                            x-text="'#' + order.id"></div>
-                                                        <div>
-                                                            <p class="font-bold text-foreground"
-                                                                x-text="order.order_number"></p>
-                                                            <p class="text-xs text-muted-foreground"
-                                                                x-text="order.placed_at"></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="text-right">
-                                                        <p class="font-bold font-mono">Rs <span
-                                                                x-text="order.grand_total"></span></p>
-                                                        <span
-                                                            class="px-2 py-0.5 rounded-full bg-muted text-[10px] uppercase font-bold text-muted-foreground"
-                                                            x-text="order.status"></span>
-                                                    </div>
-                                                </div>
-                                                <!-- Items List -->
-                                                <div class="border-t border-border/50 pt-3 px-1">
-                                                    <template x-for="item in order.items" :key="item.id">
-                                                        <div
-                                                            class="flex items-center justify-between text-xs py-1 text-muted-foreground">
-                                                            <span x-text="item.product?.name || 'Unknown Item'"></span>
-                                                            <span class="font-mono font-bold text-foreground"
-                                                                x-text="'x' + item.quantity"></span>
-                                                        </div>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </template>
-                                        <template x-if="activity.orders.length === 0">
-                                            <div class="text-center py-12 text-muted-foreground">
-                                                No past orders found.
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
+
                             </div>
                     </div>
 
@@ -2905,6 +2860,7 @@
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
                                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                                 },
                                 body: JSON.stringify({ name: this.newOutcomeName, type: 'custom', color: 'bg-gray-100 text-gray-800' })
@@ -2960,6 +2916,7 @@
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
                                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                                 },
                                 body: JSON.stringify(this.newCustomer)
@@ -3028,6 +2985,7 @@
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
                                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                                 },
                                 body: JSON.stringify({
@@ -3385,6 +3343,7 @@
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
                                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                                 },
                                 body: JSON.stringify(this.addressForm)
