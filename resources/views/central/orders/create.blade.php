@@ -626,14 +626,6 @@
                                     <!-- Sticky Tab Header -->
                                     <div
                                         class="flex items-center border-b border-border/50 bg-white/80 dark:bg-zinc-900/80 px-8 backdrop-blur-xl sticky top-0 z-20 shrink-0">
-                                        <button @click="activeTab = 'timeline'"
-                                            class="mr-8 py-5 text-sm font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2.5"
-                                            :class="activeTab === 'timeline' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100'">
-                                            <div class="size-2 rounded-full transition-colors"
-                                                :class="activeTab === 'timeline' ? 'bg-primary animate-pulse' : 'bg-transparent'">
-                                            </div>
-                                            Activity
-                                        </button>
                                         <button @click="activeTab = 'profile'"
                                             class="mr-8 py-5 text-sm font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2.5"
                                             :class="activeTab === 'profile' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100'">
@@ -643,12 +635,20 @@
                                             Full Profile
                                         </button>
                                         <button @click="activeTab = 'orders'"
-                                            class="py-5 text-sm font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2.5"
+                                            class="mr-8 py-5 text-sm font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2.5"
                                             :class="activeTab === 'orders' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100'">
                                             <div class="size-2 rounded-full transition-colors"
                                                 :class="activeTab === 'orders' ? 'bg-primary animate-pulse' : 'bg-transparent'">
                                             </div>
                                             Orders History
+                                        </button>
+                                        <button @click="activeTab = 'timeline'"
+                                            class="py-5 text-sm font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2.5"
+                                            :class="activeTab === 'timeline' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100'">
+                                            <div class="size-2 rounded-full transition-colors"
+                                                :class="activeTab === 'timeline' ? 'bg-primary animate-pulse' : 'bg-transparent'">
+                                            </div>
+                                            Activity
                                         </button>
                                     </div>
 
@@ -1022,18 +1022,59 @@
                                                                             d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                                     </svg>
                                                                 </div>
-                                                                <p
-                                                                    class="text-xs text-muted-foreground font-medium leading-relaxed">
-                                                                    <span x-text="addr.address_line1"></span>
-                                                                    <span x-show="addr.address_line2">, <span
-                                                                            x-text="addr.address_line2"></span></span>
-                                                                    <br>
-                                                                    <span x-text="addr.village"></span>, <span
-                                                                        x-text="addr.district"></span>
-                                                                    <br>
-                                                                    <span x-text="addr.state"></span> - <span
-                                                                        x-text="addr.pincode"></span>
-                                                                </p>
+                                                                <div
+                                                                    class="text-xs text-muted-foreground font-medium space-y-2 mt-2">
+                                                                    <div>
+                                                                        <span x-text="addr.address_line1"></span>
+                                                                        <span x-show="addr.address_line2">, <span
+                                                                                x-text="addr.address_line2"></span></span>
+                                                                    </div>
+                                                                    <div
+                                                                        class="grid grid-cols-2 gap-x-2 gap-y-1 bg-secondary/10 p-2 rounded-lg border border-border/20">
+                                                                        <template x-if="addr.village">
+                                                                            <div class="flex flex-col">
+                                                                                <span
+                                                                                    class="font-bold text-foreground/50 text-[10px] uppercase tracking-wider">Village:</span>
+                                                                                <span x-text="addr.village"></span>
+                                                                            </div>
+                                                                        </template>
+                                                                        <template x-if="addr.post_office">
+                                                                            <div class="flex flex-col">
+                                                                                <span
+                                                                                    class="font-bold text-foreground/50 text-[10px] uppercase tracking-wider">PO:</span>
+                                                                                <span x-text="addr.post_office"></span>
+                                                                            </div>
+                                                                        </template>
+                                                                        <template x-if="addr.taluka">
+                                                                            <div class="flex flex-col">
+                                                                                <span
+                                                                                    class="font-bold text-foreground/50 text-[10px] uppercase tracking-wider">Taluka:</span>
+                                                                                <span x-text="addr.taluka"></span>
+                                                                            </div>
+                                                                        </template>
+                                                                        <template x-if="addr.district">
+                                                                            <div class="flex flex-col">
+                                                                                <span
+                                                                                    class="font-bold text-foreground/50 text-[10px] uppercase tracking-wider">Dist:</span>
+                                                                                <span x-text="addr.district"></span>
+                                                                            </div>
+                                                                        </template>
+                                                                        <template x-if="addr.state">
+                                                                            <div class="flex flex-col">
+                                                                                <span
+                                                                                    class="font-bold text-foreground/50 text-[10px] uppercase tracking-wider">State:</span>
+                                                                                <span x-text="addr.state"></span>
+                                                                            </div>
+                                                                        </template>
+                                                                        <template x-if="addr.pincode">
+                                                                            <div class="flex flex-col">
+                                                                                <span
+                                                                                    class="font-bold text-foreground/50 text-[10px] uppercase tracking-wider">PIN:</span>
+                                                                                <span x-text="addr.pincode"></span>
+                                                                            </div>
+                                                                        </template>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </template>
 
@@ -2518,7 +2559,7 @@
                     // Activity State
                     activity: { orders: [], interactions: [] },
                     activityLoading: false,
-                    activeTab: 'timeline',
+                    activeTab: 'profile',
 
                     // Order History State (Legacy + Activity)
                     orderHistory: [],
@@ -3049,7 +3090,7 @@
                             taluka: '',
                             district: '',
                             post_office: '',
-                            state: 'Maharashtra',
+                            state: '',
                             pincode: '',
                             is_default: false,
                             type: type || 'shipping',
@@ -3075,7 +3116,7 @@
                             taluka: addr.taluka || '',
                             district: addr.district || '',
                             post_office: addr.post_office || '',
-                            state: addr.state || 'Maharashtra',
+                            state: addr.state || '',
                             pincode: addr.pincode || '',
                             is_default: addr.is_default || false,
                             type: 'both',
