@@ -32,13 +32,13 @@
 
          <a href="{{ route('central.orders.index', ['status' => 'ready_to_ship']) }}" 
             class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap {{ request('status') === 'ready_to_ship' ? 'bg-background text-sky-600 shadow-sm ring-1 ring-sky-500/10' : 'text-muted-foreground/80 hover:text-sky-600 hover:bg-background/40' }}">
-            Ready to Ship
+            Ready To Ship
          </a>
          <div class="w-px h-4 bg-border/40 mx-1 shrink-0"></div>
 
          <a href="{{ route('central.orders.index', ['status' => 'shipped']) }}" 
             class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap {{ request('status') === 'shipped' ? 'bg-background text-indigo-600 shadow-sm ring-1 ring-indigo-500/10' : 'text-muted-foreground/80 hover:text-indigo-600 hover:bg-background/40' }}">
-            Shipped
+            Dispatched
          </a>
          <div class="w-px h-4 bg-border/40 mx-1 shrink-0"></div>
 
@@ -80,7 +80,7 @@
                    <select name="shipping_status" class="h-9 rounded-lg border-border/50 bg-background/50 text-xs font-medium cursor-pointer shadow-sm hover:bg-background transition-colors focus:ring-2 focus:ring-primary/20 outline-none pl-3 pr-8 min-w-[110px]">
                        <option value="">Shipping: All</option>
                        <option value="pending" {{ request('shipping_status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                       <option value="shipped" {{ request('shipping_status') === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                       <option value="shipped" {{ request('shipping_status') === 'shipped' ? 'selected' : '' }}>Dispatched</option>
                        <option value="delivered" {{ request('shipping_status') === 'delivered' ? 'selected' : '' }}>Delivered</option>
                    </select>
                </div>
@@ -369,7 +369,7 @@
                                        @case('shipped')
                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 shadow-sm">
                                                <span class="h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
-                                               Shipped
+                                               Dispatched
                                            </span>
                                            @break
 
@@ -383,7 +383,7 @@
                                        @case('ready_to_ship')
                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-sky-500/10 text-sky-600 border border-sky-500/20 shadow-sm">
                                                <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>
-                                               Ready Ship
+                                               Ready To Ship
                                            </span>
                                            @break
 

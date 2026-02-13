@@ -33,13 +33,13 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                
+
                 {{-- Sequential Lifecycle Actions --}}
                 <div class="flex flex-wrap items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
-                    
+
                     {{-- 1. Confirm --}}
                     @php 
-                        $isPending = in_array($order->status, ['pending', 'draft', 'scheduled']);
+                                                                        $isPending = in_array($order->status, ['pending', 'draft', 'scheduled']);
                         $isConfirmedOrLater = in_array($order->status, ['confirmed', 'processing', 'ready_to_ship', 'shipped', 'in_transit', 'delivered', 'completed', 'returned']);
                     @endphp
                     @if($isPending)
@@ -104,11 +104,11 @@
                                 @csrf
                                 <input type="hidden" name="action" value="ready_to_ship">
                                 <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-all">
-                                    Ready Ship
+                                    Ready To Ship
                                 </button>
                             </form>
                         @else
-                            <button disabled class="inline-flex items-center px-3 py-1.5 border border-gray-200 shadow-sm text-xs font-bold rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed">Ready Ship</button>
+                            <button disabled class="inline-flex items-center px-3 py-1.5 border border-gray-200 shadow-sm text-xs font-bold rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed">Ready To Ship</button>
                         @endcan
                     @elseif($isReadyOrLater)
                          <button disabled class="inline-flex items-center px-3 py-1.5 border border-emerald-200 shadow-sm text-xs font-bold rounded-lg text-emerald-600 bg-emerald-50 cursor-not-allowed opacity-80">
@@ -116,7 +116,7 @@
                             Ready
                         </button>
                      @else
-                         <button disabled class="inline-flex items-center px-3 py-1.5 border border-gray-200 shadow-sm text-xs font-bold rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed">Ready Ship</button>
+                         <button disabled class="inline-flex items-center px-3 py-1.5 border border-gray-200 shadow-sm text-xs font-bold rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed">Ready To Ship</button>
                     @endif
 
                     <!-- Arrow -->
@@ -129,18 +129,18 @@
                     @if($order->status === 'ready_to_ship' && $order->invoices->isNotEmpty())
                         @can('orders ship')
                             <button onclick="document.getElementById('ship-dialog').showModal()" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-all">
-                                Ship
+                                Dispatch
                             </button>
                         @else
-                             <button disabled class="inline-flex items-center px-3 py-1.5 border border-gray-200 shadow-sm text-xs font-bold rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed">Ship</button>
+                             <button disabled class="inline-flex items-center px-3 py-1.5 border border-gray-200 shadow-sm text-xs font-bold rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed">Dispatch</button>
                         @endcan
-                    @elseif($isShippedOrLater)
+                     @elseif($isShippedOrLater)
                         <button disabled class="inline-flex items-center px-3 py-1.5 border border-emerald-200 shadow-sm text-xs font-bold rounded-lg text-emerald-600 bg-emerald-50 cursor-not-allowed opacity-80">
                             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            Shipped
+                            Dispatched
                         </button>
                      @else
-                         <button disabled class="inline-flex items-center px-3 py-1.5 border border-gray-200 shadow-sm text-xs font-bold rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed">Ship</button>
+                         <button disabled class="inline-flex items-center px-3 py-1.5 border border-gray-200 shadow-sm text-xs font-bold rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed">Dispatch</button>
                     @endif
 
                     <!-- Arrow -->
@@ -269,7 +269,7 @@
                         <div class="w-12 h-12 rounded-full flex items-center justify-center {{ $isShip ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white border-2 border-gray-200 text-gray-300' }} ring-4 ring-white transition-all duration-500 group-hover:scale-110">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
                         </div>
-                        <span class="mt-3 text-sm font-bold {{ $isShip ? 'text-gray-900' : 'text-gray-400' }}">Shipped</span>
+                        <span class="mt-3 text-sm font-bold {{ $isShip ? 'text-gray-900' : 'text-gray-400' }}">Dispatched</span>
                     </div>
 
                     <!-- Delivered -->
@@ -308,7 +308,7 @@
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         </div>
                         <div>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Shipped At</p>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Dispatched At</p>
                             <p class="text-base font-bold text-gray-900">{{ $order->shipments->first()->shipped_at ? $order->shipments->first()->shipped_at->format('M d, Y') : 'N/A' }}</p>
                         </div>
                     </div>
@@ -501,7 +501,7 @@
                          @if($order->shippingAddress)
                              <div class="space-y-3 relative z-10">
                                 <div class="font-bold text-gray-900 text-sm border-b border-gray-100 pb-2 mb-2">{{ $order->shippingAddress->contact_name ?? $order->customer->name }}</div>
-                                
+
                                 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                                      <div class="col-span-2">
                                          <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold block mb-0.5">Address</span>
@@ -512,7 +512,7 @@
                                             @endif
                                          </span>
                                     </div>
-                                    
+
                                     <div>
                                          <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold block mb-0.5">Village</span>
                                          <span class="text-gray-700 font-medium">{{ $order->shippingAddress->village ?? '-' }}</span>
@@ -572,7 +572,7 @@
                         @if($order->billingAddress)
                              <div class="space-y-3 relative z-10">
                                 <div class="font-bold text-gray-900 text-sm border-b border-gray-100 pb-2 mb-2">{{ $order->billingAddress->contact_name ?? $order->customer->name }}</div>
-                                
+
                                 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                                      <div class="col-span-2">
                                          <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold block mb-0.5">Address</span>
@@ -583,7 +583,7 @@
                                             @endif
                                          </span>
                                     </div>
-                                    
+
                                     <div>
                                          <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold block mb-0.5">Village</span>
                                          <span class="text-gray-700 font-medium">{{ $order->billingAddress->village ?? '-' }}</span>
@@ -668,7 +668,7 @@
         class="p-0 rounded-2xl shadow-2xl backdrop:bg-black/50 w-full max-w-md bg-white border border-gray-100">
         <div class="p-6">
             <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-bold text-gray-900">Ship Order</h3>
+                <h3 class="text-lg font-bold text-gray-900">Dispatch Order</h3>
                 <button onclick="document.getElementById('ship-dialog').close()"
                     class="text-gray-400 hover:text-gray-600 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -697,7 +697,7 @@
                         class="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 transition">Cancel</button>
                     <button type="submit"
                         class="px-6 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">Confirm
-                        Shipment</button>
+                        Dispatch</button>
                 </div>
             </form>
         </div>
