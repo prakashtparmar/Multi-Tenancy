@@ -1486,12 +1486,13 @@
             <!-- STEP 2: PRODUCT SELECTION -->
             <div x-show="step === 2" x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0"
-                class="flex gap-6 h-full items-start">
+                class="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full items-start">
 
                 <!-- Left: Product Catalog -->
-                <div class="flex-1 flex flex-col h-full min-h-0">
+                <div class="lg:col-span-2 flex flex-col h-full min-h-0">
                     <!-- Search & Filter Bar -->
-                    <div class="flex gap-4 mb-6 sticky top-0 z-10 bg-muted/5 pt-1 backdrop-blur-sm">
+                    <div
+                        class="flex flex-col md:flex-row gap-4 mb-6 sticky top-0 z-10 bg-muted/5 pt-1 backdrop-blur-sm">
                         <div class="relative flex-1 group">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg class="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors"
@@ -1505,7 +1506,7 @@
                                 class="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-card shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
                         </div>
                         <select
-                            class="rounded-xl border border-border bg-card px-4 py-2 pr-8 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            class="w-full md:w-auto rounded-xl border border-border bg-card px-4 py-3 md:py-2 pr-8 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
                             @change="productQuery=$event.target.value; searchProducts()">
                             <option value="">All Categories</option>
                             @foreach(\App\Models\Category::where('is_active', true)->get() as $cat)
@@ -1517,7 +1518,7 @@
                     <!-- Product Table -->
                     <div
                         class="flex-1 overflow-hidden border border-border rounded-xl bg-card shadow-sm flex flex-col mb-6">
-                        <div class="overflow-y-auto custom-scrollbar flex-1">
+                        <div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
                             <table class="w-full text-left border-collapse">
                                 <thead class="bg-muted/50 sticky top-0 z-10 backdrop-blur-md shadow-sm">
                                     <tr>
@@ -1679,7 +1680,7 @@
                 </div>
 
                 <!-- Right: Cart Sidebar (Glassmorphism) -->
-                <div class="w-96 flex-none hidden lg:block h-full pb-6">
+                <div class="lg:col-span-1 h-full pb-6">
                     <!-- Customer Intelligence Panel -->
                     <div class="mb-4 bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl overflow-hidden ring-1 ring-black/5"
                         x-data="{ showHistory: false }" x-show="selectedCustomer"
