@@ -356,11 +356,6 @@ class CustomerController extends Controller
             session()->forget('active_customer_id');
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Interaction tagged successfully.',
-            'interaction' => $interaction,
-            'redirect' => route('central.customers.index')
-        ]);
+        return back()->with('success', 'Interaction tagged successfully.');
     }
 }
