@@ -101,9 +101,9 @@
                     <div>
                         <div class="flex items-center justify-between">
                             <label for="password" class="block text-sm font-medium leading-6 text-foreground">Password</label>
-                            <div class="text-sm">
+                            <!-- <div class="text-sm">
                                 <a href="#" class="font-semibold text-primary hover:text-primary/80 transition-colors">Forgot password?</a>
-                            </div>
+                            </div> -->
                         </div>
                         <div class="mt-2 text-red-500">
                             <input id="password" name="password" type="password" autocomplete="current-password" required
