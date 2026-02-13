@@ -32,13 +32,24 @@ class OrderVerificationController extends Controller
         // Apply Status Filter
         if ($status === 'unverified') {
             $query->where(function ($q) {
-                $q->where('verification_status', 'unverified')
-                    ->orWhereNull('verification_status');
+                $q->where(function ($sub) {
+                    $sub->where('verification_status', 'unverified')
+                        ->orWhereNull('verification_status');
+                })->where('status', 'pending');
             });
         } elseif ($status === 'pending_followup') {
             $query->where('verification_status', 'pending_followup');
         } elseif ($status === 'verified') {
-            $query->where('verification_status', 'verified');
+            $query->where(function ($q) {
+                $q->where('verification_status', 'verified')
+                    ->orWhere(function ($sub) {
+                        $sub->where(function ($s) {
+                            $s->where('verification_status', 'unverified')
+                                ->orWhereNull('verification_status');
+                        })->where('status', '!=', 'pending')
+                            ->where('status', '!=', 'cancelled');
+                    });
+            });
         } elseif ($status === 'cancelled') {
             $query->where('status', 'cancelled');
         } elseif ($status === 'all') {

@@ -81,6 +81,146 @@
                                                 {{ $customer->last_name }}</option>
                                         @endforeach
                                     </select>
+                                    
+                                     <!-- Edit Customer Trigger -->
+                                    <div x-show="customerId" x-transition class="pt-1 flex justify-end">
+                                        <button type="button" @click="openEditCustomerModal()"
+                                            class="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                                                <path d="m15 5 4 4"/>
+                                            </svg>
+                                            Edit Details
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Edit Customer Modal (Premium UI) -->
+                                    <template x-teleport="body">
+                                        <div x-show="showEditModal" x-transition.opacity.duration.400ms
+                                            class="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4"
+                                            style="display: none;">
+                                            <div class="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[40px] shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 fade-in duration-500 ease-out"
+                                                @click.away="showEditModal = false">
+                                                
+                                                <div class="px-10 pt-10 pb-6 relative overflow-hidden">
+                                                    <div class="absolute -top-20 -right-20 size-60 bg-blue-500/20 blur-[80px] rounded-full">
+                                                    </div>
+                                                    <div class="relative z-10">
+                                                        <h3 class="font-black text-3xl tracking-tighter">Edit Identity</h3>
+                                                        <p class="text-sm text-muted-foreground font-medium mt-1">Update customer information.</p>
+                                                    </div>
+                                                    <button @click="showEditModal = false"
+                                                        class="absolute top-8 right-8 text-muted-foreground hover:text-foreground p-2 hover:bg-white/10 rounded-full transition-all duration-300">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                            stroke-linejoin="round" class="size-6">
+                                                            <path d="M18 6 6 18" />
+                                                            <path d="m6 6 12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+
+                                                <div class="px-10 pb-10 overflow-y-auto space-y-8 custom-scrollbar">
+                                                    <!-- Basic Info -->
+                                                    <div class="grid grid-cols-2 gap-6">
+                                                        <div class="space-y-2 group/field">
+                                                            <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">First Name</label>
+                                                            <input type="text" x-model="editingCustomer.first_name"
+                                                                class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
+                                                        </div>
+                                                        <div class="space-y-2 group/field">
+                                                            <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Last Name</label>
+                                                            <input type="text" x-model="editingCustomer.last_name"
+                                                                class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="space-y-2 group/field">
+                                                        <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Mobile</label>
+                                                        <input type="text" x-model="editingCustomer.mobile"
+                                                            class="w-full h-14 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-[20px] px-5 text-lg font-black tracking-widest focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all font-sans" />
+                                                    </div>
+                                                    
+                                                     <!-- Address Section -->
+                                                    <div class="space-y-4 pt-4 border-t border-white/10">
+                                                        <h4 class="text-xs font-black uppercase tracking-widest text-primary/80">Location Details</h4>
+                                                        
+                                                        <div class="space-y-2 group/field">
+                                                            <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Address Line 1</label>
+                                                            <input type="text" x-model="editingCustomer.address_line1"
+                                                                class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" 
+                                                                placeholder="House/Building No"/>
+                                                        </div>
+
+                                                        <div class="space-y-2 group/field">
+                                                            <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Address Line 2 (Optional)</label>
+                                                            <input type="text" x-model="editingCustomer.address_line2"
+                                                                class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" 
+                                                                placeholder="Area / Street"/>
+                                                        </div>
+
+                                                        <div class="grid grid-cols-2 gap-6">
+                                                            <div class="space-y-2 group/field">
+                                                                <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Village / City</label>
+                                                                <input type="text" x-model="editingCustomer.village"
+                                                                    class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
+                                                            </div>
+                                                            <div class="space-y-2 group/field">
+                                                                <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Post Office</label>
+                                                                <input type="text" x-model="editingCustomer.post_office"
+                                                                    class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div class="grid grid-cols-2 gap-6">
+                                                            <div class="space-y-2 group/field">
+                                                                <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Taluka</label>
+                                                                <input type="text" x-model="editingCustomer.taluka"
+                                                                    class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
+                                                            </div>
+                                                            <div class="space-y-2 group/field">
+                                                                <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">District</label>
+                                                                <input type="text" x-model="editingCustomer.district"
+                                                                    class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="grid grid-cols-2 gap-6">
+                                                            <div class="space-y-2 group/field">
+                                                                <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">State</label>
+                                                                <input type="text" x-model="editingCustomer.state"
+                                                                    class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
+                                                            </div>
+                                                            <div class="space-y-2 group/field">
+                                                                <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Pincode</label>
+                                                                <input type="text" x-model="editingCustomer.pincode"
+                                                                    class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="space-y-2 group/field">
+                                                        <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Email</label>
+                                                        <input type="email" x-model="editingCustomer.email"
+                                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
+                                                    </div>
+
+                                                    <div x-show="editError" x-transition
+                                                        class="p-5 rounded-3xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-bold leading-relaxed shadow-inner"
+                                                        x-text="editError"></div>
+                                                </div>
+
+                                                <div class="px-10 py-8 border-t border-border/50 bg-muted/20 flex justify-end gap-4">
+                                                    <button @click="showEditModal = false"
+                                                        class="px-6 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all">Cancel</button>
+                                                    <button @click="updateCustomer()" :disabled="saving"
+                                                        class="inline-flex items-center justify-center gap-3 rounded-[22px] bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-2xl hover:-translate-y-1 active:scale-95 transition-all duration-500 disabled:opacity-50">
+                                                        <span x-text="saving ? 'SAVING...' : 'SAVE CHANGES'"></span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
 
                                 <div class="space-y-2">
@@ -446,6 +586,81 @@
                             this.billingAddressId = '';
                         }
                     });
+                },
+
+                // Edit Customer Logic
+                showEditModal: false,
+                editingCustomer: {},
+                saving: false,
+                editError: '',
+
+                openEditCustomerModal() {
+                    const cust = this.customers.find(c => c.id == this.customerId);
+                    if (!cust) return;
+
+                    // Find primary address (billing or default)
+                    let addr = cust.addresses.find(a => a.is_default) || cust.addresses[0] || {};
+                    
+                    this.editingCustomer = {
+                        id: cust.id,
+                        first_name: cust.first_name,
+                        last_name: cust.last_name,
+                        mobile: cust.mobile,
+                        email: cust.email,
+                        address_line1: addr.address_line1 || '',
+                        address_line2: addr.address_line2 || '',
+                        village: addr.village || '',
+                        post_office: addr.post_office || '',
+                        taluka: addr.taluka || '',
+                        district: addr.district || '',
+                        state: addr.state || 'Maharashtra',
+                        pincode: addr.pincode || '',
+                        address_id: addr.id // Track validation
+                    };
+                    this.editError = '';
+                    this.showEditModal = true;
+                },
+
+                async updateCustomer() {
+                    this.saving = true;
+                    this.editError = '';
+                    
+                    try {
+                        const url = `{{ route('tenant.api.customers.store-quick') }}`; 
+                        // Re-using store-quick which handles update if ID is present
+                        
+                        let res = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify(this.editingCustomer)
+                        });
+                        
+                        let data = await res.json();
+                        
+                        if (data.success) {
+                             // Update local list
+                            let idx = this.customers.findIndex(c => c.id == data.customer.id);
+                            if (idx !== -1) {
+                                this.customers[idx] = data.customer; // Update reference
+                                // Trigger reactivity if needed, or re-select
+                                this.availableAddresses = data.customer.addresses;
+                                // Re-find default to ensure address dropdown updates?
+                                // Alpine watch on availableAddresses should handle UI
+                            }
+                            this.showEditModal = false;
+                        } else {
+                            this.editError = data.message || 'Update failed.';
+                        }
+                    } catch (e) {
+                         console.error(e);
+                         this.editError = 'Network error during update.';
+                    } finally {
+                        this.saving = false;
+                    }
                 },
 
                 get subTotal() {

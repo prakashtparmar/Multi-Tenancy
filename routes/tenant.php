@@ -143,6 +143,8 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
             ->name('tenant.api.customers.store-quick');
         Route::get('search/products', [\App\Http\Controllers\Tenant\SearchController::class, 'products'])
             ->name('tenant.api.search.products');
+        Route::get('village-lookup', [\App\Http\Controllers\VillageController::class, 'lookup'])
+            ->name('tenant.api.village-lookup');
     });
 });
 
