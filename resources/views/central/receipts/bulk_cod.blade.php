@@ -103,7 +103,7 @@
 
                 <div class="row">
                     <div class="col big">
-                        Pincode: {{ $order->shippingAddress->pincode ?? '-' }}
+                        Pincode: {{ optional($order->shippingAddress)->pincode ?? '-' }}
                     </div>
                     <div class="col right big">
                         COD Amount: Rs. {{ number_format($order->grand_total, 2) }}

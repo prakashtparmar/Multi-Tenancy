@@ -249,6 +249,21 @@ Route::middleware('auth')->group(function () {
     Route::post('orders/bulk-print', [\App\Http\Controllers\Central\OrderController::class, 'bulkPrint'])
         ->name('central.orders.bulk-print');
 
+    // Order Processing (Warehouse)
+    Route::get('processing/orders', [\App\Http\Controllers\Central\OrderProcessingController::class, 'index'])->name('central.processing.orders.index');
+    Route::post('processing/orders/{order}/process', [\App\Http\Controllers\Central\OrderProcessingController::class, 'process'])->name('central.processing.orders.process');
+    Route::post('processing/orders/{order}/ready', [\App\Http\Controllers\Central\OrderProcessingController::class, 'readyToShip'])->name('central.processing.orders.ready');
+    Route::post('processing/orders/{order}/dispatch', [\App\Http\Controllers\Central\OrderProcessingController::class, 'dispatch'])->name('central.processing.orders.dispatch');
+    Route::post('processing/orders/bulk-print', [\App\Http\Controllers\Central\OrderProcessingController::class, 'bulkPrint'])->name('central.processing.orders.bulk-print');
+    Route::post('processing/orders/bulk-status', [\App\Http\Controllers\Central\OrderProcessingController::class, 'bulkStatusUpdate'])->name('central.processing.orders.bulk-status');
+    Route::post('processing/orders/bulk-dispatch', [\App\Http\Controllers\Central\OrderProcessingController::class, 'bulkDispatch'])->name('central.processing.orders.bulk-dispatch');
+
+    Route::get('processing/returns', [\App\Http\Controllers\Central\OrderProcessingController::class, 'indexReturns'])->name('central.processing.returns.index');
+    Route::post('processing/returns/{orderReturn}/receive', [\App\Http\Controllers\Central\OrderProcessingController::class, 'receiveReturn'])->name('central.processing.returns.receive');
+
+    // Missing Invoice Download Route
+    Route::get('orders/{order}/invoice', [\App\Http\Controllers\Central\OrderController::class, 'downloadInvoice'])->name('central.orders.invoice');
+
     // Order Verification
     Route::get('orders/verification', [\App\Http\Controllers\Central\OrderVerificationController::class, 'index'])
         ->name('central.orders.verification.index');

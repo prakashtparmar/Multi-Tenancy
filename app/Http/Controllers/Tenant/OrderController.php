@@ -618,13 +618,48 @@ class OrderController extends Controller
         $this->authorize('orders view');
         $format = $request->input('format', 'csv');
         $filename = 'orders-' . date('Y-m-d');
+
+        // Extract Filters
+        $filters = $request->only(['status', 'search']);
+
+        // Handle Selected IDs
+        if ($request->filled('ids')) {
+            $filters['ids'] = explode(',', $request->input('ids'));
+        }
+
+        // Handle Date Filter logic to match Index
+        if ($request->filled('date_filter')) {
+            switch ($request->input('date_filter')) {
+                case 'today':
+                    $filters['start_date'] = now()->startOfDay()->format('Y-m-d');
+                    $filters['end_date'] = now()->endOfDay()->format('Y-m-d');
+                    break;
+                case 'yesterday':
+                    $filters['start_date'] = now()->subDay()->startOfDay()->format('Y-m-d');
+                    $filters['end_date'] = now()->subDay()->endOfDay()->format('Y-m-d');
+                    break;
+                case 'this_week':
+                    $filters['start_date'] = now()->startOfWeek()->format('Y-m-d');
+                    $filters['end_date'] = now()->endOfWeek()->format('Y-m-d');
+                    break;
+                case 'this_month':
+                    $filters['start_date'] = now()->startOfMonth()->format('Y-m-d');
+                    $filters['end_date'] = now()->endOfMonth()->format('Y-m-d');
+                    break;
+                case 'custom':
+                    $filters['start_date'] = $request->input('start_date');
+                    $filters['end_date'] = $request->input('end_date');
+                    break;
+            }
+        }
+
         switch ($format) {
             case 'xlsx':
-                return Excel::download(new OrdersExport(), "{$filename}.xlsx");
+                return Excel::download(new OrdersExport($filters), "{$filename}.xlsx");
             case 'pdf':
-                return Excel::download(new OrdersExport(), "{$filename}.pdf", \Maatwebsite\Excel\Excel::DOMPDF);
+                return Excel::download(new OrdersExport($filters), "{$filename}.pdf", \Maatwebsite\Excel\Excel::DOMPDF);
             default:
-                return Excel::download(new OrdersExport(), "{$filename}.csv");
+                return Excel::download(new OrdersExport($filters), "{$filename}.csv");
         }
     }
 }

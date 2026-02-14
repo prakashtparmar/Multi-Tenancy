@@ -122,7 +122,12 @@
             </td>
             <td width="40%">
                 <strong>Invoice No:</strong> {{ $invoice->invoice_number }}<br>
-                <strong>Dated:</strong> {{ $invoice->issue_date->format('d-m-Y') }}<br><br>
+                <strong>Dated:</strong> {{ $invoice->issue_date->format('d-m-Y') }}<br>
+                <strong>Payment Mode:</strong> {{ ucfirst($invoice->order->payment_method ?? 'Cash') }}<br>
+                @if(strtolower($invoice->order->payment_method) === 'cod')
+                    <strong>To Collect:</strong> Rs. {{ number_format($invoice->order->grand_total, 2) }}<br>
+                @endif
+                <br>
                 <strong>Reference No.</strong><br>
                 Seed Lic No.: GAN/FSR220001380/2022-2023<br>
                 Pesti Lic No.: GAN/FP1220002020/2022-2023

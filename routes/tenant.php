@@ -119,6 +119,18 @@ Route::middleware(['auth', 'tenant.session', 'tenant.access'])->group(function (
     Route::get('orders/{order}/receipt', [\App\Http\Controllers\Tenant\OrderController::class, 'downloadReceipt'])->name('tenant.orders.receipt');
     Route::post('orders/export', [\App\Http\Controllers\Tenant\OrderController::class, 'export'])->name('tenant.orders.export');
 
+    // Order Processing (Warehouse)
+    Route::get('processing/orders', [\App\Http\Controllers\Tenant\OrderProcessingController::class, 'index'])->name('tenant.processing.orders.index');
+    Route::post('processing/orders/{order}/process', [\App\Http\Controllers\Tenant\OrderProcessingController::class, 'process'])->name('tenant.processing.orders.process');
+    Route::post('processing/orders/{order}/ready', [\App\Http\Controllers\Tenant\OrderProcessingController::class, 'readyToShip'])->name('tenant.processing.orders.ready');
+    Route::post('processing/orders/{order}/dispatch', [\App\Http\Controllers\Tenant\OrderProcessingController::class, 'dispatch'])->name('tenant.processing.orders.dispatch');
+    Route::post('processing/orders/bulk-print', [\App\Http\Controllers\Tenant\OrderProcessingController::class, 'bulkPrint'])->name('tenant.processing.orders.bulk-print');
+    Route::post('processing/orders/bulk-status', [\App\Http\Controllers\Tenant\OrderProcessingController::class, 'bulkStatusUpdate'])->name('tenant.processing.orders.bulk-status');
+    Route::post('processing/orders/bulk-dispatch', [\App\Http\Controllers\Tenant\OrderProcessingController::class, 'bulkDispatch'])->name('tenant.processing.orders.bulk-dispatch');
+
+    Route::get('processing/returns', [\App\Http\Controllers\Tenant\OrderProcessingController::class, 'indexReturns'])->name('tenant.processing.returns.index');
+    Route::post('processing/returns/{orderReturn}/receive', [\App\Http\Controllers\Tenant\OrderProcessingController::class, 'receiveReturn'])->name('tenant.processing.returns.receive');
+
     // Order Verification
     Route::get('orders/verification', [\App\Http\Controllers\Tenant\OrderVerificationController::class, 'index'])
         ->name('tenant.orders.verification.index');

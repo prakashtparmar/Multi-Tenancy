@@ -65,17 +65,17 @@
                 @endcan
 
                 <!-- @can('analytics view')
-                                                                    <x-layout.nav-link title="Analytics" url="#" :active="false">
-                                                                        <x-slot name="icon">
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                                                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
-                                                                                class="size-5">
-                                                                                <path d="M3 3v18h18" />
-                                                                                <path d="m19 9-5 5-4-4-3 3" />
-                                                                            </svg>
-                                                                        </x-slot>
-                                                                    </x-layout.nav-link>
-                                                                @endcan -->
+                                                                            <x-layout.nav-link title="Analytics" url="#" :active="false">
+                                                                                <x-slot name="icon">
+                                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                                                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                                                                                        class="size-5">
+                                                                                        <path d="M3 3v18h18" />
+                                                                                        <path d="m19 9-5 5-4-4-3 3" />
+                                                                                    </svg>
+                                                                                </x-slot>
+                                                                            </x-layout.nav-link>
+                                                                        @endcan -->
 
                 @can('reports view')
                     <x-layout.nav-link title="Reports" url="/reports" :active="request()->is('reports*')">
@@ -291,6 +291,46 @@
                     </x-layout.nav-collapsible>
                 @endif
                 @endrole
+            </div>
+        @endif
+
+
+        <!-- SECTION: WAREHOUSE (NEW) -->
+        @if(auth()->check() && (auth()->user()->can('orders process') || auth()->user()->hasRole('Super Admin') || auth()->user()->can('orders view')))
+            <div class="space-y-1">
+                <div class="px-3 mb-2 transition-opacity duration-300"
+                    :class="sidebarCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100'">
+                    <h3 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/60">
+                        Warehouse
+                    </h3>
+                </div>
+
+                <x-layout.nav-link title="Processing"
+                    url="{{ tenant() ? route('tenant.processing.orders.index') : route('central.processing.orders.index') }}"
+                    :active="request()->is('processing/orders*')">
+                    <x-slot name="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                            class="size-5">
+                            <path
+                                d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                    </x-slot>
+                </x-layout.nav-link>
+
+                <x-layout.nav-link title="Returns (RMA)"
+                    url="{{ tenant() ? route('tenant.processing.returns.index') : route('central.processing.returns.index') }}"
+                    :active="request()->is('processing/returns*')">
+                    <x-slot name="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                            class="size-5">
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                    </x-slot>
+                </x-layout.nav-link>
             </div>
         @endif
 
