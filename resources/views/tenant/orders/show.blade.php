@@ -1,7 +1,33 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Order Details') }} - {{ $order->order_number }}
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight flex items-center gap-2">
+            {{ __('Order Details') }} - 
+            <span x-data="{ 
+                copying: false,
+                copy() {
+                    navigator.clipboard.writeText('{{ $order->order_number }}');
+                    this.copying = true;
+                    setTimeout(() => this.copying = false, 2000);
+                }
+            }" 
+            @click="copy()"
+            class="cursor-pointer hover:text-indigo-600 transition-colors relative group"
+            title="Click to copy">
+                {{ $order->order_number }}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block opacity-0 group-hover:opacity-100 transition-opacity ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                <span x-show="copying" 
+                      x-transition:enter="transition ease-out duration-200"
+                      x-transition:enter-start="opacity-0 translate-y-1"
+                      x-transition:enter-end="opacity-100 translate-y-0"
+                      x-transition:leave="transition ease-in duration-150"
+                      x-transition:leave-start="opacity-100 translate-y-0"
+                      x-transition:leave-end="opacity-0 translate-y-1"
+                      class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] py-1 px-2 rounded font-bold whitespace-nowrap z-50">
+                    Copied!
+                </span>
+            </span>
         </h2>
     </x-slot>
 
@@ -78,7 +104,7 @@
                             @if($order->billingAddress)
                                 <div class="space-y-3 relative z-10">
                                     <div class="font-bold text-gray-900 text-sm border-b border-gray-100 pb-2 mb-2">{{ $order->billingAddress->contact_name ?? $order->customer->first_name . ' ' . $order->customer->last_name }}</div>
-                                    
+
                                     <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                                          <div class="col-span-2">
                                              <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold block mb-0.5">Address</span>
@@ -89,7 +115,7 @@
                                                 @endif
                                              </span>
                                         </div>
-                                        
+
                                         <div>
                                              <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold block mb-0.5">Village</span>
                                              <span class="text-gray-700 font-medium">{{ $order->billingAddress->village ?? '-' }}</span>
@@ -153,7 +179,7 @@
                             @if($order->shippingAddress)
                                 <div class="space-y-3 relative z-10">
                                     <div class="font-bold text-gray-900 text-sm border-b border-gray-100 pb-2 mb-2">{{ $order->shippingAddress->contact_name ?? $order->customer->name }}</div>
-                                    
+
                                     <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                                          <div class="col-span-2">
                                              <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold block mb-0.5">Address</span>
@@ -164,7 +190,7 @@
                                                 @endif
                                              </span>
                                         </div>
-                                        
+
                                         <div>
                                              <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold block mb-0.5">Village</span>
                                              <span class="text-gray-700 font-medium">{{ $order->shippingAddress->village ?? '-' }}</span>
@@ -376,7 +402,7 @@
                                             </div>
                                             
                                             @php 
-                                                                                                $itemDiscounts = $order->items->sum('discount_amount');
+                                                                                                                                                                                                $itemDiscounts = $order->items->sum('discount_amount');
                                                 $orderDiscount = $order->discount_amount - $itemDiscounts;
                                             @endphp
 

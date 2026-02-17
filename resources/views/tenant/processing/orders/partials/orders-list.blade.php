@@ -10,7 +10,7 @@
                     <div class="flex items-center gap-4">
                         {{-- Checkbox --}}
                         <div class="flex items-center h-10 w-10 rounded-lg bg-white shadow-sm border border-border/50 justify-center">
-                            <input type="checkbox" value="{{ $order->id }}" x-model="selected" class="h-4 w-4 rounded border-input text-primary focus:ring-primary/20 bg-background cursor-pointer transition-all checked:bg-primary checked:border-primary">
+                            <input type="checkbox" value="{{ $order->id }}" data-status="{{ $order->status }}" x-model="selected" class="h-4 w-4 rounded border-input text-primary focus:ring-primary/20 bg-background cursor-pointer transition-all checked:bg-primary checked:border-primary">
                         </div>
                         <div>
                             <div class="flex items-center gap-3">

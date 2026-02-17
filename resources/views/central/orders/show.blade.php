@@ -7,18 +7,47 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div class="space-y-2">
                 <div class="flex items-center gap-4">
-                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
-                        Order #{{ $order->order_number }}
+                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                        <!-- Order ID : -->
+                        <span x-data="{ 
+                            copying: false,
+                            copy() {
+                                navigator.clipboard.writeText('{{ $order->order_number }}');
+                                this.copying = true;
+                                setTimeout(() => this.copying = false, 2000);
+                            }
+                        }" 
+                        @click="copy()"
+                        class="cursor-pointer hover:text-indigo-600 transition-colors relative group"
+                        title="Click to copy">
+                            {{ $order->order_number }}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block opacity-0 group-hover:opacity-100 transition-opacity ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            <span x-show="copying" 
+                                  x-transition:enter="transition ease-out duration-200"
+                                  x-transition:enter-start="opacity-0 translate-y-1"
+                                  x-transition:enter-end="opacity-100 translate-y-0"
+                                  x-transition:leave="transition ease-in duration-150"
+                                  x-transition:leave-start="opacity-100 translate-y-0"
+                                  x-transition:leave-end="opacity-0 translate-y-1"
+                                  class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] py-1 px-2 rounded font-bold whitespace-nowrap z-50">
+                                Copied!
+                            </span>
+                        </span>
                     </h1>
                     @php
                         $statusColors = match ($order->status) {
                             'completed' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                             'shipped' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                            'in_transit' => 'bg-orange-50 text-orange-700 border-orange-200',
                             'confirmed' => 'bg-blue-50 text-blue-700 border-blue-200',
                             'cancelled' => 'bg-red-50 text-red-700 border-red-200',
                             'processing' => 'bg-purple-50 text-purple-700 border-purple-200',
                             'ready_to_ship' => 'bg-sky-50 text-sky-700 border-sky-200',
                             'delivered' => 'bg-green-50 text-green-700 border-green-200',
+                            'returned' => 'bg-rose-50 text-rose-700 border-rose-200',
+                            'scheduled' => 'bg-violet-50 text-violet-700 border-violet-200',
                             default => 'bg-amber-50 text-amber-700 border-amber-200',
                         };
                     @endphp
@@ -39,7 +68,7 @@
 
                     {{-- 1. Confirm --}}
                     @php 
-                                                                        $isPending = in_array($order->status, ['pending', 'draft', 'scheduled']);
+                                                                                                                                                                        $isPending = in_array($order->status, ['pending', 'draft', 'scheduled']);
                         $isConfirmedOrLater = in_array($order->status, ['confirmed', 'processing', 'ready_to_ship', 'shipped', 'in_transit', 'delivered', 'completed', 'returned']);
                     @endphp
                     @if($isPending)

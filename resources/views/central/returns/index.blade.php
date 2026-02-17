@@ -1,376 +1,409 @@
 @extends('layouts.app')
 
 @section('content')
-    <div id="returns-page-wrapper" class="flex flex-1 flex-col space-y-8 p-8 animate-in fade-in duration-500">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+    <div x-data="{ 
+        showModal: false,
+        currentReturn: null,
+        items: [],
+        actionUrl: '',
+        
+        inspect(rma) {
+            this.currentReturn = rma;
+            this.items = rma.items.map(item => ({
+                item_id: item.id,
+                name: item.product.name,
+                sku: item.product.sku,
+                quantity: item.quantity,
+                image_url: item.product.image_url,
+                verified: false,
+                condition: 'sellable'
+            }));
+            this.actionUrl = '{{ route('central.returns.inspect.store', ':id') }}'.replace(':id', rma.id);
+            this.showModal = true;
+        },
+        
+        closeModal() {
+            this.showModal = false;
+            this.currentReturn = null;
+            this.items = [];
+        },
+        
+        get canSubmit() {
+            return this.items.length > 0 && this.items.every(i => i.verified);
+        }
+    }" 
+    class="flex flex-col space-y-8 p-8 max-w-[1600px] mx-auto w-full animate-in fade-in duration-500">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div class="space-y-1">
-                <h1
-                    class="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                    Returns (RMA)</h1>
-                <p class="text-muted-foreground text-sm">Manage return requests, approvals, and refunds.</p>
+                <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                    Returns Management
+                </h1>
+                <p class="text-muted-foreground text-sm font-medium">Process RMAs, inspect items, and issue refunds.</p>
             </div>
-            <div class="flex items-center p-1 bg-muted/50 rounded-xl border border-border/50 backdrop-blur-sm">
-                <a href="{{ route('central.returns.index') }}"
-                    class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === null ? 'bg-background text-foreground shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-foreground hover:bg-background/50' }}">
-                    All Returns
-                </a>
-                <div class="w-px h-4 bg-border/40 mx-1"></div>
-                <a href="{{ route('central.returns.index', ['status' => 'requested']) }}"
-                    class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'requested' ? 'bg-background text-amber-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-amber-600 hover:bg-background/50' }}">
-                    Requested
-                </a>
-                <div class="w-px h-4 bg-border/40 mx-1"></div>
-                <a href="{{ route('central.returns.index', ['status' => 'approved']) }}"
-                    class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'approved' ? 'bg-background text-blue-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-blue-600 hover:bg-background/50' }}">
-                    Approved
-                </a>
-                <div class="w-px h-4 bg-border/40 mx-1"></div>
-                <a href="{{ route('central.returns.index', ['status' => 'completed']) }}"
-                    class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request('status') === 'completed' ? 'bg-background text-emerald-600 shadow-sm ring-1 ring-border/20' : 'text-muted-foreground hover:text-emerald-600 hover:bg-background/50' }}">
-                    Completed
-                </a>
+            
+            <a href="{{ route('central.returns.create') }}" 
+               class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-semibold rounded-xl shadow-lg shadow-gray-900/10 transition-all hover:-translate-y-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                Process New Return
+            </a>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    </div>
+                    <span class="text-sm font-medium text-gray-500">Total Requests</span>
+                </div>
+                <div class="text-2xl font-black text-gray-900">{{ $stats['all'] }}</div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <span class="text-sm font-medium text-gray-500">Pending Action</span>
+                </div>
+                <div class="text-2xl font-black text-gray-900">{{ $stats['requested'] }}</div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    </div>
+                    <span class="text-sm font-medium text-gray-500">Received</span>
+                </div>
+                <div class="text-2xl font-black text-gray-900">{{ $stats['received'] }}</div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m17 5-9 13"/><path d="m5 17 9-13"/></svg>
+                    </div>
+                    <span class="text-sm font-medium text-gray-500">Refunded</span>
+                </div>
+                <div class="text-2xl font-black text-gray-900">{{ $stats['refunded'] }}</div>
             </div>
         </div>
 
-        <div id="returns-table-container" x-data="{ selected: [] }">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-1.5 rounded-2xl">
-                <div class="flex items-center gap-3 min-h-[44px]">
-                    <div x-cloak x-show="selected.length > 0" x-transition.opacity.duration.300ms
-                        class="flex items-center gap-3 animate-in fade-in slide-in-from-left-4">
-                        <div
-                            class="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold shadow-sm">
-                            <span x-text="selected.length"></span> selected
-                        </div>
-                    </div>
-
-                    <form id="search-form" method="GET" action="{{ url()->current() }}"
-                        class="flex items-center gap-2 group">
-                        @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
-                        @if(request('per_page')) <input type="hidden" name="per_page" value="{{ request('per_page') }}">
-                        @endif
-
-                        <div class="relative transition-all duration-300 group-focus-within:w-72"
-                            :class="selected.length > 0 ? 'w-48' : 'w-64'">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    class="text-muted-foreground group-focus-within:text-primary transition-colors">
-                                    <circle cx="11" cy="11" r="8" />
-                                    <path d="m21 21-4.3-4.3" />
-                                </svg>
-                            </div>
-                            <input type="text" name="search" value="{{ request('search') }}"
-                                placeholder="Search RMA, orders..."
-                                class="block w-full rounded-xl border-0 py-2.5 pl-10 pr-3 text-foreground bg-muted/40 ring-1 ring-inset ring-transparent placeholder:text-muted-foreground focus:bg-background focus:ring-2 focus:ring-primary/20 sm:text-sm sm:leading-6 transition-all shadow-sm">
-                        </div>
-                    </form>
-                </div>
-
-                <a href="{{ route('central.returns.create') }}"
-                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 14v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" />
-                        <path d="M16 10 12 6 8 10" />
-                        <path d="M12 6v12" />
-                    </svg>
-                    <span>Process Return</span>
-                </a>
+        <!-- Filters & Toolbar -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 sticky top-0 z-30 bg-gray-50/95 backdrop-blur-xl p-2 rounded-2xl border border-gray-200/60 shadow-sm">
+            <div class="flex items-center gap-1 overflow-x-auto no-scrollbar w-full md:w-auto">
+                @php
+                    $filters = [
+                        ['label' => 'All', 'value' => null],
+                        ['label' => 'Requested', 'value' => 'requested'],
+                        ['label' => 'Approved', 'value' => 'approved'],
+                        ['label' => 'Received', 'value' => 'received'],
+                        ['label' => 'Refunded', 'value' => 'refunded'],
+                        ['label' => 'Rejected', 'value' => 'rejected'],
+                        ['label' => 'Completed', 'value' => 'completed'],
+                    ];
+                @endphp
+                @foreach($filters as $filter)
+                    <a href="{{ route('central.returns.index', ['status' => $filter['value']]) }}" 
+                       class="px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap {{ request('status') == $filter['value'] ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50' }}">
+                        {{ $filter['label'] }}
+                    </a>
+                @endforeach
             </div>
 
-            <div class="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-xl shadow-sm overflow-hidden relative">
-                <div id="table-loading"
-                    class="absolute inset-0 z-50 bg-background/50 backdrop-blur-[2px] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
-                    <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent shadow-lg">
-                    </div>
+            <form action="{{ url()->current() }}" method="GET" class="relative group w-full md:w-72">
+                @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 </div>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search RMA, Order, Customer..." 
+                       class="w-full h-10 pl-10 pr-4 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm">
+            </form>
+        </div>
 
-                <div
-                    class="border-b border-border/40 p-4 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span
-                            class="flex h-6 w-6 items-center justify-center rounded-md bg-background border border-border font-medium text-foreground shadow-sm">
-                            {{ $returns->total() }}
-                        </span>
-                        <span>returns found</span>
-                    </div>
+        <!-- Content Area -->
+        <div class="space-y-4">
+            @forelse($returns as $rma)
+                <div class="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden relative">
+                    <!-- Status Accent Line -->
+                    <div class="absolute left-0 top-0 bottom-0 w-1 
+                        {{ $rma->status === 'requested' ? 'bg-amber-400' : 
+                          ($rma->status === 'approved' ? 'bg-blue-500' : 
+                          ($rma->status === 'received' ? 'bg-purple-500' : 
+                          ($rma->status === 'refunded' || $rma->status === 'completed' ? 'bg-emerald-500' : 
+                          ($rma->status === 'rejected' ? 'bg-red-500' : 'bg-gray-300')))) }}"></div>
 
-                    <div class="flex items-center gap-3">
-                        <form id="per-page-form" method="GET" action="{{ url()->current() }}"
-                            class="flex items-center gap-2">
-                            @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}">
-                            @endif
-                            @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}">
-                            @endif
-
-                            <label for="per_page"
-                                class="text-xs font-medium text-muted-foreground whitespace-nowrap">View</label>
-                            <div class="relative">
-                                <select name="per_page" id="per_page"
-                                    class="appearance-none h-8 pl-3 pr-8 rounded-lg border border-border bg-background text-xs font-medium focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors cursor-pointer hover:bg-accent/50">
-                                    <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
-                                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
-                                </select>
-                                <div
-                                    class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
-                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="relative w-full overflow-auto">
-                    <table class="w-full caption-bottom text-sm">
-                        <thead class="[&_tr]:border-b">
-                            <tr
-                                class="border-b border-border/40 transition-colors hover:bg-muted/30 data-[state=selected]:bg-muted bg-muted/20">
-                                <th class="h-12 w-[50px] px-6 text-left align-middle">
-                                    <div class="flex items-center">
-                                        <input type="checkbox"
-                                            class="h-4 w-4 rounded border-input text-primary focus:ring-primary/20 bg-background cursor-pointer transition-all checked:bg-primary checked:border-primary"
-                                            @click="selected = $event.target.checked ? [{{ $returns->pluck('id')->join(',') }}] : []">
-                                    </div>
-                                </th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    RMA #</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Order</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Items</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Reason</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Status</th>
-                                <th
-                                    class="h-12 px-6 text-left align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Refund</th>
-                                <th
-                                    class="h-12 px-6 text-right align-middle font-medium text-muted-foreground/70 uppercase tracking-wider text-[11px]">
-                                    Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="[&_tr:last-child]:border-0 text-sm">
-                            @forelse($returns as $return)
-                                <tr
-                                    class="group border-b border-border/40 transition-all duration-200 hover:bg-muted/40 data-[state=selected]:bg-muted/60">
-                                    <td class="p-6 align-middle">
-                                        <div class="flex items-center">
-                                            <input type="checkbox" value="{{ $return->id }}" x-model="selected"
-                                                class="h-4 w-4 rounded border-input text-primary focus:ring-primary/20 bg-background cursor-pointer transition-all checked:bg-primary checked:border-primary">
-                                        </div>
-                                    </td>
-                                    <td class="p-6 align-middle">
-                                        <span
-                                            class="font-semibold text-foreground text-sm tracking-tight">{{ $return->rma_number }}</span>
-                                    </td>
-                                    <td class="p-6 align-middle">
-                                        <div class="flex flex-col space-y-0.5">
-                                            <span
-                                                class="text-sm font-medium">#{{ $return->order->order_number ?? 'Unknown' }}</span>
-                                            <span
-                                                class="text-xs text-muted-foreground">{{ $return->order->customer->name ?? '' }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="p-6 align-middle">
+                    <div class="p-6">
+                        <div class="flex flex-col lg:flex-row gap-8">
+                            <!-- Left: Info -->
+                            <div class="flex-1 space-y-6">
+                                <!-- Header -->
+                                <div class="flex items-start justify-between">
+                                    <div class="space-y-1">
                                         <div class="flex items-center gap-3">
-                                            @if($return->items->isNotEmpty() && $return->items->first()->product)
-                                                <div class="h-8 w-8 rounded bg-muted border border-border overflow-hidden">
-                                                    <img src="{{ $return->items->first()->product->image_url }}" alt=""
-                                                        class="h-full w-full object-cover">
-                                                </div>
-                                            @endif
-                                            <div class="flex flex-col">
-                                                <span class="text-sm font-medium">{{ $return->items->sum('quantity') }}
-                                                    items</span>
-                                                <span class="text-xs text-muted-foreground">{{ $return->items->count() }}
-                                                    products</span>
-                                            </div>
+                                            <h3 class="text-lg font-bold text-gray-900 tracking-tight">{{ $rma->rma_number }}</h3>
+                                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide
+                                                {{ $rma->status === 'requested' ? 'bg-amber-50 text-amber-700' : 
+                                                  ($rma->status === 'approved' ? 'bg-blue-50 text-blue-700' : 
+                                                  ($rma->status === 'received' ? 'bg-purple-50 text-purple-700' : 
+                                                  ($rma->status === 'refunded' || $rma->status === 'completed' ? 'bg-emerald-50 text-emerald-700' : 
+                                                  ($rma->status === 'rejected' ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-700')))) }}">
+                                                {{ ucfirst($rma->status) }}
+                                            </span>
                                         </div>
-                                    </td>
-                                    <td class="p-6 align-middle">
-                                        <span class="text-sm text-muted-foreground truncate max-w-[150px] block"
-                                            title="{{ $return->reason }}">{{ Str::limit($return->reason, 25) }}</span>
-                                    </td>
-                                    <td class="p-6 align-middle">
-                                        @if($return->status === 'approved')
-                                            <span
-                                                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                                                Approved
-                                            </span>
-                                        @elseif($return->status === 'rejected')
-                                            <span
-                                                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
-                                                Rejected
-                                            </span>
-                                        @elseif($return->status === 'completed')
-                                            <span
-                                                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                                                Completed
-                                            </span>
-                                        @elseif($return->status === 'received')
-                                            <span
-                                                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-purple-500/10 text-purple-600 border border-purple-500/20">
-                                                Received
-                                            </span>
-                                        @elseif($return->status === 'refunded')
-                                            <span
-                                                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-purple-500/10 text-purple-600 border border-purple-500/20">
-                                                Refunded
-                                            </span>
-                                        @else
-                                            <span
-                                                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                                                Requested
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="p-6 align-middle">
-                                        @if($return->refund_status === 'refunded')
-                                            <span class="text-xs font-semibold text-emerald-600">Refunded</span>
-                                        @else
-                                            <span class="text-xs text-muted-foreground">Pending</span>
-                                        @endif
-                                    </td>
-                                    <td class="p-6 align-middle text-right">
-                                        <div class="relative flex justify-end" x-data="{ open: false }"
-                                            @click.away="open = false">
-                                            <button @click="open = !open"
-                                                class="group/btn inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground/70 transition-all hover:text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring active:scale-95">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                    stroke-linecap="round" stroke-linejoin="round">
-                                                    <circle cx="12" cy="12" r="1" />
-                                                    <circle cx="12" cy="5" r="1" />
-                                                    <circle cx="12" cy="19" r="1" />
-                                                </svg>
+                                        <p class="text-sm text-gray-500">Created on {{ $rma->created_at->format('M d, Y') }} • Order <a href="#" class="text-primary hover:underline font-medium">#{{ $rma->order->order_number ?? 'N/A' }}</a></p>
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-2">
+                                        @if($rma->status === 'requested')
+                                            <a href="{{ route('central.returns.edit', $rma) }}" class="px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors">Edit</a>
+                                        @elseif($rma->status === 'approved')
+                                            <button @click="inspect(@js($rma))" class="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all flex items-center gap-1 shadow-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                                Inspect & Receive
                                             </button>
-                                            <div x-show="open"
-                                                class="absolute right-0 top-9 z-50 min-w-[180px] overflow-hidden rounded-xl border border-border/60 bg-popover/95 p-1 text-popover-foreground shadow-xl shadow-black/5 backdrop-blur-xl"
-                                                style="display: none;">
-                                                <div
-                                                    class="px-2 py-1.5 text-xs font-semibold text-muted-foreground/50 uppercase tracking-wider">
-                                                    Manage</div>
-                                                <a href="{{ route('central.returns.show', $return) }}"
-                                                    class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
-                                                    View Details
-                                                </a>
-                                                @if($return->status === 'requested')
-                                                    <a href="{{ route('central.returns.edit', $return) }}"
-                                                        class="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
-                                                        Update RMA
-                                                    </a>
+                                        @endif
+                                        <a href="{{ route('central.returns.show', $rma) }}" class="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- Customer & Context -->
+                                <div class="flex items-center gap-4 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
+                                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-600 font-bold text-sm">
+                                        {{ substr($rma->order->customer->first_name ?? 'G', 0, 1) }}
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-semibold text-gray-900">{{ $rma->order->customer->first_name ?? 'Guest' }} {{ $rma->order->customer->last_name ?? '' }}</p>
+                                        <p class="text-xs text-gray-500">{{ $rma->order->customer->email ?? '' }}</p>
+                                    </div>
+                                    <div class="text-right px-4 border-l border-gray-200">
+                                        <p class="text-[10px] uppercase font-bold text-gray-400">Items</p>
+                                        <p class="text-lg font-black text-gray-900 leading-none">{{ $rma->items->sum('quantity') }}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Grid of Products -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    @foreach($rma->items->take(4) as $item)
+                                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                            <div class="h-10 w-10 rounded-md bg-white border border-gray-100 overflow-hidden flex-shrink-0">
+                                                @if($item->product && $item->product->image_url)
+                                                    <img src="{{ $item->product->image_url }}" class="w-full h-full object-cover">
+                                                @else
+                                                    <div class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-300">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                                                    </div>
                                                 @endif
                                             </div>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-medium text-gray-900 truncate">{{ $item->product->name ?? 'Unknown Item' }}</p>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-xs text-gray-500">Qty: {{ $item->quantity }}</span>
+                                                    <span class="text-[10px] px-1.5 py-px rounded bg-gray-100 text-gray-600 font-medium">{{ ucfirst($item->condition) }}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="p-16 text-center">
-                                        <div class="flex flex-col items-center justify-center text-muted-foreground/50">
-                                            <p class="text-lg font-semibold text-foreground">No return requests found</p>
-                                            <p class="text-sm mt-1">Manage new returns here.</p>
+                                    @endforeach
+                                    @if($rma->items->count() > 4)
+                                        <div class="flex items-center justify-center p-2 text-xs font-medium text-gray-500">
+                                            +{{ $rma->items->count() - 4 }} more items
                                         </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                    @endif
+                                </div>
+                            </div>
 
-                @if($returns->hasPages())
-                    <div
-                        class="border-t border-border/40 p-4 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="text-xs text-muted-foreground px-2">Page <span
-                                class="font-medium text-foreground">{{ $returns->currentPage() }}</span> of <span
-                                class="font-medium">{{ $returns->lastPage() }}</span></div>
-                        <div>{{ $returns->links() }}</div>
+                            <!-- Right: Lifecycle Stepper -->
+                            <div class="lg:w-80 flex-shrink-0 bg-gray-50 rounded-xl p-6 border border-gray-100/80">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 border-b border-gray-200 pb-2">Workflow Progress</h4>
+                                
+                                <div class="relative pl-4 space-y-8 border-l-2 border-gray-200 ml-2">
+                                    @php
+                                        // Stepper Logic for Central Admin
+                                        $steps = ['requested', 'approved', 'received', 'refunded', 'completed'];
+                                        $isRejected = $rma->status === 'rejected';
+                                        
+                                        if ($isRejected) {
+                                            $steps = ['requested', 'rejected'];
+                                        }
+
+                                        $currentIndex = array_search($rma->status, $steps);
+                                        // Normalize 'completed' and 'refunded' as final stages if not explicitly in flow
+                                        if ($rma->status === 'refunded' && !in_array('refunded', $steps)) $currentIndex = 3;
+                                        if ($rma->status === 'completed' && !in_array('completed', $steps)) $currentIndex = 4;
+                                        
+                                        if ($currentIndex === false) $currentIndex = 0;
+                                    @endphp
+
+                                    @foreach($steps as $index => $step)
+                                        @php
+                                            $isCompleted = $index <= $currentIndex;
+                                            $isActive = $index === $currentIndex;
+                                            
+                                            // Colors
+                                            if ($step === 'rejected') {
+                                                $colorClass = $isActive ? 'bg-red-500 ring-red-200 text-red-700' : 'bg-gray-200 text-gray-400';
+                                            } elseif ($step === 'refunded' || $step === 'completed') {
+                                                $colorClass = $isActive || $isCompleted ? 'bg-emerald-500 ring-emerald-200 text-emerald-700' : 'bg-gray-200 text-gray-400';
+                                            } else {
+                                                $colorClass = $isActive || $isCompleted ? 'bg-blue-500 ring-blue-200 text-blue-700' : 'bg-gray-200 text-gray-400';
+                                            }
+                                        @endphp
+
+                                        <div class="relative flex flex-col gap-1">
+                                            <!-- Dot -->
+                                            <div class="absolute -left-[25px] top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm ring-4 ring-transparent transition-all duration-300 z-10 
+                                                {{ $isActive ? 'scale-110 ring-offset-2 ring-opacity-50 ' . str_replace('text-', 'ring-', $colorClass) : '' }} 
+                                                {{ $isCompleted ? str_replace('text-', 'bg-', $colorClass) : 'bg-gray-200' }}"></div>
+                                            
+                                            <span class="text-sm font-bold uppercase tracking-wide {{ $isActive ? 'text-gray-900' : 'text-gray-400' }}">
+                                                {{ ucfirst($step) }}
+                                            </span>
+
+                                            @if($isActive)
+                                                <span class="text-xs text-gray-500 animate-pulse font-medium">Current Status</span>
+                                            @endif
+                                            
+                                            @if($step === 'requested')
+                                                 <p class="text-[10px] text-gray-400 line-clamp-1" title="{{ $rma->reason }}">{{ $rma->reason }}</p>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                @endif
+                </div>
+            @empty
+                <div class="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-gray-300">
+                    <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900">No returns found</h3>
+                    <p class="text-gray-500 text-sm">Or try adjusting your filters.</p>
+                </div>
+            @endforelse
+
+            <div class="mt-8">
+                {{ $returns->links() }}
+            </div>
+        </div>
+
+        <!-- Inspection Modal -->
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm"
+             x-show="showModal"
+             x-cloak
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100">
+            
+            <div x-show="showModal" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                 class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-gray-100 overflow-hidden"
+                 @click.away="closeModal()">
+                
+                <form :action="actionUrl" method="POST">
+                    @csrf
+                    <!-- Modal Header -->
+                    <div class="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                        <div>
+                            <h3 class="text-xl font-black text-gray-900 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M20 6 9 17l-5-5"/></svg>
+                                Inspection Checklist
+                            </h3>
+                            <p class="text-sm text-gray-500 mt-1" x-text="'Processing ' + (currentReturn ? currentReturn.rma_number : '')"></p>
+                        </div>
+                        <button type="button" @click="closeModal()" class="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-gray-900">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="px-8 py-6 max-h-[60vh] overflow-y-auto space-y-4">
+                        <template x-for="(item, index) in items" :key="index">
+                            <div class="p-4 rounded-2xl border transition-all duration-200" 
+                                 :class="item.verified ? 'bg-blue-50/30 border-blue-200' : 'bg-white border-gray-100'">
+                                <div class="flex flex-col sm:flex-row gap-4">
+                                    <div class="flex items-start gap-4 flex-1">
+                                        <!-- Checkbox -->
+                                        <div class="pt-1">
+                                            <input type="checkbox" x-model="item.verified" :name="'items['+index+'][verified]'" value="1"
+                                                   class="h-6 w-6 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer shadow-sm transition-all">
+                                        </div>
+
+                                        <!-- Product Info -->
+                                        <div class="flex items-start gap-3 flex-1">
+                                            <div class="h-12 w-12 rounded-xl bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100">
+                                                <template x-if="item.image_url">
+                                                    <img :src="item.image_url" class="h-full w-full object-cover">
+                                                </template>
+                                                <template x-if="!item.image_url">
+                                                    <div class="h-full w-full flex items-center justify-center text-gray-300">
+                                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="m21 8-9-4-9 4m18 8-9 4-9-4m18-4-9 4-9-4"/></svg>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                            <div>
+                                                <h5 class="text-sm font-black text-gray-900 leading-snug" x-text="item.name"></h5>
+                                                <p class="text-xs text-gray-500 mt-0.5" x-text="'Requested Qty: ' + item.quantity"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Condition Selector -->
+                                    <div class="w-full sm:w-40" x-show="item.verified" x-transition>
+                                        <input type="hidden" :name="'items['+index+'][item_id]'" :value="item.item_id">
+                                        <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1.5 px-1">Inspected Condition</label>
+                                        <select :name="'items['+index+'][condition]'" x-model="item.condition"
+                                                class="w-full h-10 bg-white border-gray-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500 transition-all">
+                                            <option value="sellable">Sellable (Restock)</option>
+                                            <option value="damaged">Damaged (No Restock)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="px-8 py-6 border-t border-gray-50 bg-gray-50/50 flex flex-col sm:flex-row items-center gap-4">
+                        <div class="flex-1 text-center sm:text-left">
+                            <p class="text-xs font-bold" :class="canSubmit ? 'text-emerald-600' : 'text-gray-400'">
+                                <template x-if="canSubmit">
+                                    <span class="flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                        All items verified and ready for receipt
+                                    </span>
+                                </template>
+                                <template x-if="!canSubmit">
+                                    <span x-text="'Please verify ' + items.filter(i => !i.verified).length + ' remaining item(s)'"></span>
+                                </template>
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <button type="button" @click="closeModal()" class="flex-1 sm:flex-none px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" 
+                                    :disabled="!canSubmit"
+                                    class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-8 py-3 bg-gray-900 text-white text-sm font-black rounded-2xl transition-all shadow-xl shadow-gray-900/10 hover:-translate-y-0.5 disabled:opacity-30 disabled:pointer-events-none disabled:grayscale">
+                                <span>Complete Receipt</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const container = document.getElementById('returns-table-container');
-            const loading = document.getElementById('table-loading');
-            let searchTimeout;
-
-            async function loadContent(url, pushState = true) {
-                if (loading) loading.style.opacity = '1';
-                try {
-                    const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-                    if (!res.ok) throw new Error('Network response was not ok');
-                    const html = await res.text();
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const newContent = doc.getElementById('returns-table-container');
-                    if (newContent) {
-                        container.innerHTML = newContent.innerHTML;
-                        if (pushState) window.history.pushState({}, '', url);
-                        if (typeof Alpine !== 'undefined') Alpine.initTree(container);
-                    } else {
-                        window.location.href = url;
-                    }
-                } catch (err) {
-                    window.location.href = url;
-                } finally {
-                    if (loading) loading.style.opacity = '0';
-                }
-            }
-
-            window.addEventListener('popstate', () => loadContent(window.location.href, false));
-
-            container.addEventListener('click', (e) => {
-                const link = e.target.closest('a.page-link') || e.target.closest('nav[role="navigation"] a') || e.target.closest('.pagination a');
-                if (link && container.contains(link) && link.href) {
-                    e.preventDefault();
-                    loadContent(link.href);
-                }
-            });
-
-            container.addEventListener('input', (e) => {
-                if (e.target.name === 'search') {
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(() => {
-                        const form = e.target.closest('form');
-                        const url = new URL(form.action);
-                        const params = new URLSearchParams(new FormData(form));
-                        loadContent(`${url.origin}${url.pathname}?${params.toString()}`);
-                    }, 400);
-                }
-            });
-
-            container.addEventListener('change', (e) => {
-                if (e.target.id === 'per_page') {
-                    const form = e.target.closest('form');
-                    const url = new URL(form.action);
-                    const params = new URLSearchParams(new FormData(form));
-                    loadContent(`${url.origin}${url.pathname}?${params.toString()}`);
-                }
-            });
-
-            container.addEventListener('submit', (e) => {
-                if (e.target.id === 'search-form' || e.target.id === 'per-page-form') {
-                    e.preventDefault();
-                    const form = e.target;
-                    const url = new URL(form.action);
-                    const params = new URLSearchParams(new FormData(form));
-                    loadContent(`${url.origin}${url.pathname}?${params.toString()}`);
-                }
-            });
-        });
-    </script>
 @endsection

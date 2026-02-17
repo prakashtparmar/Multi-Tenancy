@@ -373,6 +373,27 @@
                                            </span>
                                            @break
 
+                                       @case('in_transit')
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-orange-500/10 text-orange-600 border border-orange-500/20 shadow-sm">
+                                               <span class="h-1.5 w-1.5 rounded-full bg-orange-500"></span>
+                                               In Transit
+                                           </span>
+                                           @break
+
+                                       @case('delivered')
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shadow-sm">
+                                               <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                               Delivered
+                                           </span>
+                                           @break
+
+                                       @case('returned')
+                                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-rose-500/10 text-rose-600 border border-rose-500/20 shadow-sm">
+                                               <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+                                               Returned
+                                           </span>
+                                           @break
+
                                        @case('confirmed')
                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20 shadow-sm">
                                                <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>

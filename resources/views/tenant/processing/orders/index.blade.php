@@ -1,7 +1,44 @@
 @extends('layouts.app')
 
 @section('content')
-    <div x-data="{ selected: [], allIds: {{ $orders->pluck('id') }} }"
+    <div x-data="{ 
+        selected: [], 
+        allIds: @json($orders->pluck('id')),
+        statusFlow: ['placed', 'confirmed', 'processing', 'ready_to_ship', 'shipped', 'delivered'],
+        isStatusValid(targetStatus) {
+            if (this.selected.length === 0) return false;
+            
+            // Get statuses of selected orders from DOM to ensure they are up-to-date (even after AJAX)
+            // We use document.querySelector because the checkboxes are likely inside the current component or its children
+            // but for safety/simplicity we'll query by value.
+            
+            const selectedStatuses = this.selected.map(id => {
+                const checkbox = document.querySelector(`input[type='checkbox'][value='${id}']`);
+                return checkbox ? checkbox.getAttribute('data-status') : null;
+            }).filter(s => s !== null);
+
+            if (selectedStatuses.length === 0) return false;
+
+            // Handle cancellation logic
+            if (targetStatus === 'cancelled') {
+                 // Can cancel if not delivered or already cancelled
+                 return selectedStatuses.every(current => current !== 'delivered' && current !== 'cancelled');
+            }
+
+            const targetIndex = this.statusFlow.indexOf(targetStatus);
+            if (targetIndex === -1) return false;
+
+            // Forward transition: Target must be strictly greater than current for ALL selected
+            return selectedStatuses.every(current => {
+                const currentIndex = this.statusFlow.indexOf(current);
+                
+                // If current status is unknown or invalid for flow, block
+                if (currentIndex === -1) return false; 
+                
+                return targetIndex > currentIndex;
+            });
+        }
+    }"
         class="flex flex-1 flex-col space-y-6 p-6 md:p-8 max-w-[1600px] mx-auto w-full animate-in fade-in duration-500">
 
         <!-- Header Area -->
@@ -122,25 +159,25 @@
                                     <input type="hidden" name="ids[]" :value="id">
                                 </template>
 
-                                <button type="submit" name="status" value="confirmed"
+                                <button type="submit" name="status" value="confirmed" x-show="isStatusValid('confirmed')"
                                     @click="if(!confirm('Are you sure you want to mark ' + selected.length + ' orders as Confirmed?')) $event.preventDefault()"
                                     class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-blue-50 hover:text-blue-600 text-foreground/80">
                                     <span class="w-2 h-2 rounded-full bg-blue-500"></span>
                                     Mark as Confirmed
                                 </button>
-                                <button type="submit" name="status" value="processing"
+                                <button type="submit" name="status" value="processing" x-show="isStatusValid('processing')"
                                     @click="if(!confirm('Are you sure you want to mark ' + selected.length + ' orders as Processing?')) $event.preventDefault()"
                                     class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-purple-50 hover:text-purple-600 text-foreground/80">
                                     <span class="w-2 h-2 rounded-full bg-purple-500"></span>
                                     Mark as Processing
                                 </button>
-                                <button type="submit" name="status" value="ready_to_ship"
+                                <button type="submit" name="status" value="ready_to_ship" x-show="isStatusValid('ready_to_ship')"
                                     @click="if(!confirm('Are you sure you want to mark ' + selected.length + ' orders as Ready to Ship? This will generate invoices.')) $event.preventDefault()"
                                     class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-emerald-50 hover:text-emerald-600 text-foreground/80">
                                     <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                                     Mark as Ready
                                 </button>
-                                <button type="submit" name="status" value="delivered"
+                                <button type="submit" name="status" value="delivered" x-show="isStatusValid('delivered')"
                                     @click="if(!confirm('Are you sure you want to mark ' + selected.length + ' orders as Delivered?')) $event.preventDefault()"
                                     class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-green-50 hover:text-green-600 text-foreground/80">
                                     <span class="w-2 h-2 rounded-full bg-green-500"></span>

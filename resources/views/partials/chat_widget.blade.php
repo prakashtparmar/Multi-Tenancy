@@ -107,8 +107,12 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex justify-between items-baseline mb-0.5">
-                            <p class="font-medium text-sm truncate text-foreground group-hover:text-primary transition-colors"
-                                x-text="user.name"></p>
+                            <p
+                                class="font-medium text-sm truncate text-foreground group-hover:text-primary transition-colors">
+                                <span x-text="user.name"></span>
+                                <span x-show="user.location" x-text="' (' + user.location + ')'"
+                                    class="text-xs text-muted-foreground ml-1"></span>
+                            </p>
                             <span class="text-[10px] text-muted-foreground"
                                 x-text="user.last_message_time || ''"></span>
                         </div>
@@ -145,7 +149,8 @@
                             <label class="flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer">
                                 <input type="checkbox" :value="user.id" x-model="selectedGroupMembers"
                                     class="rounded border-gray-300 text-primary focus:ring-primary">
-                                <span class="text-sm" x-text="user.name"></span>
+                                <span class="text-sm"
+                                    x-text="user.name + (user.location ? ' (' + user.location + ')' : '')"></span>
                             </label>
                         </template>
                         <template x-if="availableUsers.length === 0">
@@ -180,7 +185,8 @@
                     <div class="max-h-40 overflow-y-auto border rounded-md p-2 mb-2 space-y-1">
                         <template x-for="member in groupMembers" :key="member.id">
                             <div class="flex items-center justify-between p-2 hover:bg-muted/50 rounded">
-                                <span class="text-sm" x-text="member.name"></span>
+                                <span class="text-sm"
+                                    x-text="member.name + (member.location ? ' (' + member.location + ')' : '')"></span>
                                 <button @click="removeMember(member.id)"
                                     class="text-destructive hover:bg-destructive/10 p-1 rounded transition-colors">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
@@ -203,7 +209,8 @@
                         <template x-for="user in availableUsers" :key="user.id">
                             <div class="flex items-center justify-between p-2 hover:bg-muted/50 rounded"
                                 x-show="!groupMembers.some(m => m.id == user.id)">
-                                <span class="text-sm" x-text="user.name"></span>
+                                <span class="text-sm"
+                                    x-text="user.name + (user.location ? ' (' + user.location + ')' : '')"></span>
                                 <button @click="addMember(user.id)"
                                     class="text-primary hover:bg-primary/10 p-1 rounded transition-colors">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
@@ -281,7 +288,13 @@
 
                             <!-- Sender Name for Groups -->
                             <template x-if="currentUser && currentUser.group_id != '0' && !msg.send_by_you">
-                                <div class="text-[10px] font-bold text-primary mb-1" x-text="msg.name"></div>
+                                <div class="text-[10px] font-bold text-primary mb-1">
+                                    <span x-text="msg.name"></span>
+                                    <template x-if="msg.location">
+                                        <span x-text="' (' + msg.location + ')'"
+                                            class="font-normal opacity-75 ml-0.5"></span>
+                                    </template>
+                                </div>
                             </template>
 
                             <div x-html="msg.body" class="whitespace-pre-wrap break-words"></div>
@@ -391,7 +404,14 @@
             get headerTitle() {
                 if (this.currentView === 'create_group') return 'Create Group';
                 if (this.currentView === 'edit_group') return 'Group Settings';
-                return this.currentView === 'chat' && this.currentUser ? this.currentUser.name : 'Messages';
+                if (this.currentView === 'chat' && this.currentUser) {
+                    let title = this.currentUser.name;
+                    if (this.currentUser.location) {
+                        title += ` (${this.currentUser.location})`;
+                    }
+                    return title;
+                }
+                return 'Messages';
             },
 
             init() {

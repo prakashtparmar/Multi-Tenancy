@@ -1,7 +1,45 @@
 @extends('layouts.app')
 
 @section('content')
-    <div x-data="{ selected: [], allIds: {{ $orders->pluck('id') }} }"
+    <div x-data="{ 
+                    selected: [], 
+                    allIds: {{ $orders->pluck('id') }},
+                    statusFlow: ['placed', 'confirmed', 'processing', 'ready_to_ship', 'shipped', 'delivered'],
+                    isStatusValid(targetStatus) {
+                        if (this.selected.length === 0) return false;
+
+                        // Get statuses of selected orders from DOM to ensure they are up-to-date (even after AJAX)
+                        const selectedStatuses = this.selected.map(id => {
+                            const checkbox = document.querySelector(`input[type='checkbox'][value='${id}']`);
+                            return checkbox ? checkbox.getAttribute('data-status') : null;
+                        }).filter(s => s !== null);
+
+                        if (selectedStatuses.length === 0) return false;
+
+                        // Handle cancellation logic
+                        if (targetStatus === 'cancelled') {
+                             // Can cancel if not delivered or already cancelled
+                             return selectedStatuses.every(current => current !== 'delivered' && current !== 'cancelled');
+                        }
+
+                        const targetIndex = this.statusFlow.indexOf(targetStatus);
+                        if (targetIndex === -1) return false;
+
+                        // Forward transition: Target must be strictly greater than current for AT LEAST ONE selected
+                        return selectedStatuses.some(current => {
+                            // Normalize 'completed' to 'delivered' for logic
+                            let normalizedCurrent = current === 'completed' ? 'delivered' : current;
+
+                            const currentIndex = this.statusFlow.indexOf(normalizedCurrent);
+
+                            // If current status is unknown or invalid for flow, block this specific order
+                            if (currentIndex === -1) return false; 
+
+                            // Check if this specific order can move to target
+                            return targetIndex > currentIndex;
+                        });
+                    }
+                }"
         class="flex flex-1 flex-col space-y-6 p-6 md:p-8 max-w-[1600px] mx-auto w-full animate-in fade-in duration-500">
 
         <!-- Header Area -->
@@ -123,25 +161,26 @@
                                     <input type="hidden" name="ids[]" :value="id">
                                 </template>
 
-                                <button type="submit" name="status" value="confirmed"
+                                <button type="submit" name="status" value="confirmed" x-show="isStatusValid('confirmed')"
                                     @click="if(!confirm('Are you sure you want to mark ' + selected.length + ' orders as Confirmed?')) $event.preventDefault()"
                                     class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-blue-50 hover:text-blue-600 text-foreground/80">
                                     <span class="w-2 h-2 rounded-full bg-blue-500"></span>
                                     Mark as Confirmed
                                 </button>
-                                <button type="submit" name="status" value="processing"
+                                <button type="submit" name="status" value="processing" x-show="isStatusValid('processing')"
                                     @click="if(!confirm('Are you sure you want to mark ' + selected.length + ' orders as Processing?')) $event.preventDefault()"
                                     class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-purple-50 hover:text-purple-600 text-foreground/80">
                                     <span class="w-2 h-2 rounded-full bg-purple-500"></span>
                                     Mark as Processing
                                 </button>
                                 <button type="submit" name="status" value="ready_to_ship"
+                                    x-show="isStatusValid('ready_to_ship')"
                                     @click="if(!confirm('Are you sure you want to mark ' + selected.length + ' orders as Ready to Ship? This will generate invoices.')) $event.preventDefault()"
                                     class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-emerald-50 hover:text-emerald-600 text-foreground/80">
                                     <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                                     Mark as Ready
                                 </button>
-                                <button type="submit" name="status" value="delivered"
+                                <button type="submit" name="status" value="delivered" x-show="isStatusValid('delivered')"
                                     @click="if(!confirm('Are you sure you want to mark ' + selected.length + ' orders as Delivered?')) $event.preventDefault()"
                                     class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-green-50 hover:text-green-600 text-foreground/80">
                                     <span class="w-2 h-2 rounded-full bg-green-500"></span>
@@ -258,31 +297,31 @@
                         </svg>
                     </div>
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search orders..." x-data="{
-                                                    async performSearch() {
-                                                        const url = new URL(window.location.href);
-                                                        url.searchParams.set('search', $el.value);
-                                                        // Reset pagination to page 1 when searching
-                                                        url.searchParams.delete('page'); 
+                                                                async performSearch() {
+                                                                    const url = new URL(window.location.href);
+                                                                    url.searchParams.set('search', $el.value);
+                                                                    // Reset pagination to page 1 when searching
+                                                                    url.searchParams.delete('page'); 
 
-                                                        const newUrl = url.toString();
+                                                                    const newUrl = url.toString();
 
-                                                        window.history.pushState({}, '', newUrl);
+                                                                    window.history.pushState({}, '', newUrl);
 
-                                                        try {
-                                                            const response = await fetch(newUrl, {
-                                                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                                                            });
-                                                            if (response.ok) {
-                                                                const html = await response.text();
-                                                                document.getElementById('orders-list-container').innerHTML = html;
-                                                            } else {
-                                                                console.error('Search Error:', response.status);
-                                                            }
-                                                        } catch (error) {
-                                                            console.error('Search Failed:', error);
-                                                        }
-                                                    }
-                                                }" @refresh-orders.window="performSearch()"
+                                                                    try {
+                                                                        const response = await fetch(newUrl, {
+                                                                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                                                                        });
+                                                                        if (response.ok) {
+                                                                            const html = await response.text();
+                                                                            document.getElementById('orders-list-container').innerHTML = html;
+                                                                        } else {
+                                                                            console.error('Search Error:', response.status);
+                                                                        }
+                                                                    } catch (error) {
+                                                                        console.error('Search Failed:', error);
+                                                                    }
+                                                                }
+                                                            }" @refresh-orders.window="performSearch()"
                         @input.debounce.500ms="performSearch"
                         class="flex h-10 w-full rounded-xl border border-input bg-background/50 pl-9 pr-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50 transition-all">
                 </form>
@@ -438,36 +477,36 @@
 
     <!-- Premium Processed Order Modal (AJAX) -->
     <div x-data="{ 
-                                open: false, 
-                                order: null,
-                                processOrder(orderId) {
-                                    fetch(`/processing/orders/${orderId}/process`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'Accept': 'application/json',
-                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
-                                        }
-                                    })
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        if (data.success) {
-                                            this.order = data.order;
-                                            this.open = true;
-                                        } else {
-                                            alert('Error processing order: ' + (data.message || 'Unknown error'));
-                                        }
-                                    })
-                                    .catch(error => {
-                                        console.error('Error:', error);
-                                        alert('An error occurred');
-                                    });
-                                },
-                                closeModal() {
-                            this.open = false;
-                            this.$dispatch('refresh-orders'); 
-                        }
-                            }" @open-process-modal.window="processOrder($event.detail.orderId)">
+                                            open: false, 
+                                            order: null,
+                                            processOrder(orderId) {
+                                                fetch(`/processing/orders/${orderId}/process`, {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Accept': 'application/json',
+                                                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                                                    }
+                                                })
+                                                .then(response => response.json())
+                                                .then(data => {
+                                                    if (data.success) {
+                                                        this.order = data.order;
+                                                        this.open = true;
+                                                    } else {
+                                                        alert('Error processing order: ' + (data.message || 'Unknown error'));
+                                                    }
+                                                })
+                                                .catch(error => {
+                                                    console.error('Error:', error);
+                                                    alert('An error occurred');
+                                                });
+                                            },
+                                            closeModal() {
+                                        this.open = false;
+                                        this.$dispatch('refresh-orders'); 
+                                    }
+                                        }" @open-process-modal.window="processOrder($event.detail.orderId)">
 
         <div x-show="open" style="display: none;"
             class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">

@@ -309,13 +309,28 @@ class OrderProcessingController extends Controller
                 throw new Exception("Return must be Approved before receiving items.");
             }
 
-            DB::transaction(function () use ($orderReturn) {
+            $validated = $request->validate([
+                'items' => 'required|array',
+                'items.*.id' => 'required|exists:return_items,id',
+                'items.*.condition' => 'required|in:sellable,damaged',
+            ]);
+
+            DB::transaction(function () use ($orderReturn, $validated) {
                 // Update Return Status
                 $orderReturn->update(['status' => 'received']);
 
-                // Update Inventory
-                foreach ($orderReturn->items as $item) {
-                    if ($item->condition === 'sellable') {
+                // Process each item from the request
+                foreach ($validated['items'] as $itemData) {
+                    $item = $orderReturn->items()->find($itemData['id']);
+
+                    if (!$item)
+                        continue;
+
+                    // Update condition in DB
+                    $item->update(['condition' => $itemData['condition']]);
+
+                    // Only add to inventory if sellable
+                    if ($itemData['condition'] === 'sellable') {
                         $warehouseId = $orderReturn->order->warehouse_id;
 
                         // Find or Create Stock record
@@ -333,14 +348,17 @@ class OrderProcessingController extends Controller
                             'type' => 'return',
                             'quantity' => $item->quantity,
                             'reference_id' => $orderReturn->id,
-                            'reason' => 'Return Received (RMA: ' . $orderReturn->rma_number . ')',
+                            'reason' => 'Return Received (RMA: ' . $orderReturn->rma_number . ') - Restocked',
                             'user_id' => auth()->id(),
                         ]);
+                    } else {
+                        // Log the scrap/damaged decision effectively by absence of movement or explicit log if needed
+                        // For now, we just don't add stock.
                     }
                 }
             });
 
-            return back()->with('success', 'Return items received and inventory updated.');
+            return back()->with('success', 'Return items received. Inventory updated based on condition.');
 
         } catch (Exception $e) {
             return back()->with('error', 'Error receiving return: ' . $e->getMessage());

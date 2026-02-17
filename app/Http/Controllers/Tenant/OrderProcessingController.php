@@ -284,18 +284,26 @@ class OrderProcessingController extends Controller
     /**
      * List approved returns that need to be received
      */
-    public function indexReturns(): View
+    public function indexReturns(Request $request): View
     {
-        // specific requirements: receved itemes and anly and acoirdng to update the inventory
-        // So we show 'approved' returns (waiting to be received)
-        // and 'received' returns (for history)
+        $query = OrderReturn::with(['order.customer', 'items.product'])
+            ->whereIn('status', ['approved', 'received']);
 
-        $returns = OrderReturn::with(['order.customer', 'items.product'])
-            ->whereIn('status', ['approved', 'received'])
-            ->latest()
-            ->paginate(10);
+        // Stats Calculation (Before filtering)
+        $stats = [
+            'total' => OrderReturn::whereIn('status', ['approved', 'received'])->count(),
+            'approved' => OrderReturn::where('status', 'approved')->count(),
+            'received' => OrderReturn::where('status', 'received')->count(),
+        ];
 
-        return view('tenant.processing.returns.index', compact('returns'));
+        // Filter by Status
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        $returns = $query->latest()->paginate(10)->withQueryString();
+
+        return view('tenant.processing.returns.index', compact('returns', 'stats'));
     }
 
     /**
@@ -304,18 +312,29 @@ class OrderProcessingController extends Controller
      */
     public function receiveReturn(Request $request, OrderReturn $orderReturn): RedirectResponse
     {
+        $validated = $request->validate([
+            'items' => 'required|array',
+            'items.*.item_id' => 'required|exists:return_items,id',
+            'items.*.condition' => 'required|in:sellable,damaged',
+            'items.*.verified' => 'required|accepted',
+        ]);
+
         try {
             if ($orderReturn->status !== 'approved') {
                 throw new Exception("Return must be Approved before receiving items.");
             }
 
-            DB::transaction(function () use ($orderReturn) {
+            DB::transaction(function () use ($orderReturn, $validated) {
                 // Update Return Status
                 $orderReturn->update(['status' => 'received']);
 
-                // Update Inventory
-                foreach ($orderReturn->items as $item) {
-                    if ($item->condition === 'sellable') {
+                foreach ($validated['items'] as $inspectedItem) {
+                    $item = $orderReturn->items()->findOrFail($inspectedItem['item_id']);
+
+                    // Update item condition based on inspection
+                    $item->update(['condition' => $inspectedItem['condition']]);
+
+                    if ($inspectedItem['condition'] === 'sellable') {
                         $warehouseId = $orderReturn->order->warehouse_id;
 
                         // Find or Create Stock record
@@ -325,7 +344,7 @@ class OrderProcessingController extends Controller
                         );
 
                         // Increment Quantity
-                        $stock->increment('quantity', $item->quantity);
+                        $stock->increment('quantity', (int) $item->quantity);
 
                         // Log Movement
                         InventoryMovement::create([
@@ -333,14 +352,14 @@ class OrderProcessingController extends Controller
                             'type' => 'return',
                             'quantity' => $item->quantity,
                             'reference_id' => $orderReturn->id,
-                            'reason' => 'Return Received (RMA: ' . $orderReturn->rma_number . ')',
+                            'reason' => 'Return Received & Inspected (RMA: ' . $orderReturn->rma_number . ')',
                             'user_id' => auth()->id(),
                         ]);
                     }
                 }
             });
 
-            return back()->with('success', 'Return items received and inventory updated.');
+            return back()->with('success', 'Return items inspected and received into inventory.');
 
         } catch (Exception $e) {
             return back()->with('error', 'Error receiving return: ' . $e->getMessage());

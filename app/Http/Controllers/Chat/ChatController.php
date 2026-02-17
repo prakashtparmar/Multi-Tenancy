@@ -104,7 +104,7 @@ class ChatController extends Controller
 
             if (!empty($ids)) {
                 $userList = User::whereIn('id', $ids)
-                    ->select('name', 'id')
+                    ->select('name', 'id', 'location')
                     ->get();
                 return response()->json(['flag' => true, 'member_data' => $userList, 'success' => true]);
             }

@@ -42,7 +42,18 @@ class OrderReturnController extends Controller
         $perPage = (int) $request->input('per_page', 10);
         $returns = $query->latest()->paginate($perPage)->withQueryString();
 
-        return view('central.returns.index', compact('returns'));
+        // Stats for the tabs
+        $stats = [
+            'all' => OrderReturn::count(),
+            'requested' => OrderReturn::where('status', 'requested')->count(),
+            'approved' => OrderReturn::where('status', 'approved')->count(),
+            'received' => OrderReturn::where('status', 'received')->count(),
+            'refunded' => OrderReturn::where('status', 'refunded')->count(),
+            'rejected' => OrderReturn::where('status', 'rejected')->count(),
+            'completed' => OrderReturn::where('status', 'completed')->count(),
+        ];
+
+        return view('central.returns.index', compact('returns', 'stats'));
     }
 
     /**
@@ -53,11 +64,15 @@ class OrderReturnController extends Controller
         $this->authorize('orders manage');
 
         $preSelectedOrderId = $request->query('order_id');
-        $orders = Order::where('status', '!=', 'cancelled')->latest()->limit(50)->get();
+        $orders = Order::whereIn('status', ['shipped', 'delivered'])->latest()->limit(50)->get();
 
         $preSelectedOrder = null;
         if ($preSelectedOrderId) {
-            $preSelectedOrder = Order::with('items')->find($preSelectedOrderId);
+            $preSelectedOrder = Order::with('items.product')->find($preSelectedOrderId);
+            if ($preSelectedOrder && !in_array($preSelectedOrder->status, ['shipped', 'delivered'])) {
+                $preSelectedOrder = null;
+                session()->flash('error', 'Selected order is not eligible for return (Status: ' . ucfirst($preSelectedOrder->status ?? 'Unknown') . ')');
+            }
         }
 
         return view('central.returns.create', compact('orders', 'preSelectedOrderId', 'preSelectedOrder'));
@@ -81,7 +96,11 @@ class OrderReturnController extends Controller
 
         try {
             DB::transaction(function () use ($validated) {
-                $order = Order::with('items')->findOrFail($validated['order_id']);
+                $order = Order::with('items.product')->findOrFail($validated['order_id']);
+
+                if (!in_array($order->status, ['shipped', 'delivered'])) {
+                    throw new Exception("Returns are only allowed for Shipped or Delivered orders. Current status: " . ucfirst($order->status));
+                }
 
                 // Calculate already returned quantities for this order (excluding rejected returns)
                 $existingReturns = OrderReturn::with('items')
@@ -101,17 +120,33 @@ class OrderReturnController extends Controller
 
                 // Validate requested quantities against available quantities
                 foreach ($validated['items'] as $requestedItem) {
-                    $orderItem = $order->items->where('product_id', $requestedItem['product_id'])->first();
+                    // Get ALL line items for this product to calculate total purchaesd qty
+                    $orderItems = $order->items->where('product_id', $requestedItem['product_id']);
 
-                    if (!$orderItem) {
+                    if ($orderItems->isEmpty()) {
                         throw new Exception("Product ID {$requestedItem['product_id']} does not belong to this order.");
                     }
 
-                    $previouslyReturned = $returnedQuantities[$requestedItem['product_id']] ?? 0;
-                    $availableQty = $orderItem->quantity - $previouslyReturned;
+                    $totalPurchasedQty = (float) $orderItems->sum('quantity');
+                    $productName = $orderItems->first()->product->name ?? 'Unknown Product';
 
-                    if ($requestedItem['quantity'] > $availableQty) {
-                        throw new Exception("Cannot return {$requestedItem['quantity']} of {$orderItem->product_name}. Only {$availableQty} available to return.");
+                    $previouslyReturned = (float) ($returnedQuantities[$requestedItem['product_id']] ?? 0);
+
+                    // Collect RMA numbers for this product
+                    $blockingRmas = $existingReturns->filter(function ($rma) use ($requestedItem) {
+                        return $rma->items->where('product_id', $requestedItem['product_id'])->isNotEmpty();
+                    })->pluck('rma_number')->implode(', ');
+
+                    // Rounding to avoid floating point issues
+                    $availableQty = round($totalPurchasedQty - $previouslyReturned, 3);
+                    $requestedQty = (float) $requestedItem['quantity'];
+
+                    if ($requestedQty > $availableQty) {
+                        $errorMsg = "Cannot return " . (int) $requestedQty . " of {$productName}. Only " . (int) $availableQty . " available. (Purchased: " . (int) $totalPurchasedQty . ", Previously Returned/Requested: " . (int) $previouslyReturned . ")";
+                        if (!empty($blockingRmas)) {
+                            $errorMsg .= " [Blocking RMAs: {$blockingRmas}]";
+                        }
+                        throw new Exception($errorMsg);
                     }
                 }
 
@@ -293,38 +328,40 @@ class OrderReturnController extends Controller
 
         $validated = $request->validate([
             'items' => 'required|array',
-            'items.*.id' => 'required|exists:return_items,id',
-            'items.*.quantity_received' => 'required|numeric|min:0',
-            'items.*.condition_received' => 'required|in:sellable,damaged',
+            'items.*.item_id' => 'required|exists:return_items,id',
+            'items.*.condition' => 'required|in:sellable,damaged',
+            'items.*.verified' => 'required|accepted',
         ]);
 
         try {
             DB::transaction(function () use ($validated, $return) {
-                foreach ($validated['items'] as $itemData) {
-                    $item = $return->items()->findOrFail($itemData['id']);
+                foreach ($validated['items'] as $inspectedItem) {
+                    $item = $return->items()->findOrFail($inspectedItem['item_id']);
 
-                    // Update Item Record
+                    // Update Item Record with inspected data
                     $item->update([
-                        'quantity_received' => $itemData['quantity_received'],
-                        'condition_received' => $itemData['condition_received'],
+                        'condition_received' => $inspectedItem['condition'],
+                        'quantity_received' => $item->quantity, // For now, assume full quantity is received if verified
                     ]);
 
                     // Restock Logic (Only for Sellable Received Items)
-                    if ($itemData['condition_received'] === 'sellable' && $itemData['quantity_received'] > 0) {
+                    if ($inspectedItem['condition'] === 'sellable') {
                         $warehouseId = $return->order->warehouse_id;
                         if ($warehouseId) {
                             $stock = InventoryStock::firstOrCreate(
                                 ['warehouse_id' => $warehouseId, 'product_id' => $item->product_id],
                                 ['quantity' => 0]
                             );
-                            $stock->increment('quantity', $itemData['quantity_received']);
+
+                            // Cast to int for safety
+                            $stock->increment('quantity', (int) $item->quantity);
 
                             InventoryMovement::create([
                                 'stock_id' => $stock->id,
                                 'type' => 'return',
-                                'quantity' => $itemData['quantity_received'],
+                                'quantity' => $item->quantity,
                                 'reference_id' => $return->id,
-                                'reason' => 'RMA Received: ' . $return->rma_number,
+                                'reason' => 'RMA Received & Inspected: ' . $return->rma_number,
                                 'user_id' => auth()->id(),
                             ]);
                         }
@@ -338,7 +375,7 @@ class OrderReturnController extends Controller
                 ]);
             });
 
-            return redirect()->route('central.returns.show', $return)->with('success', 'RMA Processed & Stock Updated.');
+            return redirect()->route('central.returns.index')->with('success', 'RMA Processed & Stock Updated.');
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Failed to process inspection: ' . $e->getMessage());
         }

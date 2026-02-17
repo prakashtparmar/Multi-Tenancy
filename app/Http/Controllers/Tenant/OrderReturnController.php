@@ -23,12 +23,43 @@ class OrderReturnController extends Controller
     /**
      * Display a listing of the order returns.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('orders view');
-        
-        $returns = OrderReturn::with(['order.customer'])->latest()->paginate(10);
-        return view('tenant.returns.index', compact('returns'));
+
+        // Stats for the tabs
+        $stats = [
+            'all' => OrderReturn::count(),
+            'requested' => OrderReturn::where('status', 'requested')->count(),
+            'approved' => OrderReturn::where('status', 'approved')->count(),
+            'received' => OrderReturn::where('status', 'received')->count(),
+            'refunded' => OrderReturn::where('status', 'refunded')->count(),
+            'rejected' => OrderReturn::where('status', 'rejected')->count(),
+        ];
+
+        $query = OrderReturn::with(['order.customer', 'items.product']);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('rma_number', 'like', "%{$search}%")
+                    ->orWhereHas('order', function ($q) use ($search) {
+                        $q->where('order_number', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $returns = $query->latest()->paginate(10);
+
+        return view('tenant.returns.index', compact('returns', 'stats'));
     }
 
     /**
@@ -39,11 +70,15 @@ class OrderReturnController extends Controller
         $this->authorize('orders manage');
 
         $preSelectedOrderId = $request->query('order_id');
-        $orders = Order::where('status', '!=', 'cancelled')->latest()->limit(50)->get();
-        
+        $orders = Order::with('items.product')->whereIn('status', ['shipped', 'delivered'])->latest()->limit(50)->get();
+
         $preSelectedOrder = null;
         if ($preSelectedOrderId) {
-            $preSelectedOrder = Order::with('items')->find($preSelectedOrderId);
+            $preSelectedOrder = Order::with('items.product')->find($preSelectedOrderId);
+            if ($preSelectedOrder && !in_array($preSelectedOrder->status, ['shipped', 'delivered'])) {
+                $preSelectedOrder = null;
+                session()->flash('error', 'Selected order is not eligible for return (Status: ' . ucfirst($preSelectedOrder->status ?? 'Unknown') . ')');
+            }
         }
 
         return view('tenant.returns.create', compact('orders', 'preSelectedOrderId', 'preSelectedOrder'));
@@ -65,10 +100,70 @@ class OrderReturnController extends Controller
             'items.*.condition' => 'required|in:sellable,damaged',
         ]);
 
-        $order = Order::findOrFail($validated['order_id']);
-
         try {
-            DB::transaction(function () use ($validated, $order) {
+            DB::transaction(function () use ($validated) {
+                $order = Order::with('items.product')->findOrFail($validated['order_id']);
+
+                if (!in_array($order->status, ['shipped', 'delivered'])) {
+                    throw new \Exception("Returns are only allowed for Shipped or Delivered orders. Current status: " . ucfirst($order->status));
+                }
+
+                // Calculate already returned quantities for this order (excluding rejected returns)
+                $existingReturns = OrderReturn::with('items')
+                    ->where('order_id', $order->id)
+                    ->where('status', '!=', 'rejected')
+                    ->get();
+
+                $returnedQuantities = [];
+                foreach ($existingReturns as $existingReturn) {
+                    foreach ($existingReturn->items as $item) {
+                        if (!isset($returnedQuantities[$item->product_id])) {
+                            $returnedQuantities[$item->product_id] = 0;
+                        }
+                        $returnedQuantities[$item->product_id] += $item->quantity;
+                    }
+                }
+
+                // Validate requested quantities against available quantities
+                foreach ($validated['items'] as $requestedItem) {
+                    // Get ALL line items for this product to calculate total purchaesd qty
+                    $orderItems = $order->items->where('product_id', $requestedItem['product_id']);
+
+                    if ($orderItems->isEmpty()) {
+                        throw new \Exception("Product ID {$requestedItem['product_id']} does not belong to this order.");
+                    }
+
+                    $totalPurchasedQty = (float) $orderItems->sum('quantity');
+                    $productName = $orderItems->first()->product->name ?? 'Unknown Product'; // Safe because we checked isEmpty
+
+                    $previouslyReturned = (float) ($returnedQuantities[$requestedItem['product_id']] ?? 0);
+
+                    // Collect RMA numbers for this product
+                    $blockingRmas = $existingReturns->filter(function ($rma) use ($requestedItem) {
+                        // Check if this RMA contains the current product
+                        $hasProduct = false;
+                        foreach ($rma->items as $item) {
+                            if ($item->product_id == $requestedItem['product_id']) {
+                                $hasProduct = true;
+                                break;
+                            }
+                        }
+                        return $hasProduct;
+                    })->pluck('rma_number')->implode(', ');
+
+                    // Rounding to avoid floating point issues
+                    $availableQty = round($totalPurchasedQty - $previouslyReturned, 3);
+                    $requestedQty = (float) $requestedItem['quantity'];
+
+                    if ($requestedQty > $availableQty) {
+                        $errorMsg = "Cannot return " . (int) $requestedQty . " of {$productName}. Only " . (int) $availableQty . " available. (Purchased: " . (int) $totalPurchasedQty . ", Previously Returned/Requested: " . (int) $previouslyReturned . ")";
+                        if (!empty($blockingRmas)) {
+                            $errorMsg .= " [Blocking RMAs: {$blockingRmas}]";
+                        }
+                        throw new \Exception($errorMsg);
+                    }
+                }
+
                 $rma = OrderReturn::create([
                     'rma_number' => 'RMA-' . strtoupper(Str::random(8)),
                     'order_id' => $order->id,
@@ -89,7 +184,7 @@ class OrderReturnController extends Controller
 
             return redirect()->route('tenant.returns.index')->with('success', 'RMA Requested.');
         } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Failed to request RMA.');
+            return back()->withInput()->with('error', 'Failed to request RMA: ' . $e->getMessage());
         }
     }
 
@@ -99,7 +194,7 @@ class OrderReturnController extends Controller
     public function show(OrderReturn $orderReturn): View
     {
         $this->authorize('orders view');
-        
+
         $orderReturn->load(['items.product', 'order.customer']);
         return view('tenant.returns.show', compact('orderReturn'));
     }
@@ -127,7 +222,7 @@ class OrderReturnController extends Controller
                                     ['quantity' => 0]
                                 );
                                 $stock->increment('quantity', $item->quantity);
-                                
+
                                 InventoryMovement::create([
                                     'stock_id' => $stock->id,
                                     'type' => 'return',

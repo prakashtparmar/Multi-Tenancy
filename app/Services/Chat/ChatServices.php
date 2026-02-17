@@ -357,7 +357,8 @@ class ChatServices
                 'last_message_time' => $last_message_time,
                 'created_at' => $created_at, // Might be empty if no history
                 'is_online' => $is_online,
-                'sort_score' => $sort_score
+                'sort_score' => $sort_score,
+                'location' => $member->location ?? ''
             );
 
             $all_users[] = $item;
@@ -612,6 +613,7 @@ class ChatServices
                 $returnArray['message'][$key]['created_at'] = date('g:i A', strtotime($chat->created_at));
 
                 $returnArray['message'][$key]['name'] = $chat->user->name;
+                $returnArray['message'][$key]['location'] = $chat->user->location ?? '';
                 // if ($chat->user->profile_pic) {
                 //     $returnArray['message'][$key]['photo']  = getS3Url(env('AWS_BUCKETaverp'),$chat->user->profile_pic,'userprofile');
                 // }

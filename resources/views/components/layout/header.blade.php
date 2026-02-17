@@ -372,12 +372,19 @@
                                 this.error = '';
                                 try {
                                     const url = `{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}`;
+                                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                                    if (!csrfToken) {
+                                        this.error = 'Security token missing. Refresh page.';
+                                        this.saving = false;
+                                        return;
+                                    }
+
                                     let res = await fetch(url, {
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json',
                                             'Accept': 'application/json',
-                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                            'X-CSRF-TOKEN': csrfToken
                                         },
                                         body: JSON.stringify(this.newCustomer)
                                     });
