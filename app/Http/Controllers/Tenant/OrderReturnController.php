@@ -25,7 +25,7 @@ class OrderReturnController extends Controller
      */
     public function index(Request $request): View
     {
-        $this->authorize('orders view');
+        $this->authorize('returns view');
 
         // Stats for the tabs
         $stats = [
@@ -67,7 +67,7 @@ class OrderReturnController extends Controller
      */
     public function create(Request $request): View
     {
-        $this->authorize('orders manage');
+        $this->authorize('returns create');
 
         $preSelectedOrderId = $request->query('order_id');
         $orders = Order::with('items.product')->whereIn('status', ['shipped', 'delivered'])->latest()->limit(50)->get();
@@ -89,7 +89,7 @@ class OrderReturnController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $this->authorize('orders manage');
+        $this->authorize('returns create');
 
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,id',
@@ -193,7 +193,7 @@ class OrderReturnController extends Controller
      */
     public function show(OrderReturn $orderReturn): View
     {
-        $this->authorize('orders view');
+        $this->authorize('returns view');
 
         $orderReturn->load(['items.product', 'order.customer']);
         return view('tenant.returns.show', compact('orderReturn'));
@@ -204,7 +204,7 @@ class OrderReturnController extends Controller
      */
     public function updateStatus(Request $request, OrderReturn $orderReturn): RedirectResponse
     {
-        $this->authorize('orders manage');
+        $this->authorize('returns edit');
 
         $request->validate(['status' => 'required|in:approved,received,refunded,rejected']);
 

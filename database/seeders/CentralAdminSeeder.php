@@ -136,6 +136,11 @@ class CentralAdminSeeder extends Seeder
             // Finance
             'finance view',
             'expenses manage',
+
+            // Chat System
+            'chat view',
+            'chat manage',
+            'chat create',
         ];
 
         foreach ($permissions as $permission) {

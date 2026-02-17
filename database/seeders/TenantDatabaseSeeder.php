@@ -116,6 +116,11 @@ class TenantDatabaseSeeder extends Seeder
             'reports view',
             'reports export',
 
+            // Chat System
+            'chat view',
+            'chat manage',
+            'chat create',
+
             // Finance
             'finance view',
             'expenses manage',
@@ -175,6 +180,9 @@ class TenantDatabaseSeeder extends Seeder
             'reports export',
             'finance view',
             'expenses manage',
+            'chat view',
+            'chat manage',
+            'chat create',
         ]);
 
         // Editor (Content & Catalog focus)
