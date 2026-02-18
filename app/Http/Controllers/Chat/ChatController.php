@@ -16,9 +16,7 @@ class ChatController extends Controller
     public function __construct(ChatServices $chatService)
     {
         $this->chatService = $chatService;
-        $this->middleware('permission:chat view')->only(['indexGroup', 'getGroup', 'getChat', 'getUsers', 'indexChat', 'viewGroupMembers']);
-        $this->middleware('permission:chat create')->only(['storeGroup', 'storeChat', 'addMembers', 'removeMembers', 'updateGroup', 'forwardMsg', 'markAsRead', 'markAsStarred']);
-        $this->middleware('permission:chat manage')->only(['destroyGroup']);
+
     }
 
     /*

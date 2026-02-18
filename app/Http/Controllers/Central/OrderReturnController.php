@@ -26,7 +26,7 @@ class OrderReturnController extends Controller
      */
     public function index(Request $request): View
     {
-        $this->authorize('returns view');
+        $this->authorize('orders view');
 
         $query = OrderReturn::with(['order.customer', 'items.product']);
 
@@ -61,7 +61,7 @@ class OrderReturnController extends Controller
      */
     public function create(Request $request): View
     {
-        $this->authorize('returns create');
+        $this->authorize('orders manage');
 
         $preSelectedOrderId = $request->query('order_id');
         $orders = Order::whereIn('status', ['shipped', 'delivered'])->latest()->limit(50)->get();
@@ -83,7 +83,7 @@ class OrderReturnController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $this->authorize('returns create');
+        $this->authorize('orders manage');
 
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,id',
@@ -179,7 +179,7 @@ class OrderReturnController extends Controller
      */
     public function show(OrderReturn $return): View
     {
-        $this->authorize('returns view');
+        $this->authorize('orders view');
         $return->load(['items.product', 'order.customer']);
         return view('central.returns.show', ['orderReturn' => $return]);
     }
@@ -189,7 +189,7 @@ class OrderReturnController extends Controller
      */
     public function updateStatus(Request $request, OrderReturn $orderReturn): RedirectResponse
     {
-        $this->authorize('returns edit');
+        $this->authorize('orders manage');
         $validated = $request->validate(['status' => 'required|in:approved,received,refunded,rejected']);
 
         try {
@@ -232,7 +232,7 @@ class OrderReturnController extends Controller
      */
     public function edit(OrderReturn $return): View|RedirectResponse
     {
-        $this->authorize('returns edit');
+        $this->authorize('orders manage');
 
         if ($return->status !== 'requested') {
             return redirect()->route('central.returns.show', $return)
@@ -249,7 +249,7 @@ class OrderReturnController extends Controller
      */
     public function update(Request $request, OrderReturn $return): RedirectResponse
     {
-        $this->authorize('returns edit');
+        $this->authorize('orders manage');
 
         if ($return->status !== 'requested') {
             return back()->with('error', 'Only "Requested" returns can be edited.');
@@ -303,7 +303,7 @@ class OrderReturnController extends Controller
      */
     public function inspect(OrderReturn $return): View|RedirectResponse
     {
-        $this->authorize('returns edit');
+        $this->authorize('orders manage');
 
         if ($return->status !== 'approved') {
             return redirect()->route('central.returns.show', $return)
@@ -320,7 +320,7 @@ class OrderReturnController extends Controller
      */
     public function storeInspection(Request $request, OrderReturn $return): RedirectResponse
     {
-        $this->authorize('returns edit');
+        $this->authorize('orders manage');
 
         if ($return->status !== 'approved') {
             return back()->with('error', 'Only "Approved" returns can be inspected.');
@@ -385,7 +385,7 @@ class OrderReturnController extends Controller
      */
     public function refund(OrderReturn $return): View|RedirectResponse
     {
-        $this->authorize('returns edit');
+        $this->authorize('orders manage');
 
         if ($return->status !== 'received') {
             return redirect()->route('central.returns.show', $return)
@@ -402,7 +402,7 @@ class OrderReturnController extends Controller
      */
     public function storeRefund(Request $request, OrderReturn $return): RedirectResponse
     {
-        $this->authorize('returns edit');
+        $this->authorize('orders manage');
 
         if ($return->status !== 'received') {
             return back()->with('error', 'Only "Received" returns can be refunded.');
