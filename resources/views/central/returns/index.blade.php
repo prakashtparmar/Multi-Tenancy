@@ -43,11 +43,13 @@
                 <p class="text-muted-foreground text-sm font-medium">Process RMAs, inspect items, and issue refunds.</p>
             </div>
             
+            @can('returns create')
             <a href="{{ route('central.returns.create') }}" 
                class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-semibold rounded-xl shadow-lg shadow-gray-900/10 transition-all hover:-translate-y-0.5">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 Process New Return
             </a>
+            @endcan
         </div>
 
         <!-- Stats Grid -->
@@ -160,12 +162,16 @@
                                     
                                     <div class="flex items-center gap-2">
                                         @if($rma->status === 'requested')
+                                            @can('returns edit')
                                             <a href="{{ route('central.returns.edit', $rma) }}" class="px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors">Edit</a>
+                                            @endcan
                                         @elseif($rma->status === 'approved')
+                                            @can('returns inspect')
                                             <button @click="inspect(@js($rma))" class="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all flex items-center gap-1 shadow-sm">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                                                 Inspect & Receive
                                             </button>
+                                            @endcan
                                         @endif
                                         <a href="{{ route('central.returns.show', $rma) }}" class="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>

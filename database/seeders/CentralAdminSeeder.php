@@ -92,6 +92,8 @@ class CentralAdminSeeder extends Seeder
             'returns create',
             'returns edit',
             'returns delete',
+            'returns inspect',
+            'returns manage',
 
             // CRM (Customers)
             'customers view',
@@ -174,6 +176,10 @@ class CentralAdminSeeder extends Seeder
             'customers create',
             'customers edit',
             'customers manage',
+            'returns view',
+            'returns create',
+            'returns edit',
+            'returns delete',
         ];
 
         $csrRole = Role::firstOrCreate([

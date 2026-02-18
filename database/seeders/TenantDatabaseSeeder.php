@@ -77,6 +77,8 @@ class TenantDatabaseSeeder extends Seeder
             'returns create',
             'returns edit',
             'returns delete',
+            'returns inspect',
+            'returns manage',
 
             // CRM (Customers)
             'customers view',

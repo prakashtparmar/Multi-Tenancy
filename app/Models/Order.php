@@ -130,6 +130,11 @@ class Order extends Model
         return $this->hasMany(OrderVerification::class);
     }
 
+    public function returns(): HasMany
+    {
+        return $this->hasMany(OrderReturn::class);
+    }
+
     /* -------------------------------------------------------------------------- */
     /* Scopes                                                                     */
     /* -------------------------------------------------------------------------- */

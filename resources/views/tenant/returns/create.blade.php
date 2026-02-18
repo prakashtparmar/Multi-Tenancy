@@ -17,48 +17,6 @@
 
     <div class="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 animate-in fade-in duration-500" x-data="rmaForm()">
         
-        <!-- Error Display -->
-        @if (session('error'))
-            <div class="mb-8 bg-red-50 border border-red-200 rounded-xl p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-red-800">Error</h3>
-                        <div class="mt-2 text-sm text-red-700">
-                            {{ session('error') }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
-        
-        <!-- Error Display -->
-        @if ($errors->any())
-            <div class="mb-8 bg-red-50 border border-red-200 rounded-xl p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-red-800">There were problems with your submission</h3>
-                        <div class="mt-2 text-sm text-red-700">
-                            <ul role="list" class="list-disc pl-5 space-y-1">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
-        
         <form action="{{ route('tenant.returns.store') }}" method="POST" class="space-y-8">
             @csrf
 
@@ -113,8 +71,8 @@
                                     <div class="flex items-start gap-4 w-full sm:w-auto">
                                         <!-- Checkbox -->
                                         <div class="pt-1">
-                                            <input type="checkbox" x-model="item.selected" :name="'items['+index+'][selected]'" value="1" 
-                                                   class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer transition-all">
+                                            <input type="checkbox" x-model="item.selected" value="1" :disabled="item.available_qty <= 0"
+                                                   class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                         </div>
 
                                         <!-- Image -->
@@ -133,7 +91,7 @@
                                         <div class="sm:hidden flex-1">
                                              <h4 class="text-sm font-bold text-gray-900 line-clamp-2" x-text="item.product_name || item.sku"></h4>
                                              <p class="text-xs text-gray-500 mt-0.5" x-text="'SKU: ' + (item.sku || 'N/A')"></p>
-                                             <p class="text-xs font-medium text-gray-700 mt-1">Ordered: <span x-text="item.formatted_quantity"></span></p>
+                                             <p class="text-xs font-medium mt-1" :class="item.available_qty > 0 ? 'text-gray-700' : 'text-red-500'" x-text="item.available_qty > 0 ? 'Ordered: ' + item.formatted_quantity + ' (Avail: ' + item.available_qty + ')' : 'Fully Returned'"></p>
                                         </div>
                                     </div>
 
@@ -142,23 +100,23 @@
                                         <div class="hidden sm:block">
                                             <h4 class="text-sm font-bold text-gray-900" x-text="item.product_name || item.sku"></h4>
                                             <p class="text-xs text-gray-500 mt-0.5" x-text="'SKU: ' + (item.sku || 'N/A')"></p>
-                                            <p class="text-xs font-medium text-gray-700 mt-2">Ordered: <span x-text="item.formatted_quantity"></span></p>
+                                            <p class="text-xs font-medium mt-2" :class="item.available_qty > 0 ? 'text-gray-700' : 'text-red-500'" x-text="item.available_qty > 0 ? 'Ordered: ' + item.formatted_quantity + ' (Avail: ' + item.available_qty + ')' : 'Fully Returned'"></p>
                                         </div>
 
                                         <!-- Controls (Only visible if selected) -->
                                         <div x-show="item.selected" x-transition class="flex flex-row gap-3 items-center justify-between sm:justify-end w-full bg-gray-50/50 sm:bg-transparent p-3 sm:p-0 rounded-lg sm:rounded-none">
                                             <!-- Hidden Inputs -->
-                                            <input type="hidden" :name="'items['+index+'][product_id]'" :value="item.product_id">
+                                            <!-- Removed name attribute to prevent submission of all items -->
                                             
                                             <div class="flex-1 sm:flex-none sm:w-auto">
                                                 <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Return Qty</label>
-                                                <input type="number" :name="'items['+index+'][quantity]'" x-model="item.return_qty" min="1" :max="item.quantity" 
+                                                <input type="number" x-model="item.return_qty" min="1" :max="item.available_qty" 
                                                        class="block w-full sm:w-24 rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-center font-bold">
                                             </div>
 
                                             <div class="flex-1 sm:flex-none sm:w-auto">
                                                 <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Condition</label>
-                                                <select :name="'items['+index+'][condition]'" x-model="item.condition" 
+                                                <select x-model="item.condition" 
                                                         class="block w-full sm:w-32 rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                                                     <option value="sellable">Sellable</option>
                                                     <option value="damaged">Damaged</option>
@@ -191,6 +149,15 @@
                         <textarea name="reason" rows="3" class="block w-full rounded-xl border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-4 placeholder-gray-400 resize-none" placeholder="e.g. Items were damaged in transit, ordered wrong size..." required></textarea>
                     </div>
 
+                    <!-- Hidden Inputs for Selected Items (Sequential Indices) -->
+                    <template x-for="(item, i) in orderItems.filter(x => x.selected)" :key="item.id">
+                        <div>
+                            <input type="hidden" :name="'items['+i+'][product_id]'" :value="item.product_id">
+                            <input type="hidden" :name="'items['+i+'][quantity]'" :value="item.return_qty">
+                            <input type="hidden" :name="'items['+i+'][condition]'" :value="item.condition">
+                        </div>
+                    </template>
+
                     <div class="flex items-center justify-end pt-2">
                          <button type="submit" 
                                 class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-transparent bg-gray-900 py-3.5 px-8 text-sm font-bold text-white shadow-lg shadow-gray-900/20 hover:bg-black focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all hover:-translate-y-0.5 transform">
@@ -208,12 +175,16 @@
         function rmaForm() {
             const initialItems = @json($preSelectedOrder ? $preSelectedOrder->items : []);
             // Normalize initial items if any
-            const normalizedInitial = initialItems.map(item => ({
-                ...item,
-                selected: false,
-                return_qty: 1, 
-                condition: 'sellable'
-            }));
+            const normalizedInitial = initialItems.map(item => {
+                const available = item.available_quantity !== undefined ? parseFloat(item.available_quantity) : parseFloat(item.quantity);
+                return {
+                    ...item,
+                    selected: false,
+                    available_qty: available,
+                    return_qty: available > 0 ? 1 : 0,
+                    condition: 'sellable'
+                };
+            });
 
             return {
                 selectedOrder: '{{ $preSelectedOrderId ?? "" }}',
@@ -233,13 +204,17 @@
                     if (option && option.dataset.items) {
                         const items = JSON.parse(option.dataset.items);
                         // Map items to include local state
-                        this.orderItems = items.map(item => ({
-                            ...item,
-                            selected: false,
-                            return_qty: 1, 
-                            condition: 'sellable',
-                            formatted_quantity: parseFloat(item.quantity)
-                        }));
+                        this.orderItems = items.map(item => {
+                            const available = item.available_quantity !== undefined ? parseFloat(item.available_quantity) : parseFloat(item.quantity);
+                            return {
+                                ...item,
+                                selected: false,
+                                available_qty: available,
+                                return_qty: available > 0 ? 1 : 0, 
+                                condition: 'sellable',
+                                formatted_quantity: parseFloat(item.quantity)
+                            };
+                        });
                     } else {
                         this.orderItems = [];
                     }

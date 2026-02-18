@@ -261,15 +261,16 @@ class SearchController extends Controller
      */
     public function allOrders(Request $request): JsonResponse
     {
-        $term = (string) $request->input('q', '');
+        $term = trim((string) $request->input('q', ''));
 
         $query = \App\Models\Order::query()
-            ->with(['customer', 'items.product']) // Eager load for display
+            ->with(['customer', 'items.product', 'returns.items']) // Eager load for display
             ->latest();
 
         if (!empty($term)) {
             $query->where(function ($q) use ($term) {
                 $q->where('order_number', 'like', "%{$term}%")
+                    ->orWhere('id', $term)
                     ->orWhereHas('customer', function ($subQ) use ($term) {
                         $subQ->where('first_name', 'like', "%{$term}%")
                             ->orWhere('last_name', 'like', "%{$term}%")
@@ -279,6 +280,19 @@ class SearchController extends Controller
         }
 
         $orders = $query->limit(20)->get()->map(function ($order) {
+            // Calculate returned quantities
+            $returnedQuantities = [];
+            foreach ($order->returns as $rma) {
+                if ($rma->status === 'rejected')
+                    continue;
+                foreach ($rma->items as $rmaItem) {
+                    if (!isset($returnedQuantities[$rmaItem->product_id])) {
+                        $returnedQuantities[$rmaItem->product_id] = 0;
+                    }
+                    $returnedQuantities[$rmaItem->product_id] += $rmaItem->quantity;
+                }
+            }
+
             return [
                 'id' => $order->id,
                 'order_number' => $order->order_number ?? 'ORD-' . $order->id,
@@ -286,11 +300,15 @@ class SearchController extends Controller
                 'placed_at' => $order->placed_at ? $order->placed_at->format('d M Y') : $order->created_at->format('d M Y'),
                 'grand_total' => (float) $order->grand_total,
                 'status' => ucfirst($order->status),
-                'items' => $order->items->map(function ($item) {
+                'items' => $order->items->map(function ($item) use ($returnedQuantities) {
+                    $qtyReturned = $returnedQuantities[$item->product_id] ?? 0;
+                    $availableQty = max(0, $item->quantity - $qtyReturned);
+
                     return [
                         'id' => $item->id,
                         'product_id' => $item->product_id,
                         'quantity' => $item->quantity,
+                        'available_quantity' => $availableQty,
                         'product' => $item->product ? [
                             'name' => $item->product->name,
                             'sku' => $item->product->sku,
@@ -340,7 +358,7 @@ class SearchController extends Controller
         }
 
         $orders = \App\Models\Order::where('customer_id', $customerId)
-            ->with('items.product.images')
+            ->with('items.product.images', 'creator')
             ->latest()
             ->limit(10)
             ->get()
@@ -356,6 +374,7 @@ class SearchController extends Controller
                     'payment_status' => ucfirst($order->payment_status ?? 'unpaid'),
                     'item_count' => $order->items->count(),
                     'items' => $order->items, // Return items for display
+                    'creator_name' => optional($order->creator)->name ?? 'System',
                 ];
             });
 

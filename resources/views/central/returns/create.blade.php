@@ -21,50 +21,7 @@
 
     <div class="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 animate-in fade-in duration-500" x-data="rmaForm()">
 
-        <!-- Error Display -->
-        @if (session('error'))
-            <div class="mb-8 bg-red-50 border border-red-200 rounded-xl p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-red-800">Error</h3>
-                        <div class="mt-2 text-sm text-red-700">
-                            {{ session('error') }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="mb-8 bg-red-50 border border-red-200 rounded-xl p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-red-800">There were problems with your submission</h3>
-                        <div class="mt-2 text-sm text-red-700">
-                            <ul role="list" class="list-disc pl-5 space-y-1">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
+    <div class="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 animate-in fade-in duration-500" x-data="rmaForm()">
 
         <!-- Search Section -->
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible relative z-30 mb-8">
@@ -196,8 +153,8 @@
 
                                 <!-- Selection Badge -->
                                 <div class="absolute top-3 left-3 z-10">
-                                    <input type="checkbox" x-model="item.selected"
-                                        class="h-6 w-6 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shadow-sm transition-all focus:ring-offset-2">
+                                    <input type="checkbox" x-model="item.selected" :disabled="item.available_qty <= 0"
+                                        class="h-6 w-6 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shadow-sm transition-all focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                 </div>
 
                                 <div class="p-4 flex gap-4 h-full">
@@ -229,9 +186,9 @@
                                                 <span
                                                     class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"
                                                     x-text="'SKU: ' + (item.sku || 'N/A')"></span>
-                                                <span
-                                                    class="text-[10px] font-bold text-gray-500 px-1.5 py-0.5 bg-gray-100 rounded"
-                                                    x-text="'Ordered: ' + item.formatted_quantity"></span>
+                                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                                                    :class="item.available_qty > 0 ? 'bg-gray-100 text-gray-500' : 'bg-red-100 text-red-600'"
+                                                    x-text="item.available_qty > 0 ? 'Ordered: ' + item.formatted_quantity + ' (Avail: ' + item.available_qty + ')' : 'Fully Returned'"></span>
                                             </div>
                                         </div>
 
@@ -245,7 +202,7 @@
                                                     class="block text-[10px] font-black uppercase text-gray-400 mb-1 px-1">Return
                                                     Qty</label>
                                                 <input type="number" x-model="item.return_qty" min="1"
-                                                    :max="item.quantity"
+                                                    :max="item.available_qty"
                                                     class="block w-full h-10 bg-gray-50 border-gray-100 rounded-xl text-xs font-bold text-center focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
                                             </div>
                                             <div>
@@ -257,17 +214,7 @@
                                                     <option value="damaged">Damaged</option>
                                                 </select>
                                             </div>
-                                            <!-- Hidden Inputs for Form Submission -->
-                                            <input type="hidden" :name="'items['+index+'][product_id]'"
-                                                :value="item.product_id" :disabled="!item.selected">
-                                            <input type="hidden" :name="'items['+index+'][quantity]'"
-                                                :value="item.return_qty" :disabled="!item.selected">
-                                            <input type="hidden" :name="'items['+index+'][condition]'"
-                                                :value="item.condition" :disabled="!item.selected">
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
                         </template>
                     </div>
                 </div>
@@ -304,6 +251,16 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Hidden Inputs for Selected Items (Sequential Indices) -->
+                <template x-for="(item, i) in orderItems.filter(x => x.selected)" :key="item.id">
+                    <div>
+                        <input type="hidden" :name="'items['+i+'][product_id]'" :value="item.product_id">
+                        <input type="hidden" :name="'items['+i+'][quantity]'" :value="item.return_qty">
+                        <input type="hidden" :name="'items['+i+'][condition]'" :value="item.condition">
+                    </div>
+                </template>
+
             </form>
         </div>
     </div>
@@ -347,15 +304,19 @@
 
                 selectOrder(order) {
                     this.selectedOrder = order;
-                    this.orderItems = (order.items || []).map(item => ({
-                        ...item,
-                        selected: false,
-                        return_qty: parseFloat(item.quantity) || 1,
-                        condition: 'sellable',
-                        product_name: item.product?.name || item.product_name || 'Unknown Item',
-                        sku: item.product?.sku || item.sku || 'N/A',
-                        formatted_quantity: parseFloat(item.quantity) // Helper for display
-                    }));
+                    this.orderItems = (order.items || []).map(item => {
+                        const available = item.available_quantity !== undefined ? parseFloat(item.available_quantity) : parseFloat(item.quantity);
+                        return {
+                            ...item,
+                            selected: false,
+                            available_qty: available,
+                            return_qty: available > 0 ? 1 : 0,
+                            condition: 'sellable',
+                            product_name: item.product?.name || item.product_name || 'Unknown Item',
+                            sku: item.product?.sku || item.sku || 'N/A',
+                            formatted_quantity: parseFloat(item.quantity)
+                        };
+                    });
 
                     this.showResults = false;
                     this.searchQuery = order.order_number;

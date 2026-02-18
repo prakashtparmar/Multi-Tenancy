@@ -52,7 +52,7 @@
                         @endphp
                         <div class="flex flex-col items-center gap-3 relative z-10 flex-1">
                             <div class="w-12 h-12 rounded-full border-4 border-white shadow-md flex items-center justify-center transition-all duration-500
-                                        {{ $isCompleted ? 'bg-' . $colorClass . '-500 scale-110' : 'bg-gray-200' }}">
+                                            {{ $isCompleted ? 'bg-' . $colorClass . '-500 scale-110' : 'bg-gray-200' }}">
                                 @if($isCompleted)
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
@@ -284,41 +284,49 @@
 
                 <div class="flex flex-wrap items-center gap-3 justify-end">
                     @if($orderReturn->status === 'requested')
-                        <a href="{{ route('central.returns.edit', $orderReturn) }}"
-                            class="inline-flex justify-center rounded-lg border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all">
-                            Edit Request
-                        </a>
-                        <form action="{{ route('central.returns.update-status', $orderReturn) }}" method="POST">
-                            @csrf @method('PATCH')
-                            <input type="hidden" name="status" value="rejected">
-                            <button type="submit"
-                                class="inline-flex justify-center rounded-lg border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all"
-                                onclick="return confirm('Are you sure you want to REJECT this return request?')">
-                                Reject
-                            </button>
-                        </form>
-                        <form action="{{ route('central.returns.update-status', $orderReturn) }}" method="POST">
-                            @csrf @method('PATCH')
-                            <input type="hidden" name="status" value="approved">
-                            <button type="submit"
-                                class="inline-flex justify-center rounded-lg border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all">
-                                Approve Request
-                            </button>
-                        </form>
+                        @can('returns edit')
+                            <a href="{{ route('central.returns.edit', $orderReturn) }}"
+                                class="inline-flex justify-center rounded-lg border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all">
+                                Edit Request
+                            </a>
+                        @endcan
+                        @can('returns manage')
+                            <form action="{{ route('central.returns.update-status', $orderReturn) }}" method="POST">
+                                @csrf @method('PATCH')
+                                <input type="hidden" name="status" value="rejected">
+                                <button type="submit"
+                                    class="inline-flex justify-center rounded-lg border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all"
+                                    onclick="return confirm('Are you sure you want to REJECT this return request?')">
+                                    Reject
+                                </button>
+                            </form>
+                            <form action="{{ route('central.returns.update-status', $orderReturn) }}" method="POST">
+                                @csrf @method('PATCH')
+                                <input type="hidden" name="status" value="approved">
+                                <button type="submit"
+                                    class="inline-flex justify-center rounded-lg border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all">
+                                    Approve Request
+                                </button>
+                            </form>
+                        @endcan
                     @endif
 
                     @if($orderReturn->status === 'approved')
-                        <a href="{{ route('central.returns.inspect', $orderReturn) }}"
-                            class="inline-flex justify-center rounded-lg border border-transparent bg-emerald-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all">
-                            Inspect & Receive Items
-                        </a>
+                        @can('returns inspect')
+                            <a href="{{ route('central.returns.inspect', $orderReturn) }}"
+                                class="inline-flex justify-center rounded-lg border border-transparent bg-emerald-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all">
+                                Inspect & Receive Items
+                            </a>
+                        @endcan
                     @endif
 
                     @if($orderReturn->status === 'received')
-                        <a href="{{ route('central.returns.refund', $orderReturn) }}"
-                            class="inline-flex justify-center rounded-lg border border-transparent bg-purple-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all">
-                            Issue Refund
-                        </a>
+                        @can('returns manage')
+                            <a href="{{ route('central.returns.refund', $orderReturn) }}"
+                                class="inline-flex justify-center rounded-lg border border-transparent bg-purple-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all">
+                                Issue Refund
+                            </a>
+                        @endcan
                     @endif
 
                     @if($orderReturn->status === 'refunded')

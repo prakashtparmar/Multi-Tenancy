@@ -25,7 +25,7 @@ class OrderReturnController extends Controller
      */
     public function index(Request $request): View
     {
-        $this->authorize('orders view');
+        $this->authorize('returns view');
 
         // Stats for the tabs
         $stats = [
@@ -67,17 +67,55 @@ class OrderReturnController extends Controller
      */
     public function create(Request $request): View
     {
-        $this->authorize('orders manage');
+        $this->authorize('returns create');
 
         $preSelectedOrderId = $request->query('order_id');
-        $orders = Order::with('items.product')->whereIn('status', ['shipped', 'delivered'])->latest()->limit(50)->get();
+
+        // Helper closure to processing order items
+        $processOrderItems = function ($order) {
+            $returnedQuantities = [];
+            foreach ($order->returns as $rma) {
+                if ($rma->status === 'rejected')
+                    continue;
+                foreach ($rma->items as $rmaItem) {
+                    if (!isset($returnedQuantities[$rmaItem->product_id])) {
+                        $returnedQuantities[$rmaItem->product_id] = 0;
+                    }
+                    $returnedQuantities[$rmaItem->product_id] += $rmaItem->quantity;
+                }
+            }
+
+            $order->items->transform(function ($item) use ($returnedQuantities) {
+                $qtyReturned = $returnedQuantities[$item->product_id] ?? 0;
+                $item->available_quantity = max(0, $item->quantity - $qtyReturned);
+                return $item;
+            });
+            return $order;
+        };
+
+        $orders = Order::with(['items.product', 'returns.items'])
+            ->whereIn('status', ['shipped', 'delivered'])
+            ->latest()
+            ->limit(50)
+            ->get()
+            ->map($processOrderItems);
 
         $preSelectedOrder = null;
         if ($preSelectedOrderId) {
-            $preSelectedOrder = Order::with('items.product')->find($preSelectedOrderId);
+            $preSelectedOrder = $orders->firstWhere('id', $preSelectedOrderId);
+
+            if (!$preSelectedOrder) {
+                // Fetch if not in the recent 50 list
+                $preSelectedOrder = Order::with(['items.product', 'returns.items'])->find($preSelectedOrderId);
+                if ($preSelectedOrder) {
+                    $preSelectedOrder = $processOrderItems($preSelectedOrder);
+                }
+            }
+
             if ($preSelectedOrder && !in_array($preSelectedOrder->status, ['shipped', 'delivered'])) {
+                $status = $preSelectedOrder->status;
                 $preSelectedOrder = null;
-                session()->flash('error', 'Selected order is not eligible for return (Status: ' . ucfirst($preSelectedOrder->status ?? 'Unknown') . ')');
+                session()->flash('error', 'Selected order is not eligible for return (Status: ' . ucfirst($status ?? 'Unknown') . ')');
             }
         }
 
@@ -89,7 +127,7 @@ class OrderReturnController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $this->authorize('orders manage');
+        $this->authorize('returns create');
 
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,id',
@@ -193,7 +231,7 @@ class OrderReturnController extends Controller
      */
     public function show(OrderReturn $orderReturn): View
     {
-        $this->authorize('orders view');
+        $this->authorize('returns view');
 
         $orderReturn->load(['items.product', 'order.customer']);
         return view('tenant.returns.show', compact('orderReturn'));
@@ -204,7 +242,7 @@ class OrderReturnController extends Controller
      */
     public function updateStatus(Request $request, OrderReturn $orderReturn): RedirectResponse
     {
-        $this->authorize('orders manage');
+        $this->authorize('returns manage');
 
         $request->validate(['status' => 'required|in:approved,received,refunded,rejected']);
 

@@ -7,11 +7,13 @@
                 </h2>
                 <p class="text-sm text-gray-500 mt-1">Manage customer return requests and simple refunds.</p>
             </div>
+            @can('returns create')
             <a href="{{ route('central.returns.create') }}" 
                class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-semibold rounded-xl shadow-lg shadow-gray-900/10 transition-all hover:-translate-y-0.5">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 Create Return
             </a>
+            @endcan
         </div>
     </x-slot>
 
