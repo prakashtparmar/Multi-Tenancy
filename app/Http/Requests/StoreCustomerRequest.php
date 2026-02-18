@@ -16,6 +16,7 @@ class StoreCustomerRequest extends FormRequest
         return [
             'customer_code' => 'nullable|string|unique:customers,customer_code',
             'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'display_name' => 'nullable|string|max:255',
             'mobile' => 'required|digits:10|unique:customers',
@@ -28,7 +29,7 @@ class StoreCustomerRequest extends FormRequest
             'company_name' => 'nullable|string|max:255',
             'gst_number' => 'nullable|string|size:15',
             'pan_number' => 'nullable|string|size:10',
-            
+
             // Address
             'address_line1' => 'nullable|string|max:255',
             'address_line2' => 'nullable|string|max:255',
@@ -41,20 +42,20 @@ class StoreCustomerRequest extends FormRequest
             'post_office' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            
+
             // Agriculture
             'land_area' => 'nullable|numeric|min:0',
             'land_unit' => 'nullable|string|max:50',
             'primary_crops' => 'nullable|string', // Comma separated string from tag input
             'secondary_crops' => 'nullable|string', // Comma separated string
             'irrigation_type' => 'nullable|string|max:100',
-            
+
             // Financial / Compliance
             'credit_limit' => 'nullable|numeric|min:0',
             'credit_valid_till' => 'nullable|date',
             'aadhaar_last4' => 'nullable|digits:4',
             'kyc_completed' => 'nullable|boolean',
-            
+
             // Status & Notes
             'is_active' => 'nullable|boolean',
             'is_blacklisted' => 'nullable|boolean',

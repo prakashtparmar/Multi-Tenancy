@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 class Customer extends Model
 {
     use HasFactory, SoftDeletes;
- 
+
     // protected $connection = 'mysql'; // Removed to support hybrid multi-tenancy
 
     protected $guarded = ['id'];
@@ -39,12 +39,12 @@ class Customer extends Model
 
         static::creating(function ($customer) {
             $customer->uuid = (string) Str::uuid();
-            
+
             // Auto-generate customer code if not provided
             if (empty($customer->customer_code)) {
                 $latest = static::latest('id')->first();
                 $nextId = $latest ? $latest->id + 1 : 1;
-                $customer->customer_code = 'CUST-' . str_pad((string)$nextId, 6, '0', STR_PAD_LEFT);
+                $customer->customer_code = 'CUST-' . str_pad((string) $nextId, 6, '0', STR_PAD_LEFT);
             }
 
             if (auth()->check()) {
@@ -95,12 +95,13 @@ class Customer extends Model
     {
         return $query->where(function ($q) use ($term) {
             $q->where('first_name', 'like', "%{$term}%")
-              ->orWhere('last_name', 'like', "%{$term}%")
-              ->orWhere('mobile', 'like', "%{$term}%")
-              ->orWhere('phone_number_2', 'like', "%{$term}%")
-              ->orWhere('relative_phone', 'like', "%{$term}%")
-              ->orWhere('customer_code', 'like', "%{$term}%")
-              ->orWhere('company_name', 'like', "%{$term}%");
+                ->orWhere('middle_name', 'like', "%{$term}%")
+                ->orWhere('last_name', 'like', "%{$term}%")
+                ->orWhere('mobile', 'like', "%{$term}%")
+                ->orWhere('phone_number_2', 'like', "%{$term}%")
+                ->orWhere('relative_phone', 'like', "%{$term}%")
+                ->orWhere('customer_code', 'like', "%{$term}%")
+                ->orWhere('company_name', 'like', "%{$term}%");
         });
     }
 
@@ -116,6 +117,6 @@ class Customer extends Model
 
     public function getNameAttribute(): string
     {
-        return trim("{$this->first_name} {$this->last_name}");
+        return trim("{$this->first_name} {$this->middle_name} {$this->last_name}");
     }
 }

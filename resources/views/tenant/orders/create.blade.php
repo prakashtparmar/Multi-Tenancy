@@ -28,7 +28,15 @@
 
         <!-- Main Card -->
         <div class="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-xl shadow-lg shadow-black/5 overflow-hidden"
-            x-data="orderForm({{ json_encode($customers->map(fn($c) => ['id' => $c->id, 'addresses' => $c->addresses])->values()) }})">
+            x-data="orderForm({{ json_encode($customers->map(fn($c) => [
+                'id' => $c->id, 
+                'first_name' => $c->first_name, 
+                'middle_name' => $c->middle_name, 
+                'last_name' => $c->last_name, 
+                'mobile' => $c->mobile, 
+                'email' => $c->email, 
+                'addresses' => $c->addresses
+            ])->values()) }})">
 
             <!-- Decoration Line -->
             <div class="h-1 w-full bg-gradient-to-r from-primary/20 via-primary/50 to-primary/20"></div>
@@ -122,10 +130,15 @@
 
                                                 <div class="px-10 pb-10 overflow-y-auto space-y-8 custom-scrollbar">
                                                     <!-- Basic Info -->
-                                                    <div class="grid grid-cols-2 gap-6">
+                                                    <div class="grid grid-cols-3 gap-6">
                                                         <div class="space-y-2 group/field">
                                                             <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">First Name</label>
                                                             <input type="text" x-model="editingCustomer.first_name"
+                                                                class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
+                                                        </div>
+                                                        <div class="space-y-2 group/field">
+                                                            <label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Middle Name</label>
+                                                            <input type="text" x-model="editingCustomer.middle_name"
                                                                 class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans" />
                                                         </div>
                                                         <div class="space-y-2 group/field">
@@ -604,6 +617,7 @@
                     this.editingCustomer = {
                         id: cust.id,
                         first_name: cust.first_name,
+                        middle_name: cust.middle_name || '',
                         last_name: cust.last_name,
                         mobile: cust.mobile,
                         email: cust.email,
@@ -642,16 +656,13 @@
                         let data = await res.json();
                         
                         if (data.success) {
-                             // Update local list
+                            // Update local list
                             let idx = this.customers.findIndex(c => c.id == data.customer.id);
                             if (idx !== -1) {
                                 this.customers[idx] = data.customer; // Update reference
-                                // Trigger reactivity if needed, or re-select
-                                this.availableAddresses = data.customer.addresses;
-                                // Re-find default to ensure address dropdown updates?
-                                // Alpine watch on availableAddresses should handle UI
+                                // Ensure middle_name is present
+                                if (!this.customers[idx].middle_name) this.customers[idx].middle_name = '';
                             }
-                            this.showEditModal = false;
                         } else {
                             this.editError = data.message || 'Update failed.';
                         }

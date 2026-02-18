@@ -356,6 +356,7 @@
                                                 </svg>
                                             </div>
                                             <input type="text" x-model="customerQuery"
+                                                @input="if (/^\d+$/.test($el.value) && $el.value.length > 10) { $el.value = $el.value.slice(0, 10); customerQuery = $el.value; }"
                                                 @input.debounce.300ms="searchCustomers()"
                                                 placeholder="Search by Name, Mobile, or Code..."
                                                 class="w-full h-16 pl-16 pr-6 rounded-2xl border border-border/50 bg-secondary/30 dark:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-4 focus:ring-primary/10 focus:border-primary/50 transition-all text-xl font-medium placeholder:text-muted-foreground/50 shadow-inner"
@@ -1136,8 +1137,11 @@
                                                                 </div>
                                                                 <div>
                                                                     <div class="flex items-center gap-3 mb-1">
-                                                                        <h4 class="text-lg font-black text-foreground"
-                                                                            x-text="order.order_number"></h4>
+                                                                        <h4 class="text-lg font-black text-foreground cursor-pointer hover:text-indigo-500 transition-colors"
+                                                                            title="Click to copy"
+                                                                            x-text="order.order_number"
+                                                                            @click="navigator.clipboard.writeText(order.order_number); window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Order ID copied to clipboard' } }));">
+                                                                        </h4>
                                                                         <span
                                                                             class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary text-foreground"
                                                                             x-text="order.status"></span>
@@ -1201,6 +1205,27 @@
                                                                     </div>
                                                                 </div>
 
+                                                                <!-- Tracking Info -->
+                                                                <div class="hidden md:block text-right"
+                                                                    x-show="order.shipments && order.shipments.length > 0">
+                                                                    <template x-for="shipment in order.shipments">
+                                                                        <div class="flex flex-col items-end mb-2">
+                                                                            <p
+                                                                                class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-0.5">
+                                                                                <span x-text="shipment.carrier"></span>
+                                                                                Tracking
+                                                                            </p>
+                                                                            <p class="text-xs font-bold font-mono text-foreground cursor-pointer hover:text-indigo-500 transition-colors"
+                                                                                title="Click to copy"
+                                                                                x-text="shipment.tracking_number || 'N/A'"
+                                                                                @click="if(shipment.tracking_number) {
+                                                                                    navigator.clipboard.writeText(shipment.tracking_number);
+                                                                                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Tracking ID copied to clipboard' } }));
+                                                                                }"></p>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+
                                                                 <div class="text-right">
                                                                     <p
                                                                         class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-0.5">
@@ -1260,7 +1285,7 @@
                             <div class="mb-6">
                                 <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
                                     Identity & Contact</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <label class="block text-sm font-medium mb-1.5">First Name <span
                                                 class="text-red-500">*</span></label>
@@ -1269,17 +1294,19 @@
                                             placeholder="e.g. Rahul">
                                     </div>
                                     <div>
+                                        <label class="block text-sm font-medium mb-1.5">Middle Name</label>
+                                        <input type="text" x-model="newCustomer.middle_name"
+                                            @input="updateDisplayName()"
+                                            class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
+                                            placeholder="e.g. Kumar">
+                                    </div>
+                                    <div>
                                         <label class="block text-sm font-medium mb-1.5">Last Name</label>
                                         <input type="text" x-model="newCustomer.last_name" @input="updateDisplayName()"
                                             class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
                                             placeholder="e.g. Sharma">
                                     </div>
-                                    <div>
-                                        <label class="block text-sm font-medium mb-1.5">Display Name</label>
-                                        <input type="text" x-model="newCustomer.display_name"
-                                            class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
-                                            placeholder="e.g. Rahul Sharma (Farmer)">
-                                    </div>
+                                    <input type="hidden" x-model="newCustomer.display_name">
                                     <div>
                                         <label class="block text-sm font-medium mb-1.5">Source</label>
                                         <select x-model="newCustomer.source"
@@ -2497,6 +2524,7 @@
                     newCustomer: {
                         display_name: '',
                         first_name: '',
+                        middle_name: '',
                         last_name: '',
                         mobile: '',
                         phone_number_2: '',
@@ -2868,6 +2896,7 @@
                             id: this.selectedCustomer.id,
                             display_name: this.selectedCustomer.display_name,
                             first_name: this.selectedCustomer.first_name,
+                            middle_name: this.selectedCustomer.middle_name || '',
                             last_name: this.selectedCustomer.last_name,
                             mobile: this.selectedCustomer.mobile,
                             phone_number_2: this.selectedCustomer.phone_number_2,
@@ -2950,6 +2979,11 @@
 
                     async searchCustomers() {
                         if (this.customerQuery.length < 2) return;
+
+                        // Validation: If numeric (mobile), must be exactly 10 digits
+                        if (/^\d+$/.test(this.customerQuery) && this.customerQuery.length !== 10) {
+                            return;
+                        }
                         try {
                             let res = await fetch(`{{ route('central.api.search.customers') }}?q=${this.customerQuery}&_t=${Date.now()}`);
                             if (!res.ok) throw new Error('Network response was not ok');
@@ -3495,6 +3529,7 @@
                             id: null,
                             display_name: '',
                             first_name: '',
+                            middle_name: '',
                             last_name: '',
                             mobile: '',
                             phone_number_2: '',
@@ -3532,8 +3567,9 @@
 
                     updateDisplayName() {
                         const first = this.newCustomer.first_name || '';
+                        const middle = this.newCustomer.middle_name || '';
                         const last = this.newCustomer.last_name || '';
-                        this.newCustomer.display_name = (first + ' ' + last).trim();
+                        this.newCustomer.display_name = [first, middle, last].filter(Boolean).join(' ').trim();
                     },
 
                     get subTotal() {
@@ -3582,7 +3618,9 @@
                                 sum += lineTotal * (taxRate / 100);
                             }
                             return sum;
-                        }, 0);
+                         },
+
+                    0);
                     },
 
                     get grandTotal() {

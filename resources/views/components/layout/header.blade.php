@@ -67,7 +67,11 @@
 
         <!-- Premium Customer Search "Command Center" style -->
         @can('customers view')
-            <div x-data="headerCustomerSearch()">
+            <div x-data="headerCustomerSearch({
+                        searchUrl: '{{ tenant() ? route('tenant.api.search.customers') : route('central.api.search.customers') }}',
+                        storeUrl: '{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}',
+                        orderUrl: '{{ tenant() ? route('tenant.orders.create') : route('central.orders.create') }}'
+                    })">
                 <!-- Search Trigger Button -->
                 <button @click="openSearchModal()"
                     class="group flex items-center justify-center rounded-2xl p-2.5 text-muted-foreground hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-foreground hover:shadow-inner transition-all duration-300 active:scale-95 focus-visible:outline-none focus:ring-2 focus:ring-primary/20 backdrop-blur-md border border-transparent hover:border-zinc-200 dark:hover:border-white/20">
@@ -237,7 +241,7 @@
                             </div>
 
                             <div class="px-10 pb-10 overflow-y-auto space-y-8 custom-scrollbar">
-                                <div class="grid grid-cols-2 gap-6">
+                                <div class="grid grid-cols-3 gap-4">
                                     <div class="space-y-2 group/field">
                                         <label
                                             class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">First
@@ -245,6 +249,14 @@
                                         <input type="text" x-model="newCustomer.first_name"
                                             class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                             placeholder="Rahul" />
+                                    </div>
+                                    <div class="space-y-2 group/field">
+                                        <label
+                                            class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">Middle
+                                            Name</label>
+                                        <input type="text" x-model="newCustomer.middle_name"
+                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
+                                            placeholder="" />
                                     </div>
                                     <div class="space-y-2 group/field">
                                         <label
@@ -313,7 +325,7 @@
                 </template>
 
                 <script>
-                    function headerCustomerSearch() {
+                    function headerCustomerSearch(routes) {
                         return {
                             customerQuery: '',
                             customerResults: [],
@@ -322,7 +334,7 @@
                             showModal: false,
                             saving: false,
                             error: '',
-                            newCustomer: { first_name: '', last_name: '', mobile: '', email: '', type: 'farmer' },
+                            newCustomer: { first_name: '', middle_name: '', last_name: '', mobile: '', email: '', type: 'farmer' },
 
                             openSearchModal() {
                                 this.searchOpen = true;
@@ -338,7 +350,7 @@
                                 }
                                 this.loading = true;
                                 try {
-                                    const url = `{{ tenant() ? route('tenant.api.search.customers') : route('central.api.search.customers') }}?q=${this.customerQuery}`;
+                                    const url = `${routes.searchUrl}?q=${this.customerQuery}`;
                                     let res = await fetch(url);
                                     if (!res.ok) throw new Error('Search failed');
                                     this.customerResults = await res.json();
@@ -347,15 +359,21 @@
                             },
 
                             selectCustomer(cust) {
-                                const baseUrl = `{{ tenant() ? route('tenant.orders.create') : route('central.orders.create') }}`;
-                                window.location.href = `${baseUrl}?customer_id=${cust.id}&reset=1`;
+                                window.location.href = `${routes.orderUrl}?customer_id=${cust.id}&reset=1`;
                             },
 
                             openCreateCustomerModal() {
                                 this.searchOpen = false; // Close search modal
                                 this.showModal = true;
                                 this.error = '';
-                                this.newCustomer = { first_name: '', last_name: '', mobile: '', email: '', type: 'farmer' };
+                                this.newCustomer = {
+                                    first_name: '',
+                                    middle_name: '',
+                                    last_name: '',
+                                    mobile: '',
+                                    email: '',
+                                    type: 'farmer'
+                                };
                                 if (/^\d+$/.test(this.customerQuery)) {
                                     this.newCustomer.mobile = this.customerQuery;
                                 } else {
@@ -370,8 +388,18 @@
                                 }
                                 this.saving = true;
                                 this.error = '';
+
+                                // Auto-generate display_name
+                                const f = this.newCustomer.first_name.trim();
+                                const m = this.newCustomer.middle_name ? this.newCustomer.middle_name.trim() : '';
+                                const l = this.newCustomer.last_name ? this.newCustomer.last_name.trim() : '';
+                                const payload = {
+                                    ...this.newCustomer,
+                                    display_name: [f, m, l].filter(Boolean).join(' ')
+                                };
+
                                 try {
-                                    const url = `{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}`;
+                                    const url = routes.storeUrl;
                                     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                                     if (!csrfToken) {
                                         this.error = 'Security token missing. Refresh page.';
@@ -386,7 +414,7 @@
                                             'Accept': 'application/json',
                                             'X-CSRF-TOKEN': csrfToken
                                         },
-                                        body: JSON.stringify(this.newCustomer)
+                                        body: JSON.stringify(payload)
                                     });
                                     let data = await res.json();
                                     if (data.success) {

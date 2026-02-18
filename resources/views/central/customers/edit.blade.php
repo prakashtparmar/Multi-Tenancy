@@ -94,6 +94,7 @@
                                     <input type="text" value="{{ $customer->customer_code }}" disabled
                                         class="flex h-10 w-full rounded-xl border border-input bg-muted/50 px-3 py-2 text-sm text-muted-foreground shadow-sm cursor-not-allowed">
                                 </div>
+                            <div class="grid gap-6 sm:col-span-2 sm:grid-cols-3">
                                 <div class="space-y-2">
                                     <label class="text-sm font-medium leading-none text-foreground/80">First Name <span
                                             class="text-destructive">*</span></label>
@@ -104,17 +105,21 @@
                                     {{ $message }}</p> @enderror
                                 </div>
                                 <div class="space-y-2">
+                                    <label class="text-sm font-medium leading-none text-foreground/80">Middle Name</label>
+                                    <input type="text" name="middle_name" id="middle_name"
+                                        value="{{ old('middle_name', $customer->middle_name) }}"
+                                        class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+                                </div>
+
+                                <div class="space-y-2">
                                     <label class="text-sm font-medium leading-none text-foreground/80">Last Name</label>
                                     <input type="text" name="last_name" id="last_name"
                                         value="{{ old('last_name', $customer->last_name) }}"
                                         class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
                                 </div>
-                                <div class="space-y-2 sm:col-span-2">
-                                    <label class="text-sm font-medium leading-none text-foreground/80">Display Name</label>
-                                    <input type="text" name="display_name" id="display_name"
-                                        value="{{ old('display_name', $customer->display_name ?? $customer->first_name . ' ' . $customer->last_name) }}"
-                                        class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                                </div>
+                            </div>
+                                <input type="hidden" name="display_name" id="display_name"
+                                    value="{{ old('display_name', $customer->display_name) }}">
                                 <div class="space-y-2">
                                     <label class="text-sm font-medium leading-none text-foreground/80">Mobile <span
                                             class="text-destructive">*</span></label>
@@ -648,6 +653,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const first = document.querySelector('input[name="first_name"]');
+            const middle = document.querySelector('input[name="middle_name"]');
             const last = document.querySelector('input[name="last_name"]');
             const display = document.querySelector('input[name="display_name"]');
 
@@ -663,15 +669,17 @@
                 // For now, I'll just use the same simple logic as Create for consistency.
 
                 const f = first.value.trim();
+                const m = middle ? middle.value.trim() : '';
                 const l = last.value.trim();
-                if (f || l) {
+                if (f || m || l) {
                     // Auto-update display name if it's empty or matches previous simple concatenation
                     // For now, we'll just update it to keep it in sync, which is usually desired behavior.
-                    display.value = [f, l].filter(Boolean).join(' '); 
+                    display.value = [f, m, l].filter(Boolean).join(' '); 
                 }
             }
 
             first.addEventListener('input', updateDisplayName);
+            if(middle) middle.addEventListener('input', updateDisplayName);
             last.addEventListener('input', updateDisplayName);
         });
     </script>

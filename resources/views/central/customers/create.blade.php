@@ -55,22 +55,28 @@
                         </div>
                         
                         <div class="grid gap-6 sm:grid-cols-2">
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none text-foreground/80">First Name <span class="text-destructive">*</span></label>
-                                <input type="text" name="first_name" id="first_name" value="{{ old('first_name') }}" required
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm @error('first_name') border-destructive/50 ring-destructive/20 @enderror">
-                                @error('first_name') <p class="text-[0.8rem] font-medium text-destructive mt-1">{{ $message }}</p> @enderror
+                            <div class="grid gap-6 sm:col-span-2 sm:grid-cols-3">
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium leading-none text-foreground/80">First Name <span
+                                            class="text-destructive">*</span></label>
+                                    <input type="text" name="first_name" id="first_name" value="{{ old('first_name') }}"
+                                        required
+                                        class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm @error('first_name') border-destructive/50 ring-destructive/20 @enderror">
+                                    @error('first_name') <p class="text-[0.8rem] font-medium text-destructive mt-1">
+                                        {{ $message }}</p> @enderror
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium leading-none text-foreground/80">Middle Name</label>
+                                    <input type="text" name="middle_name" id="middle_name" value="{{ old('middle_name') }}"
+                                        class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium leading-none text-foreground/80">Last Name</label>
+                                    <input type="text" name="last_name" id="last_name" value="{{ old('last_name') }}"
+                                        class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
+                                </div>
                             </div>
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none text-foreground/80">Last Name</label>
-                                <input type="text" name="last_name" id="last_name" value="{{ old('last_name') }}"
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                            </div>
-                            <div class="space-y-2 sm:col-span-2">
-                                <label class="text-sm font-medium leading-none text-foreground/80">Display Name</label>
-                                <input type="text" name="display_name" id="display_name" value="{{ old('display_name') }}"
-                                    class="flex h-10 w-full rounded-xl border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all shadow-sm">
-                            </div>
+                            <input type="hidden" name="display_name" id="display_name" value="{{ old('display_name') }}">
                             <div class="space-y-2">
                                 <label class="text-sm font-medium leading-none text-foreground/80">Mobile <span class="text-destructive">*</span></label>
                                 <input type="text" name="mobile" value="{{ old('mobile', request('mobile')) }}" required
@@ -454,24 +460,27 @@
    tagInput('secondary-box', 'secondary-input', 'secondary-hidden');
    tagInput('tags-box', 'tags-input', 'tags-hidden');
 
-   document.addEventListener('DOMContentLoaded', () => {
-       const first = document.querySelector('input[name="first_name"]');
-       const last = document.querySelector('input[name="last_name"]');
-       const display = document.querySelector('input[name="display_name"]');
+    document.addEventListener('DOMContentLoaded', () => {
+        const first = document.querySelector('input[name="first_name"]');
+        const middle = document.querySelector('input[name="middle_name"]');
+        const last = document.querySelector('input[name="last_name"]');
+        const display = document.querySelector('input[name="display_name"]');
 
-       if (!first || !last || !display) return;
+        if (!first || !last || !display) return;
 
-       function updateDisplayName() {
-           const f = first.value.trim();
-           const l = last.value.trim();
-           if(f || l) {
-               display.value = [f, l].filter(Boolean).join(' ');
-           }
-       }
+        function updateDisplayName() {
+            const f = first.value.trim();
+            const m = middle ? middle.value.trim() : '';
+            const l = last.value.trim();
+            if (f || m || l) {
+                display.value = [f, m, l].filter(Boolean).join(' ');
+            }
+        }
 
-       first.addEventListener('input', updateDisplayName);
-       last.addEventListener('input', updateDisplayName);
-   });
+        first.addEventListener('input', updateDisplayName);
+        if(middle) middle.addEventListener('input', updateDisplayName);
+        last.addEventListener('input', updateDisplayName);
+    });
 </script>
 
  <!-- -- Address Auto-fill Script -- -->

@@ -42,6 +42,7 @@ class SearchController extends Controller
         $data = $customers->map(fn($customer) => [
             'id' => $customer->id,
             'first_name' => $customer->first_name,
+            'middle_name' => $customer->middle_name,
             'last_name' => $customer->last_name,
             'mobile' => $customer->mobile,
             'phone_number_2' => $customer->phone_number_2,
@@ -144,6 +145,7 @@ class SearchController extends Controller
 
             $validated = $request->validate([
                 'first_name' => 'required|string|max:255',
+                'middle_name' => 'nullable|string|max:255',
                 'last_name' => 'nullable|string|max:255',
                 'display_name' => 'nullable|string|max:255',
                 'mobile' => 'required|string|max:20|unique:customers,mobile' . ($id ? ",$id" : ''),
@@ -358,7 +360,7 @@ class SearchController extends Controller
         }
 
         $orders = \App\Models\Order::where('customer_id', $customerId)
-            ->with('items.product.images', 'creator')
+            ->with('items.product.images', 'creator', 'shipments')
             ->latest()
             ->limit(10)
             ->get()
@@ -375,6 +377,14 @@ class SearchController extends Controller
                     'item_count' => $order->items->count(),
                     'items' => $order->items, // Return items for display
                     'creator_name' => optional($order->creator)->name ?? 'System',
+                    'shipments' => $order->shipments->map(function ($shipment) {
+                        return [
+                            'tracking_number' => $shipment->tracking_number,
+                            'carrier' => $shipment->carrier,
+                            'status' => $shipment->status,
+                            'shipped_at' => $shipment->shipped_at ? $shipment->shipped_at->format('d M Y') : null,
+                        ];
+                    }),
                 ];
             });
 

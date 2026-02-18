@@ -37,6 +37,7 @@ class SearchController extends Controller
         $data = $customers->map(fn($customer) => [
             'id' => $customer->id,
             'first_name' => $customer->first_name,
+            'middle_name' => $customer->middle_name,
             'last_name' => $customer->last_name,
             'mobile' => $customer->mobile,
             'email' => $customer->email,
@@ -109,7 +110,9 @@ class SearchController extends Controller
 
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
+            'display_name' => 'nullable|string|max:255',
             'mobile' => 'required|string|max:20|unique:customers,mobile' . ($id ? ",$id" : ''),
             'email' => 'nullable|email|unique:customers,email' . ($id ? ",$id" : ''),
             'company_name' => 'nullable|string|max:255',
