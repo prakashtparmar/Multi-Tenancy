@@ -2978,12 +2978,17 @@
                     },
 
                     async searchCustomers() {
-                        if (this.customerQuery.length < 2) return;
-
-                        // Validation: If numeric (mobile), must be exactly 10 digits
-                        if (/^\d+$/.test(this.customerQuery) && this.customerQuery.length !== 10) {
+                        if (this.customerQuery.length < 2) {
+                            this.customerResults = [];
                             return;
                         }
+
+                        // Strict 10-digit check for numeric inputs
+                        if (/^\d+$/.test(this.customerQuery) && this.customerQuery.length !== 10) {
+                            this.customerResults = [];
+                            return;
+                        }
+
                         try {
                             let res = await fetch(`{{ route('central.api.search.customers') }}?q=${this.customerQuery}&_t=${Date.now()}`);
                             if (!res.ok) throw new Error('Network response was not ok');
@@ -3618,9 +3623,9 @@
                                 sum += lineTotal * (taxRate / 100);
                             }
                             return sum;
-                         },
+                        },
 
-                    0);
+                            0);
                     },
 
                     get grandTotal() {

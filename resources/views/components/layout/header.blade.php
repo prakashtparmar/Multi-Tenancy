@@ -68,10 +68,10 @@
         <!-- Premium Customer Search "Command Center" style -->
         @can('customers view')
             <div x-data="headerCustomerSearch({
-                        searchUrl: '{{ tenant() ? route('tenant.api.search.customers') : route('central.api.search.customers') }}',
-                        storeUrl: '{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}',
-                        orderUrl: '{{ tenant() ? route('tenant.orders.create') : route('central.orders.create') }}'
-                    })">
+                                searchUrl: '{{ tenant() ? route('tenant.api.search.customers') : route('central.api.search.customers') }}',
+                                storeUrl: '{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}',
+                                orderUrl: '{{ tenant() ? route('tenant.orders.create') : route('central.orders.create') }}'
+                            })">
                 <!-- Search Trigger Button -->
                 <button @click="openSearchModal()"
                     class="group flex items-center justify-center rounded-2xl p-2.5 text-muted-foreground hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-foreground hover:shadow-inner transition-all duration-300 active:scale-95 focus-visible:outline-none focus:ring-2 focus:ring-primary/20 backdrop-blur-md border border-transparent hover:border-zinc-200 dark:hover:border-white/20">
@@ -104,8 +104,10 @@
                                             <path d="m21 21-4.3-4.3" />
                                         </svg>
                                     </div>
-                                    <input type="text" x-model="customerQuery" @input.debounce.300ms="searchCustomers()"
-                                        x-ref="searchInput" placeholder="Scan Registry: Enter name, mobile, or code..."
+                                    <input type="text" x-model="customerQuery"
+                                        @input="if (/^\d+$/.test($el.value) && $el.value.length > 10) { $el.value = $el.value.slice(0, 10); customerQuery = $el.value; }"
+                                        @input.debounce.300ms="searchCustomers()" x-ref="searchInput"
+                                        placeholder="Scan Registry: Enter name, mobile, or code..."
                                         class="flex h-12 w-full rounded-2xl bg-secondary/50 dark:bg-zinc-800/50 pl-12 pr-12 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50" />
                                     <button @click="searchOpen = false"
                                         class="absolute right-3 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground transition-colors">
@@ -348,6 +350,12 @@
                                     this.customerResults = [];
                                     return;
                                 }
+                                // Strict 10-digit check for numeric inputs
+                                if (/^\d+$/.test(this.customerQuery) && this.customerQuery.length !== 10) {
+                                    this.customerResults = [];
+                                    return;
+                                }
+
                                 this.loading = true;
                                 try {
                                     const url = `${routes.searchUrl}?q=${this.customerQuery}`;

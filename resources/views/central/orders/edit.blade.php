@@ -296,7 +296,9 @@
                                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                         </svg>
                                     </div>
-                                    <input type="text" x-model="customerQuery" @input.debounce.300ms="searchCustomers()"
+                                    <input type="text" x-model="customerQuery"
+                                        @input="if (/^\d+$/.test($el.value) && $el.value.length > 10) { $el.value = $el.value.slice(0, 10); customerQuery = $el.value; }"
+                                        @input.debounce.300ms="searchCustomers()"
                                         placeholder="Search by Name, Mobile, or Code..."
                                         class="w-full pl-11 pr-4 py-4 rounded-xl border-2 border-border bg-background/50 focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-lg shadow-sm"
                                         autofocus>
@@ -2046,7 +2048,7 @@
                                 error: ''
                             };
                             this.showAddressModal = true;
-                        // Setup auto-complete after modal is shown
+                            // Setup auto-complete after modal is shown
                             this.$nextTick(() => {
                                 this.setupAddressAutoComplete();
                             });
@@ -2552,7 +2554,7 @@
                                 this.updateDisplayName();
                             }
 
-                   this.showCreateCustomerModal = true;
+                            this.showCreateCustomerModal = true;
                         },
 
                         updateDisplayName() {
