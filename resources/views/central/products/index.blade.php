@@ -30,7 +30,19 @@
             </div>
         </div>
 
-        <div id="products-table-container" x-data="{ selected: [] }">
+        <div id="products-table-container" x-data="{ 
+            selected: [], 
+            viewingProduct: null,
+            products: {{ \Illuminate\Support\Js::from($products->items()) }},
+            showCost: {{ auth()->user()->hasRole('Super Admin') ? 'true' : 'false' }},
+            formatPrice(price) {
+                return '₹' + parseFloat(price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            },
+            formatDate(dateString) {
+                if (!dateString) return 'N/A';
+                return new Date(dateString).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+            }
+        }">
             <!-- Toolbar -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
                 <div class="flex items-center gap-3 w-full sm:w-auto">
@@ -187,9 +199,11 @@
                                             @if($product->mrp > $product->price)
                                                 <span class="text-xs text-gray-400 line-through">₹{{ number_format($product->mrp, 2) }}</span>
                                             @endif
-                                            @if($product->cost_price > 0)
-                                                <span class="text-[10px] text-gray-400 mt-1">Cost: ₹{{ number_format($product->cost_price, 2) }}</span>
-                                            @endif
+                                            @hasrole('Super Admin')
+                                                @if($product->cost_price > 0)
+                                                    <span class="text-[10px] text-gray-400 mt-1">Cost: ₹{{ number_format($product->cost_price, 2) }}</span>
+                                                @endif
+                                            @endhasrole
                                         </div>
                                     </td>
 
@@ -243,6 +257,13 @@
                                                 </svg>
                                             </a>
                                             @endcan
+                                            <button @click="viewingProduct = products.find(p => p.id == {{ $product->id }})" 
+                                                class="text-gray-400 hover:text-blue-600 transition-colors p-1.5 rounded-lg hover:bg-blue-50" title="View Details">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            </button>
                                             @can('products delete')
                                             <form action="{{ route('central.products.destroy', $product) }}" method="POST"
                                                 onsubmit="return confirm('Are you sure you want to delete this product?');" class="inline-block">
@@ -287,6 +308,178 @@
                     </div>
                 @endif
             </div>
+            <!-- View Details Modal -->
+            <template x-teleport="body">
+                <div x-show="viewingProduct" style="display: none;" class="relative z-[100]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                    <!-- Backdrop -->
+                    <div x-show="viewingProduct" 
+                        x-transition:enter="ease-out duration-300" 
+                        x-transition:enter-start="opacity-0" 
+                        x-transition:enter-end="opacity-100" 
+                        x-transition:leave="ease-in duration-200" 
+                        x-transition:leave-start="opacity-100" 
+                        x-transition:leave-end="opacity-0" 
+                        class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+                        aria-hidden="true"></div>
+
+                    <!-- Scroll Container -->
+                    <div class="fixed inset-0 z-10 overflow-y-auto">
+                        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0" @click.self="viewingProduct = null">
+                            <!-- Panel -->
+                            <div x-show="viewingProduct" 
+                                x-transition:enter="ease-out duration-300" 
+                                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                                x-transition:leave="ease-in duration-200" 
+                                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                                class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl"
+                                @click.stop>
+                                
+                                <div class="absolute top-0 right-0 pt-4 pr-4">
+                                    <button @click="viewingProduct = null" type="button" class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none">
+                                        <span class="sr-only">Close</span>
+                                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                    <div class="sm:flex sm:items-start">
+                                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                            <h3 class="text-2xl leading-6 font-bold text-gray-900 mb-1" id="modal-title" x-text="viewingProduct?.name"></h3>
+                                            <div class="flex items-center gap-2 mb-6">
+                                                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800" x-text="viewingProduct?.sku"></span>
+                                                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800" x-text="viewingProduct?.type"></span>
+                                                <span x-show="viewingProduct?.is_active" class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                                                <span x-show="!viewingProduct?.is_active" class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Inactive</span>
+                                            </div>
+
+                                            <!-- Grid Layout -->
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                
+                                                <!-- Column 1: Images & Key Stats -->
+                                                <div class="md:col-span-1 space-y-6">
+                                                    <!-- Main Image -->
+                                                    <div class="aspect-square rounded-xl bg-gray-100 overflow-hidden border border-gray-200">
+                                                        <template x-if="viewingProduct?.images && viewingProduct.images.length > 0">
+                                                            <img :src="'/storage/' + viewingProduct.images.find(i => i.is_primary)?.image_path || '/storage/' + viewingProduct.images[0].image_path" class="w-full h-full object-cover">
+                                                        </template>
+                                                        <template x-if="!viewingProduct?.images || viewingProduct.images.length === 0">
+                                                            <div class="w-full h-full flex items-center justify-center text-gray-400">
+                                                                <svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                </svg>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+
+                                                    <!-- Pricing Card -->
+                                                    <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Pricing</h4>
+                                                        <div class="space-y-2">
+                                                            <div class="flex justify-between items-center">
+                                                                <span class="text-sm text-gray-600">Selling Price</span>
+                                                                <span class="text-lg font-bold text-indigo-700" x-text="formatPrice(viewingProduct?.price || 0)"></span>
+                                                            </div>
+                                                            <div class="flex justify-between items-center" x-show="viewingProduct?.mrp > viewingProduct?.price">
+                                                                <span class="text-sm text-gray-600">MRP</span>
+                                                                <span class="text-sm text-gray-400 line-through" x-text="formatPrice(viewingProduct?.mrp || 0)"></span>
+                                                            </div>
+                                                            <div class="flex justify-between items-center pt-2 border-t border-gray-200" x-show="showCost">
+                                                                <span class="text-xs text-gray-500">Cost</span>
+                                                                <span class="text-xs text-gray-600" x-text="formatPrice(viewingProduct?.cost_price || 0)"></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Column 2 & 3: Details -->
+                                                <div class="md:col-span-2 space-y-6">
+                                                    <!-- Basic Details -->
+                                                    <div>
+                                                        <h4 class="text-lg font-semibold text-gray-900 mb-3">Product Details</h4>
+                                                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4 text-sm">
+                                                            <div class="sm:col-span-1">
+                                                                <dt class="font-medium text-gray-500">Category</dt>
+                                                                <dd class="mt-1 text-gray-900" x-text="viewingProduct?.category?.name || 'Uncategorized'"></dd>
+                                                            </div>
+                                                            <div class="sm:col-span-1">
+                                                                <dt class="font-medium text-gray-500">Brand</dt>
+                                                                <dd class="mt-1 text-gray-900" x-text="viewingProduct?.brand?.name || 'N/A'"></dd>
+                                                            </div>
+                                                            <div class="sm:col-span-1">
+                                                                <dt class="font-medium text-gray-500">Unit Type</dt>
+                                                                <dd class="mt-1 text-gray-900" x-text="viewingProduct?.unit_type"></dd>
+                                                            </div>
+                                                            <div class="sm:col-span-1">
+                                                                <dt class="font-medium text-gray-500">Packing Size</dt>
+                                                                <dd class="mt-1 text-gray-900" x-text="viewingProduct?.packing_size || 'N/A'"></dd>
+                                                            </div>
+                                                            <div class="sm:col-span-1">
+                                                                <dt class="font-medium text-gray-500">Stock on Hand</dt>
+                                                                <dd class="mt-1 font-semibold" 
+                                                                    :class="{'text-red-600': viewingProduct?.stock_on_hand <= 0, 'text-emerald-600': viewingProduct?.stock_on_hand > 0}"
+                                                                    x-text="viewingProduct?.manage_stock ? parseFloat(viewingProduct?.stock_on_hand) : 'Not Tracked'"></dd>
+                                                            </div>
+                                                            <div class="sm:col-span-1">
+                                                                <dt class="font-medium text-gray-500">HSN Code</dt>
+                                                                <dd class="mt-1 text-gray-900" x-text="viewingProduct?.hsn_code || 'N/A'"></dd>
+                                                            </div>
+                                                        </dl>
+                                                    </div>
+
+                                                    <div class="h-px bg-gray-100"></div>
+
+                                                    <!-- Agri Details -->
+                                                    <div x-show="viewingProduct?.technical_name || viewingProduct?.application_method">
+                                                        <h4 class="text-lg font-semibold text-gray-900 mb-3">Agri Specifications</h4>
+                                                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4 text-sm">
+                                                            <div class="sm:col-span-2" x-show="viewingProduct?.technical_name">
+                                                                <dt class="font-medium text-gray-500">Technical Name</dt>
+                                                                <dd class="mt-1 text-gray-900" x-text="viewingProduct?.technical_name"></dd>
+                                                            </div>
+                                                            <div class="sm:col-span-2" x-show="viewingProduct?.application_method">
+                                                                <dt class="font-medium text-gray-500">Application Method</dt>
+                                                                <dd class="mt-1 text-gray-900" x-text="viewingProduct?.application_method"></dd>
+                                                            </div>
+                                                            <div class="sm:col-span-1" x-show="viewingProduct?.harvest_date">
+                                                                <dt class="font-medium text-gray-500">Harvest Date</dt>
+                                                                <dd class="mt-1 text-gray-900" x-text="formatDate(viewingProduct?.harvest_date)"></dd>
+                                                            </div>
+                                                            <div class="sm:col-span-1" x-show="viewingProduct?.expiry_date">
+                                                                <dt class="font-medium text-gray-500">Expiry Date</dt>
+                                                                <dd class="mt-1 text-gray-900" x-text="formatDate(viewingProduct?.expiry_date)"></dd>
+                                                            </div>
+                                                        </dl>
+                                                    </div>
+
+                                                    <!-- SEO -->
+                                                    <div class="bg-indigo-50/50 rounded-lg p-4" x-show="viewingProduct?.meta_title || viewingProduct?.meta_description">
+                                                        <h4 class="text-xs font-semibold text-indigo-900 uppercase tracking-wider mb-2">SEO Preview</h4>
+                                                        <div class="text-sm">
+                                                            <div class="text-blue-600 font-medium truncate" x-text="viewingProduct?.meta_title || viewingProduct?.name"></div>
+                                                            <div class="text-green-700 text-xs truncate">example.com/products/sku</div>
+                                                            <div class="text-gray-600 text-xs mt-1 line-clamp-2" x-text="viewingProduct?.meta_description || 'No description available.'"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                    <button type="button" @click="viewingProduct = null" 
+                                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
         </div>
     </div>
 
