@@ -95,20 +95,38 @@
 
                             <!-- Search Input Header -->
                             <div class="p-4 border-b border-border/50 relative">
-                                <div class="relative flex items-center">
-                                    <div class="absolute left-4 text-muted-foreground">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round" class="size-5">
-                                            <circle cx="11" cy="11" r="8" />
-                                            <path d="m21 21-4.3-4.3" />
-                                        </svg>
-                                    </div>
-                                    <input type="text" x-model="customerQuery"
-                                        @input="if (/^\d+$/.test($el.value) && $el.value.length > 10) { $el.value = $el.value.slice(0, 10); customerQuery = $el.value; }"
-                                        @input.debounce.300ms="searchCustomers()" x-ref="searchInput"
-                                        placeholder="Scan Registry: Enter name, mobile, or code..."
-                                        class="flex h-12 w-full rounded-2xl bg-secondary/50 dark:bg-zinc-800/50 pl-12 pr-12 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50" />
+                                    <div class="relative flex items-center">
+                                        <!-- Search Type Dropdown -->
+                                        <div class="relative shrink-0 mr-2">
+                                            <select x-model="searchType"
+                                                class="h-10 pl-3 pr-8 rounded-xl border border-border/50 bg-secondary/30 dark:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-primary/20 text-xs font-bold shadow-sm appearance-none cursor-pointer outline-none">
+                                                <option value="mobile">Mobile</option>
+                                                <option value="name">Name</option>
+                                                <option value="code">Code</option>
+                                            </select>
+                                            <div
+                                                class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-muted-foreground">
+                                                <svg class="size-3" fill="none" viewBox="0 0 24 24"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
+
+                                        <div class="absolute left-[6.5rem] text-muted-foreground pointer-events-none z-10">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round" class="size-5">
+                                                <circle cx="11" cy="11" r="8" />
+                                                <path d="m21 21-4.3-4.3" />
+                                            </svg>
+                                        </div>
+                                        <input type="text" x-model="customerQuery"
+                                            @input="if (searchType === 'mobile' && /^\d+$/.test($el.value) && $el.value.length > 10) { $el.value = $el.value.slice(0, 10); customerQuery = $el.value; }"
+                                            @input.debounce.300ms="searchCustomers()" x-ref="searchInput"
+                                            :placeholder="searchType === 'mobile' ? 'Enter 10-digit Mobile...' : 'Search customers...'"
+                                            class="flex h-12 w-full rounded-2xl bg-secondary/50 dark:bg-zinc-800/50 pl-12 pr-12 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50" />
                                     <button @click="searchOpen = false"
                                         class="absolute right-3 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground transition-colors">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -182,8 +200,10 @@
                                     </div>
                                 </template>
 
+
                                 <!-- No Results / Register Prompt -->
-                                <template x-if="!loading && customerResults.length === 0 && customerQuery.length >= 2">
+                                <template
+                                    x-if="!loading && customerResults.length === 0 && (searchType === 'mobile' ? customerQuery.length === 10 : customerQuery.length >= 2)">
                                     <div class="text-center py-10 px-4">
                                         <div
                                             class="size-16 rounded-3xl bg-secondary/50 flex items-center justify-center mx-auto mb-4">
@@ -329,6 +349,7 @@
                 <script>
                     function headerCustomerSearch(routes) {
                         return {
+                            searchType: 'mobile',
                             customerQuery: '',
                             customerResults: [],
                             searchOpen: false, // New state for search modal
@@ -346,19 +367,30 @@
                             },
 
                             async searchCustomers() {
-                                if (this.customerQuery.length < 2) {
-                                    this.customerResults = [];
-                                    return;
-                                }
-                                // Strict 10-digit check for numeric inputs
-                                if (/^\d+$/.test(this.customerQuery) && this.customerQuery.length !== 10) {
+                                // 1. Clear results if empty
+                                if (!this.customerQuery) {
                                     this.customerResults = [];
                                     return;
                                 }
 
+                                // 2. Validation Logic
+                                if (this.searchType === 'mobile') {
+                                    // Strict 10-digit check for Mobile
+                                    if (!/^\d{10}$/.test(this.customerQuery)) {
+                                        this.customerResults = [];
+                                        return;
+                                    }
+                                } else {
+                                    // Standard check
+                                    if (this.customerQuery.length < 2) {
+                                        this.customerResults = [];
+                                        return;
+                                    }
+                                }
+
                                 this.loading = true;
                                 try {
-                                    const url = `${routes.searchUrl}?q=${this.customerQuery}`;
+                                    const url = `${routes.searchUrl}?q=${this.customerQuery}&type=${this.searchType}`;
                                     let res = await fetch(url);
                                     if (!res.ok) throw new Error('Search failed');
                                     this.customerResults = await res.json();

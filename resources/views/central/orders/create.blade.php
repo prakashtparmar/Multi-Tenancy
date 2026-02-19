@@ -345,35 +345,56 @@
                                             Search the registry to identify the customer, or enroll a new profile
                                             instantly.</p>
 
-                                        <div class="relative group max-w-xl mx-auto">
-                                            <div
-                                                class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                                                <svg class="h-6 w-6 text-muted-foreground group-focus-within:text-primary transition-colors duration-300"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                                </svg>
+                                        <div class="relative group max-w-xl mx-auto flex gap-2">
+                                            <!-- Search Type Dropdown -->
+                                            <div class="relative shrink-0">
+                                                <select x-model="searchType"
+                                                    class="h-16 pl-4 pr-8 rounded-2xl border border-border/50 bg-secondary/30 dark:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-4 focus:ring-primary/10 focus:border-primary/50 transition-all text-sm font-bold text-foreground shadow-inner appearance-none cursor-pointer">
+                                                    <option value="mobile">Mobile</option>
+                                                    <option value="name">Name</option>
+                                                    <option value="code">Code</option>
+                                                </select>
+                                                <div
+                                                    class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
+                                                    <svg class="size-4" fill="none" viewBox="0 0 24 24"
+                                                        stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </div>
                                             </div>
-                                            <input type="text" x-model="customerQuery"
-                                                @input="if (/^\d+$/.test($el.value) && $el.value.length > 10) { $el.value = $el.value.slice(0, 10); customerQuery = $el.value; }"
-                                                @input.debounce.300ms="searchCustomers()"
-                                                placeholder="Search by Name, Mobile, or Code..."
-                                                class="w-full h-16 pl-16 pr-6 rounded-2xl border border-border/50 bg-secondary/30 dark:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-4 focus:ring-primary/10 focus:border-primary/50 transition-all text-xl font-medium placeholder:text-muted-foreground/50 shadow-inner"
-                                                autofocus>
 
-                                            <!-- Spinner -->
-                                            <div class="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none opacity-0 transition-opacity duration-300"
-                                                :class="{'opacity-100': false}">
-                                                <!-- Replace false with loading state if available -->
-                                                <svg class="animate-spin h-5 w-5 text-primary"
-                                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10"
-                                                        stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor"
-                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                                                    </path>
-                                                </svg>
+                                            <div class="relative flex-1">
+                                                <div
+                                                    class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                                                    <svg class="h-6 w-6 text-muted-foreground group-focus-within:text-primary transition-colors duration-300"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                    </svg>
+                                                </div>
+                                                <input type="text" x-model="customerQuery"
+                                                    @input="if (searchType === 'mobile' && /^\d+$/.test($el.value) && $el.value.length > 10) { $el.value = $el.value.slice(0, 10); customerQuery = $el.value; }"
+                                                    @input.debounce.300ms="searchCustomers()"
+                                                    :placeholder="searchType === 'mobile' ? 'Enter 10-digit Mobile Number...' : (searchType === 'code' ? 'Enter Customer Code...' : 'Search by Customer Name...')"
+                                                    class="w-full h-16 pl-16 pr-6 rounded-2xl border border-border/50 bg-secondary/30 dark:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-4 focus:ring-primary/10 focus:border-primary/50 transition-all text-xl font-medium placeholder:text-muted-foreground/50 shadow-inner"
+                                                    autofocus>
+
+                                                <!-- Spinner -->
+                                                <div class="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none opacity-0 transition-opacity duration-300"
+                                                    :class="{'opacity-100': false}">
+                                                    <!-- Replace false with loading state if available -->
+                                                    <svg class="animate-spin h-5 w-5 text-primary"
+                                                        xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                        viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                            stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor"
+                                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                        </path>
+                                                    </svg>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -438,7 +459,7 @@
                                                 </div>
                                             </template>
 
-                                            <div x-show="customerQuery.length > 2 && customerResults.length === 0"
+                                            <div x-show="(searchType === 'mobile' ? customerQuery.length === 10 : customerQuery.length > 2) && customerResults.length === 0"
                                                 class="text-center py-10">
                                                 <div
                                                     class="size-16 rounded-3xl bg-muted flex items-center justify-center mx-auto mb-4">
@@ -2516,6 +2537,7 @@
                     },
 
                     // Customer State
+                    searchType: 'mobile',
                     customerQuery: '',
                     customerResults: [],
                     selectedCustomer: preSelectedCustomer || null,
@@ -2765,9 +2787,14 @@
                             }
                         }
 
+
                         // Allow UI to settle before enabling saveState
                         this.$nextTick(() => {
                             this.isRestoring = false;
+                            // FIX: If we have a selected customer (e.g. from header redirect), save state immediately
+                            if (this.selectedCustomer) {
+                                this.saveState();
+                            }
                         });
 
                         // 2. Setup Watchers for Persistence
@@ -2978,19 +3005,30 @@
                     },
 
                     async searchCustomers() {
-                        if (this.customerQuery.length < 2) {
+                        // 1. Clear results if empty
+                        if (!this.customerQuery) {
                             this.customerResults = [];
                             return;
                         }
 
-                        // Strict 10-digit check for numeric inputs
-                        if (/^\d+$/.test(this.customerQuery) && this.customerQuery.length !== 10) {
-                            this.customerResults = [];
-                            return;
+                        // 2. Validation Logic
+                        if (this.searchType === 'mobile') {
+                            // Strict 10-digit check for Mobile
+                            if (!/^\d{10}$/.test(this.customerQuery)) {
+                                this.customerResults = [];
+                                return; // Don't search if not exactly 10 digits
+                            }
+                        } else {
+                            // Standard check for Name/Code (min 2 chars)
+                            if (this.customerQuery.length < 2) {
+                                this.customerResults = [];
+                                return;
+                            }
                         }
 
                         try {
-                            let res = await fetch(`{{ route('central.api.search.customers') }}?q=${this.customerQuery}&_t=${Date.now()}`);
+                            // Pass searchType to backend
+                            let res = await fetch(`{{ route('central.api.search.customers') }}?q=${this.customerQuery}&type=${this.searchType}&_t=${Date.now()}`);
                             if (!res.ok) throw new Error('Network response was not ok');
                             this.customerResults = await res.json();
                         } catch (e) {
@@ -3098,7 +3136,7 @@
                             if (data.success) {
                                 window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Interaction logged. Session closed.' } }));
                                 localStorage.removeItem('order_wizard_state');
-                                window.location.href = "{{ route('central.orders.create', ['reset' => 1]) }}";
+                                window.location.href = "{{ url('/dashboard') }}";
                             }
                         } catch (e) {
                             console.error(e);
