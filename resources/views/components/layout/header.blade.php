@@ -68,11 +68,11 @@
         <!-- Premium Customer Search "Command Center" style -->
         @can('customers view')
             <div x-data="headerCustomerSearch({
-                                                searchUrl: '{{ tenant() ? route('tenant.api.search.customers') : route('central.api.search.customers') }}',
-                                                storeUrl: '{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}',
-                                                addressStoreUrl: '{{ tenant() ? route('tenant.api.addresses.store') : route('central.api.addresses.store') }}',
-                                                orderUrl: '{{ tenant() ? route('tenant.orders.create') : route('central.orders.create') }}'
-                                            })">
+                                                        searchUrl: '{{ tenant() ? route('tenant.api.search.customers') : route('central.api.search.customers') }}',
+                                                        storeUrl: '{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}',
+                                                        addressStoreUrl: '{{ tenant() ? route('tenant.api.addresses.store') : route('central.api.addresses.store') }}',
+                                                        orderUrl: '{{ tenant() ? route('tenant.orders.create') : route('central.orders.create') }}'
+                                                    })">
                 <!-- Search Trigger Button -->
                 <button @click="openSearchModal()"
                     class="group flex items-center justify-center rounded-2xl p-2.5 text-muted-foreground hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-foreground hover:shadow-inner transition-all duration-300 active:scale-95 focus-visible:outline-none focus:ring-2 focus:ring-primary/20 backdrop-blur-md border border-transparent hover:border-zinc-200 dark:hover:border-white/20">
