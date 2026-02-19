@@ -68,10 +68,11 @@
         <!-- Premium Customer Search "Command Center" style -->
         @can('customers view')
             <div x-data="headerCustomerSearch({
-                                searchUrl: '{{ tenant() ? route('tenant.api.search.customers') : route('central.api.search.customers') }}',
-                                storeUrl: '{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}',
-                                orderUrl: '{{ tenant() ? route('tenant.orders.create') : route('central.orders.create') }}'
-                            })">
+                                                searchUrl: '{{ tenant() ? route('tenant.api.search.customers') : route('central.api.search.customers') }}',
+                                                storeUrl: '{{ tenant() ? route('tenant.api.customers.store-quick') : route('central.api.customers.store-quick') }}',
+                                                addressStoreUrl: '{{ tenant() ? route('tenant.api.addresses.store') : route('central.api.addresses.store') }}',
+                                                orderUrl: '{{ tenant() ? route('tenant.orders.create') : route('central.orders.create') }}'
+                                            })">
                 <!-- Search Trigger Button -->
                 <button @click="openSearchModal()"
                     class="group flex items-center justify-center rounded-2xl p-2.5 text-muted-foreground hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-foreground hover:shadow-inner transition-all duration-300 active:scale-95 focus-visible:outline-none focus:ring-2 focus:ring-primary/20 backdrop-blur-md border border-transparent hover:border-zinc-200 dark:hover:border-white/20">
@@ -95,38 +96,37 @@
 
                             <!-- Search Input Header -->
                             <div class="p-4 border-b border-border/50 relative">
-                                    <div class="relative flex items-center">
-                                        <!-- Search Type Dropdown -->
-                                        <div class="relative shrink-0 mr-2">
-                                            <select x-model="searchType"
-                                                class="h-10 pl-3 pr-8 rounded-xl border border-border/50 bg-secondary/30 dark:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-primary/20 text-xs font-bold shadow-sm appearance-none cursor-pointer outline-none">
-                                                <option value="mobile">Mobile</option>
-                                                <option value="name">Name</option>
-                                                <option value="code">Code</option>
-                                            </select>
-                                            <div
-                                                class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-muted-foreground">
-                                                <svg class="size-3" fill="none" viewBox="0 0 24 24"
-                                                    stroke="currentColor" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </div>
-                                        </div>
-
-                                        <div class="absolute left-[6.5rem] text-muted-foreground pointer-events-none z-10">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round" class="size-5">
-                                                <circle cx="11" cy="11" r="8" />
-                                                <path d="m21 21-4.3-4.3" />
+                                <div class="relative flex items-center">
+                                    <!-- Search Type Dropdown -->
+                                    <div class="relative shrink-0 mr-2">
+                                        <select x-model="searchType"
+                                            class="h-10 pl-3 pr-8 rounded-xl border border-border/50 bg-secondary/30 dark:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-primary/20 text-xs font-bold shadow-sm appearance-none cursor-pointer outline-none">
+                                            <option value="mobile">Mobile</option>
+                                            <option value="name">Name</option>
+                                            <option value="code">Code</option>
+                                        </select>
+                                        <div
+                                            class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-muted-foreground">
+                                            <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                                             </svg>
                                         </div>
-                                        <input type="text" x-model="customerQuery"
-                                            @input="if (searchType === 'mobile' && /^\d+$/.test($el.value) && $el.value.length > 10) { $el.value = $el.value.slice(0, 10); customerQuery = $el.value; }"
-                                            @input.debounce.300ms="searchCustomers()" x-ref="searchInput"
-                                            :placeholder="searchType === 'mobile' ? 'Enter 10-digit Mobile...' : 'Search customers...'"
-                                            class="flex h-12 w-full rounded-2xl bg-secondary/50 dark:bg-zinc-800/50 pl-12 pr-12 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50" />
+                                    </div>
+
+                                    <div class="absolute left-[6.5rem] text-muted-foreground pointer-events-none z-10">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" class="size-5">
+                                            <circle cx="11" cy="11" r="8" />
+                                            <path d="m21 21-4.3-4.3" />
+                                        </svg>
+                                    </div>
+                                    <input type="text" x-model="customerQuery"
+                                        @input="if (searchType === 'mobile' && /^\d+$/.test($el.value) && $el.value.length > 10) { $el.value = $el.value.slice(0, 10); customerQuery = $el.value; }"
+                                        @input.debounce.300ms="searchCustomers()" x-ref="searchInput"
+                                        :placeholder="searchType === 'mobile' ? 'Enter 10-digit Mobile...' : 'Search customers...'"
+                                        class="flex h-12 w-full rounded-2xl bg-secondary/50 dark:bg-zinc-800/50 pl-12 pr-12 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50" />
                                     <button @click="searchOpen = false"
                                         class="absolute right-3 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground transition-colors">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -237,108 +237,285 @@
                 </template>
 
                 <!-- Premeum Registration Modal (Teleported to Body to avoid Header Clipping) -->
+                <!-- Premium Fast Enrollment Modal -->
                 <template x-teleport="body">
-                    <div x-show="showModal" x-transition.opacity.duration.400ms
-                        class="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4"
+                    <div x-show="showModal" x-transition:enter="transition ease-out duration-500"
+                        x-transition:enter-start="opacity-0 backdrop-blur-none"
+                        x-transition:enter-end="opacity-100 backdrop-blur-xl"
+                        x-transition:leave="transition ease-in duration-300"
+                        x-transition:leave-start="opacity-100 backdrop-blur-xl"
+                        x-transition:leave-end="opacity-0 backdrop-blur-none"
+                        class="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6"
                         style="display: none;">
-                        <div class="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[40px] shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 fade-in duration-500 ease-out"
+
+                        <div class="relative w-full max-w-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl rounded-[40px] shadow-[0_0_80px_rgba(0,0,0,0.4)] border border-white/20 dark:border-white/5 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 ease-out"
                             @click.away="showModal = false">
-                            <div class="px-10 pt-10 pb-6 relative overflow-hidden">
-                                <div class="absolute -top-20 -right-20 size-60 bg-primary/20 blur-[80px] rounded-full">
+
+                            <!-- Premium Header with Abstract Art -->
+                            <div class="relative px-8 pt-8 pb-6 overflow-hidden shrink-0">
+                                <div
+                                    class="absolute -top-24 -right-24 size-64 bg-gradient-to-br from-primary/30 to-purple-500/30 blur-[60px] rounded-full pointer-events-none">
                                 </div>
-                                <div class="relative z-10">
-                                    <h3 class="font-black text-3xl tracking-tighter">Fast Enrollment</h3>
-                                    <p class="text-sm text-muted-foreground font-medium mt-1">Creating a new identity in the
-                                        current ledger.</p>
+                                <div
+                                    class="absolute top-10 -left-10 size-40 bg-teal-500/20 blur-[50px] rounded-full pointer-events-none">
                                 </div>
-                                <button @click="showModal = false"
-                                    class="absolute top-8 right-8 text-muted-foreground hover:text-foreground p-2 hover:bg-white/10 rounded-full transition-all duration-300">
+
+                                <div class="relative z-10 flex justify-between items-start">
+                                    <div>
+                                        <h3
+                                            class="font-black text-3xl tracking-tighter bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                            Fast Enrollment</h3>
+                                        <p class="text-sm font-medium text-muted-foreground mt-1 flex items-center gap-2">
+                                            <span class="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            Creating new identity in active ledger
+                                        </p>
+                                    </div>
+                                    <button @click="showModal = false"
+                                        class="group relative p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            class="size-6 text-muted-foreground group-hover:text-foreground transition-colors group-hover:rotate-90 duration-300">
+                                            <path d="M18 6 6 18" />
+                                            <path d="m6 6 12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Scrollable Content -->
+                            <div class="flex-1 overflow-y-auto custom-scrollbar px-8 pb-8 space-y-8">
+
+                                <!-- Identity Section -->
+                                <section class="space-y-4">
+                                    <div class="flex items-center gap-2 pb-2 border-b border-border/40">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" class="size-4 text-primary">
+                                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                                            <circle cx="12" cy="7" r="4" />
+                                        </svg>
+                                        <h4 class="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                                            Identity</h4>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">First
+                                                Name</label>
+                                            <input type="text" x-model="newCustomer.first_name"
+                                                class="w-full h-11 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-black/40 transition-all"
+                                                placeholder="Required" />
+                                        </div>
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">Middle
+                                                Name</label>
+                                            <input type="text" x-model="newCustomer.middle_name"
+                                                class="w-full h-11 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-black/40 transition-all"
+                                                placeholder="Optional" />
+                                        </div>
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">Last
+                                                Name</label>
+                                            <input type="text" x-model="newCustomer.last_name"
+                                                class="w-full h-11 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-black/40 transition-all"
+                                                placeholder="Optional" />
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-1.5 group/field relative">
+                                        <label
+                                            class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">Mobile
+                                            Identity</label>
+                                        <div class="relative group">
+                                            <div
+                                                class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <span
+                                                    class="text-primary font-black text-sm border-r border-border pr-3">+91</span>
+                                            </div>
+                                            <input type="text" x-model="newCustomer.mobile" maxlength="10"
+                                                class="w-full h-12 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl pl-16 pr-4 text-lg font-black tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-black/40 transition-all font-mono"
+                                                placeholder="00000 00000" />
+                                            <div
+                                                class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity">
+                                                <div
+                                                    class="size-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">Email
+                                                (Optional)</label>
+                                            <input type="email" x-model="newCustomer.email"
+                                                class="w-full h-11 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                                placeholder="name@domain.com" />
+                                        </div>
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">Type</label>
+                                            <div class="relative">
+                                                <select x-model="newCustomer.type"
+                                                    class="w-full h-11 appearance-none bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-foreground cursor-pointer">
+                                                    <option value="farmer">🏢 Farmer / Individual</option>
+                                                    <option value="buyer">💼 Corporate Buyer</option>
+                                                    <option value="dealer">📦 Retail Dealer</option>
+                                                    <option value="vendor">🚚 Service Vendor</option>
+                                                </select>
+                                                <div
+                                                    class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="m6 9 6 6 6-6" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <!-- Address Section -->
+                                <section class="space-y-4">
+                                    <div class="flex items-center gap-2 pb-2 border-b border-border/40">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" class="size-4 text-primary">
+                                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                        </svg>
+                                        <h4 class="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                                            Location Details</h4>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">Village
+                                                / Town</label>
+                                            <div class="relative">
+                                                <input type="text" x-model="newCustomer.village"
+                                                    @input.debounce.300ms="lookupAddress('village', $el.value)"
+                                                    class="w-full h-11 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/30"
+                                                    placeholder="Search..." />
+                                                <!-- Suggestions Dropdown -->
+                                                <div x-show="addressSuggestions.length > 0"
+                                                    @click.away="addressSuggestions = []"
+                                                    x-transition:enter="transition ease-out duration-200"
+                                                    x-transition:enter-start="opacity-0 translate-y-1"
+                                                    x-transition:enter-end="opacity-100 translate-y-0"
+                                                    class="absolute z-50 left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-black/5 dark:border-white/10 rounded-2xl shadow-xl ring-1 ring-black/5">
+                                                    <div
+                                                        class="sticky top-0 bg-muted/50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50">
+                                                        Suggestions</div>
+                                                    <template x-for="item in addressSuggestions" :key="item.label">
+                                                        <button @click="fillAddress(item.data)"
+                                                            class="w-full text-left px-4 py-2.5 hover:bg-primary/5 dark:hover:bg-white/5 transition-colors text-xs font-medium border-b border-border/20 last:border-0"
+                                                            x-text="item.label"></button>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">Pincode</label>
+                                            <input type="text" x-model="newCustomer.pincode" maxlength="6"
+                                                @input.debounce.300ms="lookupAddress('pincode', $el.value)"
+                                                class="w-full h-11 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono tracking-wide"
+                                                placeholder="000000" />
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">Post
+                                                Office</label>
+                                            <input type="text" x-model="newCustomer.post_office" readonly
+                                                class="w-full h-11 bg-black/5 dark:bg-white/5 border border-transparent rounded-xl px-4 text-sm font-bold text-muted-foreground cursor-not-allowed" />
+                                        </div>
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">Taluka</label>
+                                            <input type="text" x-model="newCustomer.taluka"
+                                                class="w-full h-11 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">District</label>
+                                            <input type="text" x-model="newCustomer.district"
+                                                class="w-full h-11 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                                        </div>
+                                        <div class="space-y-1.5 group/field">
+                                            <label
+                                                class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">State</label>
+                                            <input type="text" x-model="newCustomer.state"
+                                                class="w-full h-11 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-1.5 group/field">
+                                        <label
+                                            class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider pl-1">Address
+                                            Line 1</label>
+                                        <input type="text" x-model="newCustomer.address_line1"
+                                            class="w-full h-11 bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                            placeholder="House No, Building, Street" />
+                                    </div>
+                                </section>
+
+                                <!-- Error Box -->
+                                <div x-show="error" x-transition
+                                    class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-3">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round" class="size-6">
-                                        <path d="M18 6 6 18" />
-                                        <path d="m6 6 12 12" />
+                                        stroke-linejoin="round" class="size-5 shrink-0">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" x2="12" y1="8" y2="12" />
+                                        <line x1="12" x2="12.01" y1="16" y2="16" />
                                     </svg>
-                                </button>
+                                    <span x-text="error"></span>
+                                </div>
                             </div>
 
-                            <div class="px-10 pb-10 overflow-y-auto space-y-8 custom-scrollbar">
-                                <div class="grid grid-cols-3 gap-4">
-                                    <div class="space-y-2 group/field">
-                                        <label
-                                            class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">First
-                                            Name</label>
-                                        <input type="text" x-model="newCustomer.first_name"
-                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
-                                            placeholder="Rahul" />
-                                    </div>
-                                    <div class="space-y-2 group/field">
-                                        <label
-                                            class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">Middle
-                                            Name</label>
-                                        <input type="text" x-model="newCustomer.middle_name"
-                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
-                                            placeholder="" />
-                                    </div>
-                                    <div class="space-y-2 group/field">
-                                        <label
-                                            class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">Last
-                                            Name</label>
-                                        <input type="text" x-model="newCustomer.last_name"
-                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
-                                            placeholder="Sharma" />
-                                    </div>
-                                </div>
-
-                                <div class="space-y-2 group/field">
-                                    <label
-                                        class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors">Mobile
-                                        Identity (Verify)</label>
-                                    <div class="relative">
-                                        <span
-                                            class="absolute left-5 top-1/2 -translate-y-1/2 text-primary font-black text-sm">+91</span>
-                                        <input type="text" x-model="newCustomer.mobile"
-                                            class="w-full h-14 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-[20px] pl-16 pr-5 text-lg font-black tracking-widest focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans" />
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-6">
-                                    <div class="space-y-2 group/field">
-                                        <label
-                                            class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Contact
-                                            Email</label>
-                                        <input type="email" x-model="newCustomer.email"
-                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans"
-                                            placeholder="name@domain.com" />
-                                    </div>
-                                    <div class="space-y-2 group/field">
-                                        <label
-                                            class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Classification</label>
-                                        <select x-model="newCustomer.type"
-                                            class="w-full h-12 bg-secondary/30 dark:bg-white/5 border border-white/10 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans">
-                                            <option value="farmer">🏢 Farmer / Individual</option>
-                                            <option value="buyer">💼 Corporate Buyer</option>
-                                            <option value="dealer">📦 Retail Dealer</option>
-                                            <option value="vendor">🚚 Service Vendor</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div x-show="error" x-transition
-                                    class="p-5 rounded-3xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-bold leading-relaxed shadow-inner"
-                                    x-text="error"></div>
-                            </div>
-
-                            <div class="px-10 py-8 border-t border-border/50 bg-muted/20 flex justify-end gap-4">
+                            <!-- Premium Footer -->
+                            <div
+                                class="px-8 py-5 border-t border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 flex justify-end gap-3 shrink-0 backdrop-blur-md">
                                 <button @click="showModal = false"
-                                    class="px-6 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all">Discard</button>
+                                    class="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all">
+                                    Discard
+                                </button>
                                 <button @click="createCustomer()" :disabled="saving"
-                                    class="inline-flex items-center justify-center gap-3 rounded-[22px] bg-gradient-to-r from-primary to-purple-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-2xl hover:-translate-y-1 active:scale-95 transition-all duration-500 disabled:opacity-50">
-                                    <span x-text="saving ? 'AUTHENTICATING...' : 'ENROLL & CONTINUE'"></span>
+                                    class="group relative inline-flex items-center justify-center gap-3 rounded-[18px] bg-foreground text-background px-8 py-3 text-xs font-black uppercase tracking-widest shadow-lg shadow-black/20 dark:shadow-white/5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-70 overflow-hidden">
+
+                                    <div
+                                        class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out">
+                                    </div>
+
+                                    <span x-text="saving ? 'Syncing...' : 'Enroll Customer'"></span>
                                     <svg x-show="!saving" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                        stroke-linecap="round" stroke-linejoin="round" class="size-4">
-                                        <path d="m9 18 6-6-6-6" />
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                        stroke-linecap="round" stroke-linejoin="round"
+                                        class="size-4 group-hover:translate-x-1 transition-transform">
+                                        <path d="M5 12h14" />
+                                        <path d="m12 5 7 7-7 7" />
+                                    </svg>
+                                    <svg x-show="saving" class="animate-spin size-4" xmlns="http://www.w3.org/2000/svg"
+                                        fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                            stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
                                     </svg>
                                 </button>
                             </div>
@@ -352,12 +529,28 @@
                             searchType: 'mobile',
                             customerQuery: '',
                             customerResults: [],
-                            searchOpen: false, // New state for search modal
+                            searchOpen: false,
                             loading: false,
                             showModal: false,
                             saving: false,
                             error: '',
-                            newCustomer: { first_name: '', middle_name: '', last_name: '', mobile: '', email: '', type: 'farmer' },
+                            newCustomer: {
+                                first_name: '',
+                                middle_name: '',
+                                last_name: '',
+                                mobile: '',
+                                email: '',
+                                type: 'farmer',
+                                address_line1: '',
+                                address_line2: '',
+                                village: '',
+                                taluka: '',
+                                district: '',
+                                state: '',
+                                pincode: '',
+                                post_office: ''
+                            },
+                            addressSuggestions: [],
 
                             openSearchModal() {
                                 this.searchOpen = true;
@@ -367,21 +560,17 @@
                             },
 
                             async searchCustomers() {
-                                // 1. Clear results if empty
                                 if (!this.customerQuery) {
                                     this.customerResults = [];
                                     return;
                                 }
 
-                                // 2. Validation Logic
                                 if (this.searchType === 'mobile') {
-                                    // Strict 10-digit check for Mobile
                                     if (!/^\d{10}$/.test(this.customerQuery)) {
                                         this.customerResults = [];
                                         return;
                                     }
                                 } else {
-                                    // Standard check
                                     if (this.customerQuery.length < 2) {
                                         this.customerResults = [];
                                         return;
@@ -403,7 +592,7 @@
                             },
 
                             openCreateCustomerModal() {
-                                this.searchOpen = false; // Close search modal
+                                this.searchOpen = false;
                                 this.showModal = true;
                                 this.error = '';
                                 this.newCustomer = {
@@ -412,7 +601,15 @@
                                     last_name: '',
                                     mobile: '',
                                     email: '',
-                                    type: 'farmer'
+                                    type: 'farmer',
+                                    address_line1: '',
+                                    address_line2: '',
+                                    village: '',
+                                    taluka: '',
+                                    district: '',
+                                    state: '',
+                                    pincode: '',
+                                    post_office: ''
                                 };
                                 if (/^\d+$/.test(this.customerQuery)) {
                                     this.newCustomer.mobile = this.customerQuery;
@@ -429,7 +626,6 @@
                                 this.saving = true;
                                 this.error = '';
 
-                                // Auto-generate display_name
                                 const f = this.newCustomer.first_name.trim();
                                 const m = this.newCustomer.middle_name ? this.newCustomer.middle_name.trim() : '';
                                 const l = this.newCustomer.last_name ? this.newCustomer.last_name.trim() : '';
@@ -457,7 +653,39 @@
                                         body: JSON.stringify(payload)
                                     });
                                     let data = await res.json();
+
                                     if (data.success) {
+                                        // CUSTOMER CREATED - NOW CHECK FOR ADDRESS
+                                        if ((this.newCustomer.address_line1 || this.newCustomer.village) && this.newCustomer.pincode) {
+                                            try {
+                                                const addrPayload = {
+                                                    customer_id: data.customer.id,
+                                                    label: 'Home',
+                                                    address_line1: this.newCustomer.address_line1 || this.newCustomer.village,
+                                                    address_line2: this.newCustomer.address_line2,
+                                                    village: this.newCustomer.village,
+                                                    taluka: this.newCustomer.taluka,
+                                                    district: this.newCustomer.district,
+                                                    state: this.newCustomer.state,
+                                                    pincode: this.newCustomer.pincode,
+                                                    post_office: this.newCustomer.post_office,
+                                                    is_default: true,
+                                                    type: 'both'
+                                                };
+
+                                                await fetch(routes.addressStoreUrl, {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Accept': 'application/json',
+                                                        'X-CSRF-TOKEN': csrfToken
+                                                    },
+                                                    body: JSON.stringify(addrPayload)
+                                                });
+                                            } catch (addrErr) {
+                                                console.error('Address sync failed', addrErr);
+                                            }
+                                        }
                                         this.selectCustomer(data.customer);
                                     } else {
                                         this.error = data.message || 'System rejection. Contact core admin.';
@@ -468,6 +696,39 @@
                                 } finally {
                                     this.saving = false;
                                 }
+                            },
+
+                            async lookupAddress(field, value) {
+                                if (value.length < 2) {
+                                    this.addressSuggestions = [];
+                                    return;
+                                }
+                                if (field === 'pincode' && value.length < 6) return;
+
+                                try {
+                                    let res = await fetch(`{{ url('/api/village-lookup') }}?${field}=${value}`);
+                                    let data = await res.json();
+
+                                    if (data.found) {
+                                        if (data.mode === 'single') {
+                                            this.fillAddress(data.data);
+                                            this.addressSuggestions = [];
+                                        } else {
+                                            this.addressSuggestions = data.list;
+                                        }
+                                    } else {
+                                        this.addressSuggestions = [];
+                                    }
+                                } catch (e) { console.error(e); }
+                            },
+
+                            fillAddress(data) {
+                                Object.keys(data).forEach(k => {
+                                    if (this.newCustomer.hasOwnProperty(k)) {
+                                        this.newCustomer[k] = data[k] || '';
+                                    }
+                                });
+                                this.addressSuggestions = [];
                             }
                         }
                     }

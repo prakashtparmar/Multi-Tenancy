@@ -3327,11 +3327,14 @@
                                 }, 300);
                             });
 
-                            // For readonly dropdown fields (Post Office)
+                            // ✅ For readonly dropdown fields (Post Office)
                             el.addEventListener('focus', () => {
                                 activeField = el;
 
                                 if (isReadonly) {
+                                    // Only auto-trigger lookup if the field is currently empty
+                                    if (el.value.trim() !== '') return;
+
                                     const baseValue =
                                         document.getElementById('modal_pincode')?.value ||
                                         document.getElementById('modal_village')?.value ||
